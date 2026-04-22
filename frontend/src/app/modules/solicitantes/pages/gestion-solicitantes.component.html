@@ -1,0 +1,187 @@
+<div class="solicitantes-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <app-icon name="users" size="lg"></app-icon>
+        Gestión de Solicitantes
+      </h1>
+      <p class="page-subtitle">Administra los solicitantes del sistema</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" routerLink="nuevo">
+        <app-icon name="plus" size="sm"></app-icon>
+        Nuevo Solicitante
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon bg-blue-100 text-blue-600">
+        <app-icon name="users" size="md"></app-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ totalElements() }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon bg-green-100 text-green-600">
+        <app-icon name="check-circle" size="md"></app-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ getActivosCount() }}</span>
+        <span class="stat-label">Activos</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon bg-red-100 text-red-600">
+        <app-icon name="x-circle" size="md"></app-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ getInactivosCount() }}</span>
+        <span class="stat-label">Inactivos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <app-icon name="search" size="sm" customClass="search-icon"></app-icon>
+      <input 
+        type="text" 
+        placeholder="Buscar solicitantes..." 
+        [value]="searchTerm()"
+        (input)="setSearchTerm($any($event.target).value)"
+        class="search-input"
+      >
+    </div>
+    
+    <div class="filter-group">
+      <select 
+        class="filter-select"
+        [value]="filterTipo()"
+        (change)="setFilterTipo($any($event.target).value)"
+      >
+        <option value="todos">Todos los tipos</option>
+        <option value="PersonaNatural">Persona Natural</option>
+        <option value="Empresa">Empresa</option>
+        <option value="Vehiculo">Vehículo</option>
+      </select>
+
+      <button class="btn btn-ghost" (click)="clearFilters()" *ngIf="filterTipo() !== 'todos' || searchTerm()">
+        <app-icon name="x" size="sm"></app-icon>
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-overlay" *ngIf="loading()">
+    <div class="spinner"></div>
+    <p>Cargando solicitantes...</p>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container" *ngIf="!loading()">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Nombre</th>
+          <th>Identificación</th>
+          <th>Contacto</th>
+          <th>Estado</th>
+          <th>Fecha Registro</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let solicitante of filteredSolicitantes">
+          <td>
+            <div class="tipo-cell">
+              <app-icon [name]="getTipoIcon(solicitante.tipoSolicitante)" size="sm"></app-icon>
+              <span>{{ getTipoLabel(solicitante.tipoSolicitante) }}</span>
+            </div>
+          </td>
+          <td class="font-medium">{{ solicitante.nombre || 'N/A' }}</td>
+          <td>{{ solicitante.identificacion || 'N/A' }}</td>
+          <td>
+            <div class="contacto-cell">
+              <span *ngIf="solicitante.email">{{ solicitante.email }}</span>
+              <span *ngIf="solicitante.telefono">{{ solicitante.telefono }}</span>
+              <span *ngIf="!solicitante.email && !solicitante.telefono" class="text-gray-400">Sin contacto</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getEstadoClass(solicitante.activo)">
+              {{ getEstadoLabel(solicitante.activo) }}
+            </span>
+          </td>
+          <td>{{ formatDate(solicitante.fechaRegistro) }}</td>
+          <td>
+            <div class="actions-cell">
+              <button 
+                class="btn-icon" 
+                *ngIf="!solicitante.activo"
+                (click)="activate(solicitante)"
+                title="Activar"
+              >
+                <app-icon name="check-circle" size="sm" customClass="text-green-600"></app-icon>
+              </button>
+              <button 
+                class="btn-icon" 
+                *ngIf="solicitante.activo"
+                (click)="deactivate(solicitante)"
+                title="Desactivar"
+              >
+                <app-icon name="x-circle" size="sm" customClass="text-red-600"></app-icon>
+              </button>
+              <button 
+                class="btn-icon btn-danger-icon"
+                (click)="delete(solicitante)"
+                title="Eliminar"
+              >
+                <app-icon name="trash" size="sm"></app-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredSolicitantes.length === 0">
+      <app-icon name="users" size="xl" customClass="text-gray-400"></app-icon>
+      <h3>No hay solicitantes</h3>
+      <p>No se encontraron solicitantes con los filtros seleccionados</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="totalPages() > 1">
+    <button 
+      class="btn btn-ghost" 
+      (click)="prevPage()" 
+      [disabled]="currentPage() === 0"
+    >
+      <app-icon name="chevron-left" size="sm"></app-icon>
+      Anterior
+    </button>
+    <span class="page-info">
+      Página {{ currentPage() + 1 }} de {{ totalPages() }}
+      ({{ totalElements() }} total)
+    </span>
+    <button 
+      class="btn btn-ghost" 
+      (click)="nextPage()" 
+      [disabled]="currentPage() >= totalPages() - 1"
+    >
+      Siguiente
+      <app-icon name="chevron-right" size="sm"></app-icon>
+    </button>
+  </div>
+</div>

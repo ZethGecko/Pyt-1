@@ -1,0 +1,659 @@
+// busqueda-rutas.component.scss
+@use 'sass:color';
+
+// Variables - consistentes con el primer ejemplo
+$primary-color: #2563eb;
+$primary-hover: #1d4ed8;
+$secondary-color: #64748b;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$background-color: #f8fafc;
+$card-background: #ffffff;
+$border-color: #e2e8f0;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+$shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+$shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+$shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+$transition-fast: 150ms ease;
+$transition-normal: 250ms ease;
+$border-radius: 0.5rem;
+$border-radius-lg: 0.75rem;
+
+// Container principal
+.busqueda-rutas {
+  min-height: 100vh;
+  background-color: $background-color;
+  padding: 1.5rem;
+}
+
+// Header (adaptado del primer ejemplo)
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .header-back-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: $border-radius;
+      background-color: $card-background;
+      border: 1px solid $border-color;
+      color: $text-secondary;
+      transition: all $transition-fast;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        background-color: #f1f5f9;
+        color: $text-primary;
+        border-color: $text-muted;
+      }
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius-lg;
+      background: linear-gradient(135deg, #dbeafe, #eff6ff);
+      color: $primary-color;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .page-subtitle {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+}
+
+// Mensajes (unificado)
+.messages {
+  margin-bottom: 1.5rem;
+
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: $border-radius;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: slideIn 0.3s ease;
+
+    &.alert-error {
+      background-color: #fef2f2;
+      color: $danger-color;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+// Contenido principal
+.main-content {
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+}
+
+// Panel de búsqueda (estilo consistente)
+.search-panel {
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  height: fit-content;
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid $border-color;
+
+    .panel-icon {
+      width: 24px;
+      height: 24px;
+      color: $primary-color;
+    }
+
+    h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+  }
+}
+
+// Formulario (reutilizado del primer ejemplo)
+.form-group {
+  margin-bottom: 1.25rem;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+
+    .label-icon {
+      width: 16px;
+      height: 16px;
+      color: $text-secondary;
+    }
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    font-size: 0.875rem;
+    color: $text-primary;
+    background-color: $background-color;
+    transition: all $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+
+    &::placeholder {
+      color: $text-muted;
+    }
+
+    &[readonly] {
+      background-color: $background-color;
+      cursor: default;
+    }
+  }
+
+  .input-with-button {
+    display: flex;
+    gap: 0.5rem;
+
+    .form-input {
+      flex: 1;
+    }
+  }
+}
+
+// Botones (consistente)
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: $border-radius;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  &.btn-primary {
+    background: linear-gradient(135deg, $primary-color, $primary-hover);
+    color: white;
+    box-shadow: $shadow-sm;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $primary-hover, color.adjust($primary-hover, $lightness: -5%));
+      box-shadow: $shadow-md;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-secondary {
+    background-color: white;
+    border: 1px solid $border-color;
+    color: $text-primary;
+
+    &:hover:not(:disabled) {
+      background-color: #f1f5f9;
+      border-color: $text-muted;
+    }
+  }
+
+  &.btn-outline {
+    background-color: transparent;
+    border: 1px solid $border-color;
+    color: $text-secondary;
+
+    &:hover:not(:disabled) {
+      background-color: #f1f5f9;
+      color: $text-primary;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-block {
+    width: 100%;
+  }
+}
+
+.btn-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: $border-radius;
+  border: 1px solid $border-color;
+  background-color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    color: $text-secondary;
+    transition: color $transition-fast;
+  }
+
+  &:hover {
+    background-color: $primary-color;
+    border-color: $primary-color;
+
+    svg {
+      color: white;
+    }
+  }
+
+  &.btn-edit {
+    background-color: #dbeafe;
+    border-color: $primary-color;
+
+    svg {
+      color: $primary-color;
+    }
+
+    &:hover {
+      background-color: $primary-color;
+
+      svg {
+        color: white;
+      }
+    }
+  }
+}
+
+// Botón de búsqueda
+.btn-primary {
+  margin-top: 0.5rem;
+  padding: 0.875rem !important;
+
+  .btn-icon-svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Mapa
+.map-container {
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+  height: 600px;
+
+  .map-inner {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// Resultados
+.results-section {
+  margin-top: 2rem;
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+
+    .results-icon {
+      width: 24px;
+      height: 24px;
+      color: $primary-color;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+    }
+
+    .results-count {
+      margin-left: auto;
+      font-size: 0.875rem;
+      color: $text-secondary;
+      background-color: $card-background;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid $border-color;
+    }
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+// Tarjeta de ruta (mejorada)
+.ruta-card {
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  padding: 1.25rem;
+  transition: all $transition-normal;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+    border-color: $primary-color;
+
+    .btn-secondary {
+      background: linear-gradient(135deg, $primary-color, $primary-hover);
+      color: white;
+      border-color: transparent;
+
+      svg {
+        color: white;
+      }
+    }
+  }
+
+  .ruta-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0;
+      flex: 1;
+    }
+
+    .empresa-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      background-color: #dbeafe;
+      color: $primary-color;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+      margin-left: 0.5rem;
+
+      .badge-icon {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+
+  .ruta-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .stat-icon {
+        width: 20px;
+        height: 20px;
+        color: $text-secondary;
+        flex-shrink: 0;
+      }
+
+      .stat-content {
+        display: flex;
+        flex-direction: column;
+
+        .stat-label {
+          font-size: 0.75rem;
+          color: $text-secondary;
+        }
+
+        .stat-value {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: $text-primary;
+        }
+      }
+    }
+  }
+
+  .btn-secondary {
+    width: 100%;
+    border: 1px solid $border-color;
+    background-color: white;
+    transition: all $transition-fast;
+
+    svg {
+      transition: color $transition-fast;
+    }
+  }
+}
+
+// Estados vacío y loading (consistentes)
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  margin-top: 2rem;
+
+  svg {
+    width: 64px;
+    height: 64px;
+    color: $text-muted;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.875rem;
+    margin: 0;
+  }
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  margin-top: 2rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    color: $text-secondary;
+    font-size: 0.875rem;
+  }
+}
+
+// Iconos SVG reutilizables
+.btn-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Responsive
+@media (max-width: 1024px) {
+  .main-content .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-container {
+    height: 450px;
+  }
+}
+
+@media (max-width: 768px) {
+  .busqueda-rutas {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-actions {
+      width: 100%;
+
+      .btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ruta-card-header {
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .empresa-badge {
+      margin-left: 0 !important;
+      align-self: flex-start;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .ruta-card-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-group .input-with-button {
+    flex-direction: column;
+
+    .btn-icon {
+      width: 100%;
+    }
+  }
+}

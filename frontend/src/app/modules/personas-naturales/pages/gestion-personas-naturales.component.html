@@ -1,0 +1,236 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h3 mb-0">Gestión de Personas Naturales</h2>
+      <p class="text-muted mb-0">Administración de personas naturales en el sistema</p>
+    </div>
+    <button class="btn btn-primary" (click)="abrirModalCrear()" [disabled]="cargando">
+      <i class="bi bi-plus-circle me-2"></i>Nueva Persona
+    </button>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="row g-3 mb-4" *ngIf="estadisticas">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <h3 class="h4 text-primary mb-1">{{ totalPersonas }}</h3>
+          <small class="text-muted">Total</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <h3 class="h4 text-success mb-1">{{ personasConEmail }}</h3>
+          <small class="text-muted">Con Email</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <h3 class="h4 text-info mb-1">{{ personasConTelefono }}</h3>
+          <small class="text-muted">Con Teléfono</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <h3 class="h4 text-warning mb-1">{{ generoStats.size }}</h3>
+          <small class="text-muted">Géneros Registrados</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <input type="text" class="form-control" placeholder="Buscar por nombre, DNI, email..." 
+                 [(ngModel)]="filtroBusqueda" (input)="actualizarPaginacion()">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" [(ngModel)]="filtroGenero" (change)="actualizarPaginacion()">
+            <option value="">Todos los géneros</option>
+            <option *ngFor="let g of ['MASCULINO', 'FEMENINO', 'OTRO']" [value]="g">{{ getGeneroLabel(g) }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="filterEmail" [(ngModel)]="filtroConEmail" (change)="actualizarPaginacion()">
+            <label class="form-check-label" for="filterEmail">Con email</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="filterTelefono" [(ngModel)]="filtroConTelefono" (change)="actualizarPaginacion()">
+            <label class="form-check-label" for="filterTelefono">Con teléfono</label>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">
+            <i class="bi bi-x-circle me-2"></i>Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>DNI</th>
+              <th>Nombre Completo</th>
+              <th>Género</th>
+              <th>Contacto</th>
+              <th>Fecha Registro</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let persona of personasPaginadas">
+              <td><strong>{{ persona.dni }}</strong></td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <div>
+                    <div class="fw-semibold">{{ formatNombreCompleto(persona) }}</div>
+                    <small class="text-muted" *ngIf="persona.observaciones">{{ persona.observaciones }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [class]="getGeneroClass(persona.genero)">
+                  {{ getGeneroLabel(persona.genero) }}
+                </span>
+              </td>
+              <td>
+                <small>{{ formatContacto(persona) }}</small>
+              </td>
+              <td>{{ formatDate(persona.fechaRegistro) }}</td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" (click)="abrirModalEditar(persona)" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="eliminar(persona)" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="personasPaginadas.length === 0">
+              <td colspan="6" class="text-center py-4">
+                <div class="text-muted">
+                  <i class="bi bi-search display-4"></i>
+                  <p class="mt-2">No se encontraron personas</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <nav *ngIf="totalPages > 1" class="mt-3">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="currentPage === 0">
+            <a class="page-link" (click)="cambiarPagina(0)">Primera</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === 0">
+            <a class="page-link" (click)="cambiarPagina(currentPage - 1)">Anterior</a>
+          </li>
+          <li class="page-item" *ngFor="let page of getPages()" 
+              [class.active]="page === currentPage" 
+              [class.disabled]="page === -1">
+            <a class="page-link" (click)="cambiarPagina(page)">{{ page === -1 ? '...' : page + 1 }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage >= totalPages - 1">
+            <a class="page-link" (click)="cambiarPagina(currentPage + 1)">Siguiente</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage >= totalPages - 1">
+            <a class="page-link" (click)="cambiarPagina(totalPages - 1)">Última</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            {{ modoModal === 'crear' ? 'Nueva Persona Natural' : 'Editar Persona' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+        </div>
+        <div class="modal-body">
+          <form #personaForm="ngForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombres *</label>
+                <input type="text" class="form-control" [(ngModel)]="formulario.nombres" name="nombres" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Apellidos *</label>
+                <input type="text" class="form-control" [(ngModel)]="formulario.apellidos" name="apellidos" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">DNI *</label>
+                <input type="number" class="form-control" [(ngModel)]="formulario.dni" name="dni" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Género</label>
+                <select class="form-select" [(ngModel)]="formulario.genero" name="genero">
+                  <option value="">Seleccione...</option>
+                  <option *ngFor="let g of ['MASCULINO', 'FEMENINO', 'OTRO']" [value]="g">{{ getGeneroLabel(g) }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" class="form-control" [(ngModel)]="formulario.telefono" name="telefono">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" [(ngModel)]="formulario.email" name="email">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-control" [(ngModel)]="formulario.observaciones" name="observaciones" rows="3"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="guardar()" [disabled]="cargando">
+            <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+            {{ modoModal === 'crear' ? 'Crear' : 'Actualizar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="mostrarModal" *ngIf="mostrarModal"></div>
+
+  <!-- Alertas -->
+  <div class="alert alert-danger alert-dismissible fade show position-fixed top-0 end-0 m-3" 
+       style="z-index: 1060;" *ngIf="error" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <div class="alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3" 
+       style="z-index: 1060; margin-top: 80px;" *ngIf="exito" role="alert">
+    {{ exito }}
+    <button type="button" class="btn-close" (click)="exito = null"></button>
+  </div>
+</div>

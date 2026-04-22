@@ -1,0 +1,257 @@
+<div class="modal-overlay" *ngIf="mostrar">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>
+        <span class="header-icon">📋</span>
+        {{ modoEditar ? 'Editar Requisito' : 'Nuevo Requisito' }}
+      </h2>
+      <button type="button" class="close-btn" (click)="cerrarModal()" aria-label="Cerrar modal">
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+
+        <!-- Información del TUPA -->
+        @if (tupac) {
+          <div class="alert alert-info">
+            <span class="alert-icon">ℹ️</span>
+            <div>
+              <strong>TUPA:</strong> {{ tupac.codigo }} - {{ tupac.descripcion }}
+            </div>
+          </div>
+        }
+
+        <!-- Campos básicos -->
+        <div class="form-group">
+          <label for="codigo">
+            <span class="label-icon">🔖</span>
+            Código *
+          </label>
+          <input
+            type="text"
+            id="codigo"
+            formControlName="codigo"
+            class="form-input"
+            placeholder="Ej: DOC-001"
+            maxlength="50"
+          >
+          @if (form.get('codigo')?.invalid && form.get('codigo')?.touched) {
+            <span class="error-message">
+              <span class="error-icon">⚠️</span>
+              El código es requerido
+            </span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">
+            <span class="label-icon">📝</span>
+            Descripción *
+          </label>
+          <textarea
+            id="descripcion"
+            formControlName="descripcion"
+            class="form-textarea"
+            rows="3"
+            placeholder="Ingrese una descripción detallada del requisito"
+          ></textarea>
+          @if (form.get('descripcion')?.invalid && form.get('descripcion')?.touched) {
+            <span class="error-message">
+              <span class="error-icon">⚠️</span>
+              La descripción es requerida
+            </span>
+          }
+        </div>
+
+         <!-- TUPAC (solo si no está pre-seleccionado) -->
+         @if (!tupac) {
+           <div class="form-group">
+              <label for="tupacSelect">
+                <span class="label-icon">📁</span>
+                TUPA *
+              </label>
+              <select id="tupacSelect" formControlName="tupacId" class="form-select">
+                <option value="">Seleccionar TUPA...</option>
+                @for (t of tupacs; track t.id) {
+                  <option [value]="t.id">{{ t.codigo }} - {{ t.descripcion }}</option>
+                }
+              </select>
+              @if (cargandoTupacs) {
+                <span class="loading-text">⏳ Cargando TUPACs...</span>
+              }
+              @if (form.get('tupacId')?.invalid && form.get('tupacId')?.touched) {
+                <span class="error-message">
+                  <span class="error-icon">⚠️</span>
+                  Debe seleccionar un TUPAC
+                </span>
+              }
+            </div>
+           }
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tipoDocumento">
+              <span class="label-icon">📄</span>
+              Tipo de Documento *
+            </label>
+            <select id="tipoDocumento" formControlName="tipoDocumento" class="form-select">
+              <option value="">Seleccionar tipo</option>
+              @for (tipo of TIPOS_DOCUMENTO; track $index) {
+                <option [value]="tipo.value">{{ tipo.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="diasValidez">
+              <span class="label-icon">📅</span>
+              Días de Validez (opcional)
+            </label>
+            <input
+              type="number"
+              id="diasValidez"
+              formControlName="diasValidez"
+              class="form-input"
+              min="0"
+              placeholder="Ej: 30"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="esExamen" class="form-checkbox">
+            <span class="checkbox-text">
+              <span class="label-icon">🎯</span>
+              ¿Es Examen?
+            </span>
+          </label>
+        </div>
+
+
+        <!-- Campo de Formato (condicional) -->
+        @if (!form.get('esExamen')?.value) {
+          <div class="form-section">
+            <h3>
+              <span class="section-icon">📎</span>
+              Formato / Archivo
+            </h3>
+            
+            <ng-container *ngIf="modoEditar && requisito?.formato as formato">
+              <div class="formato-actual">
+                <p>
+                  <strong>Formato actual:</strong> {{ formato.descripcion }}
+                </p>
+              </div>
+            </ng-container>
+            
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" formControlName="modoFormato" value="subir" (change)="onModoFormatoChange()">
+                <span>📤 Subir nuevo archivo</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="modoFormato" value="seleccionar" (change)="onModoFormatoChange()">
+                <span>📋 Seleccionar formato existente</span>
+              </label>
+              @if (modoEditar) {
+                <label class="radio-label">
+                  <input type="radio" formControlName="modoFormato" value="ninguno" (change)="onModoFormatoChange()">
+                  <span>❌ Sin formato</span>
+                </label>
+              }
+            </div>
+
+            @if (form.get('modoFormato')?.value === 'subir') {
+              <div class="form-group">
+                <label for="archivo">
+                  <span class="label-icon">📁</span>
+                  Archivo a subir *
+                </label>
+                <input
+                  type="file"
+                  id="archivo"
+                  (change)="onArchivoChange($event)"
+                  class="form-file-input"
+                  [accept]="'.pdf,.doc,.docx,.xls,.xlsx'"
+                >
+                @if (archivoSeleccionado) {
+                  <div class="file-name">
+                    <span class="file-icon">✅</span>
+                    Seleccionado: {{ archivoSeleccionado.name }}
+                  </div>
+                }
+              </div>
+            } @else if (form.get('modoFormato')?.value === 'seleccionar') {
+              <div class="form-group">
+                <label for="formatoSelect">
+                  <span class="label-icon">📚</span>
+                  Seleccionar Formato *
+                </label>
+                <select id="formatoSelect" formControlName="formatoId" class="form-select">
+                  <option value="">-- Seleccione un formato --</option>
+                  @for (formato of formatos; track formato.id) {
+                    <option [value]="formato.id">{{ formato.descripcion }}</option>
+                  }
+                </select>
+                @if (formatos.length === 0) {
+                  <div class="info-message">
+                    <span class="info-icon">💡</span>
+                    No hay formatos disponibles. Suba uno nuevo.
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Mensajes de error/éxito -->
+        @if (error) {
+          <div class="alert alert-error">
+            <span class="alert-icon">❌</span>
+            {{ error }}
+          </div>
+        }
+        @if (success) {
+          <div class="alert alert-success">
+            <span class="alert-icon">✅</span>
+            {{ success }}
+          </div>
+        }
+
+        <!-- Botones -->
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cerrarModal()"
+            [disabled]="cargando"
+          >
+            <span class="btn-icon">✕</span>
+            <span class="btn-text">Cancelar</span>
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="cargando || form.invalid"
+          >
+            @if (cargando) {
+              <span class="spinner"></span>
+              <span class="btn-text">Guardando...</span>
+            } @else {
+              <span class="btn-icon">
+                {{ modoEditar ? '✏️' : '➕' }}
+              </span>
+              <span class="btn-text">
+                {{ modoEditar ? 'Actualizar' : 'Crear' }}
+              </span>
+            }
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>

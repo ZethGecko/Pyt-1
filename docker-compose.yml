@@ -1,0 +1,68 @@
+version: '3.8'
+
+# Environment variables
+x-environment:
+  &default-environment
+    POSTGRES_DB: ${DB_NAME:-db_transportes}
+    POSTGRES_USER: ${DB_USER:-app_admin}
+    POSTGRES_PASSWORD: ${DB_PASSWORD:-Admin1234!}
+    SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/db_transportes}
+    SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-app_admin}
+    SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-Admin1234!}
+
+# Volumes
+x-volumes:
+  &default-volumes
+    pgdata:
+      driver: local
+
+# Networks
+x-networks:
+  &default-networks
+    backend:
+      driver: bridge
+
+# Services
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: db_transportes
+    environment:
+      <<: *default-environment
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  backend:
+    build:
+      context: ./demo
+    container_name: spring_app
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *default-environment
+    networks:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: angular_app
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - backend
+
+volumes:
+  <<: *default-volumes
+
+networks:
+  <<: *default-networks

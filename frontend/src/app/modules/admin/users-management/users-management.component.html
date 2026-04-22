@@ -1,0 +1,375 @@
+<div class="gestion-usuarios">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <a routerLink="/app/configuracion" class="back-button">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver
+      </a>
+      <div class="header-content">
+        <h1>Gestión de Usuarios</h1>
+        <p class="header-subtitle">Administra los usuarios del sistema</p>
+      </div>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Rol:</label>
+      <select [(ngModel)]="filtroRol">
+        <option value="">Todos los roles</option>
+        <option value="ADMIN">Administradores</option>
+        <option value="MANAGER">Gerentes</option>
+        <option value="USER">Usuarios</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select [(ngModel)]="filtroActivo">
+        <option value="">Todos</option>
+        <option value="activo">Activos</option>
+        <option value="inactivo">Inactivos</option>
+      </select>
+    </div>
+    <div class="search-box">
+      <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input 
+        type="text" 
+        [(ngModel)]="terminoBusqueda"
+        placeholder="Buscar por nombre o email..." 
+        class="search-input"
+      >
+    </div>
+    <button class="btn btn-outline" (click)="cargarUsuarios()">
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ totalUsuarios }}</span>
+        <span class="stat-label">Total Usuarios</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ usuariosActivos }}</span>
+        <span class="stat-label">Activos</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ usuariosInactivos }}</span>
+        <span class="stat-label">Inactivos</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background-color: #f3e8ff; color: #9333ea;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ tuRol }}</span>
+        <span class="stat-label">Tu Rol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-container">
+    <div class="loading-overlay" *ngIf="cargando">
+      <div class="spinner"></div>
+      <p>Cargando usuarios...</p>
+    </div>
+
+    <table class="data-table" *ngIf="!cargando">
+       <thead>
+         <tr>
+           <th>ID</th>
+           <th>Usuario</th>
+           <th>Departamento</th>
+           <th>Rol</th>
+           <th>Estado</th>
+           <th>Acciones</th>
+         </tr>
+       </thead>
+      <tbody>
+        <tr *ngFor="let user of getUsuariosFiltrados()">
+          <td>
+            <span class="id-badge">#{{ user.id }}</span>
+          </td>
+          <td>
+            <div class="user-cell">
+              <div class="user-avatar">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <span class="username">{{ user.username }}</span>
+            </div>
+          </td>
+           <td class="departamento-cell">
+             {{ user.departamento?.nombre || 'Sin departamento' }}
+           </td>
+          <td>
+            <span class="badge"
+                  [class.badge-admin]="getRoleName(user.role) === 'ADMIN'"
+                  [class.badge-manager]="getRoleName(user.role) === 'MANAGER'"
+                  [class.badge-user]="getRoleName(user.role) === 'USER'">
+              {{ getRoleName(user.role) }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" [class.badge-success]="user.active" [class.badge-danger]="!user.active">
+              {{ user.active ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn-icon btn-edit" (click)="openEditModal(user)" title="Editar">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </button>
+            <button class="btn-icon" 
+                    [class.btn-toggle-active]="user.active"
+                    [class.btn-toggle-inactive]="!user.active"
+                    (click)="toggleUserStatus(user)" 
+                    [title]="user.active ? 'Desactivar' : 'Activar'">
+              <svg *ngIf="user.active" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <svg *ngIf="!user.active" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-delete" *ngIf="puedeEliminar" (click)="deleteUser(user)" title="Eliminar">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="getUsuariosFiltrados().length === 0 && !cargando">
+          <td colspan="6" class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p>No se encontraron usuarios</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button 
+      class="btn btn-outline" 
+      [disabled]="page === 0" 
+      (click)="cambiarPagina(page - 1)">
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Anterior
+    </button>
+    <span class="page-info">
+      Página {{ page + 1 }} de {{ totalPages }} ({{ totalElements }} registros)
+    </span>
+    <button 
+      class="btn btn-outline" 
+      [disabled]="page >= totalPages - 1" 
+      (click)="cambiarPagina(page + 1)">
+      Siguiente
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Info Card (versión simplificada) -->
+  <div class="info-card">
+    <div class="info-card-header">
+      <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+      <h3>Información de Administrador</h3>
+    </div>
+    <div class="info-card-body">
+      <div class="info-item">
+        <span class="info-label">Usuario actual:</span>
+        <span class="info-value">{{ usuarioActual?.username }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Rol actual:</span>
+        <span class="info-value">
+          <span class="badge" [class.badge-admin]="esAdmin" [class.badge-manager]="esManager" [class.badge-user]="!esAdmin && !esManager">
+            {{ rolActual }}
+          </span>
+        </span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Permisos:</span>
+        <span class="info-value" [class.text-success]="puedeGestionar" [class.text-danger]="!puedeGestionar">
+          <svg class="info-item-icon" *ngIf="puedeGestionar" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <svg class="info-item-icon" *ngIf="!puedeGestionar" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          {{ puedeGestionar ? 'Puede gestionar usuarios' : 'No puede gestionar usuarios' }}
+        </span>
+      </div>
+      <div class="info-actions">
+        <a routerLink="/dashboard" class="back-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Volver al Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para crear/editar usuario -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <svg class="modal-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path *ngIf="modoCreacion" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            <path *ngIf="!modoCreacion" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          {{ modoCreacion ? 'Nuevo Usuario' : 'Editar Usuario' }}
+        </h2>
+        <button class="btn-close" (click)="cerrarModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="guardarUsuario()">
+          <div class="form-group">
+            <label for="username">Usuario *</label>
+            <input 
+              type="text" 
+              id="username" 
+              [(ngModel)]="formulario.username" 
+              name="username"
+              required
+              placeholder="Ingrese nombre de usuario"
+            >
+          </div>
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input 
+              type="email" 
+              id="email" 
+              [(ngModel)]="formulario.email" 
+              name="email"
+              required
+              placeholder="Ingrese email"
+            >
+          </div>
+           <div class="form-group">
+             <label for="password">
+               {{ modoCreacion ? 'Contraseña *' : 'Nueva Contraseña (opcional)' }}
+             </label>
+             <input 
+               type="password" 
+               id="password" 
+               [(ngModel)]="formulario.password" 
+               name="password"
+               [required]="modoCreacion"
+               placeholder="Ingrese contraseña"
+             >
+           </div>
+           <div class="form-group" *ngIf="modoCreacion">
+             <label for="confirmPassword">Confirmar Contraseña *</label>
+             <input 
+               type="password" 
+               id="confirmPassword" 
+               [(ngModel)]="formulario.confirmPassword" 
+               name="confirmPassword"
+               required
+               placeholder="Confirme su contraseña"
+             >
+             <div class="password-mismatch" *ngIf="formulario.password !== formulario.confirmPassword && formulario.confirmPassword">
+               <svg fill="currentColor" viewBox="0 0 20 20">
+                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+               </svg>
+               Las contraseñas no coinciden
+             </div>
+           </div>
+          <div class="form-group">
+            <label for="role">Rol *</label>
+            <select 
+              id="role" 
+              [(ngModel)]="formulario.roleId" 
+              name="roleId"
+              required
+            >
+              <option value="" disabled selected>Seleccione un rol</option>
+              <option *ngFor="let role of activeRolesList" [value]="role.id">
+                {{ role.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input 
+                type="checkbox" 
+                [(ngModel)]="formulario.activo" 
+                name="activo"
+              >
+              Usuario activo
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+              </svg>
+              {{ modoCreacion ? 'Crear Usuario' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,78 @@
+// Styles for TramiteDetalleComponent
+
+/* Botones de acción - Estilo icon-only (replicado de TUPAC) */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &.btn-view {
+    background-color: #dcfce7;
+    color: #16a34a;
+
+    &:hover:not(:disabled) {
+      background-color: #bbf7d6;
+    }
+  }
+
+  &.btn-edit {
+    background-color: #dbeafe;
+    color: #2563eb;
+
+    &:hover:not(:disabled) {
+      background-color: #bfdbfe;
+    }
+  }
+
+  &.btn-deactivate {
+    background-color: #fef3c7;
+    color: #d97706;
+
+    &:hover:not(:disabled) {
+      background-color: #fde047;
+    }
+  }
+
+  &.btn-activate {
+    background-color: #dcfce7;
+    color: #16a34a;
+
+    &:hover:not(:disabled) {
+      background-color: #bbf7d6;
+    }
+  }
+
+  &.btn-delete {
+    background-color: #fee2e2;
+    color: #dc2626;
+
+    &:hover:not(:disabled) {
+      background-color: #fecaca;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+

@@ -1,0 +1,107 @@
+<div class="consulta-publica-container">
+  <div class="page-header">
+    <h1>Consulta de Trámites</h1>
+    <p class="subtitle">Ingrese su Código RUT para consultar el estado de su trámite</p>
+  </div>
+
+  <div class="search-card">
+    <div class="search-form">
+      <div class="input-group">
+        <input
+          type="text"
+          [(ngModel)]="codigoRUT"
+          placeholder="Ej: 12345678-9"
+          class="form-control input-rut"
+          (keyup.enter)="buscar()"
+        />
+        <button
+          class="btn btn-primary"
+          [disabled]="!codigoRUT || codigoRUT.length < 6 || loading"
+          (click)="buscar()"
+        >
+          <span *ngIf="!loading">Consultar</span>
+          <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
+      <div *ngIf="error" class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="tramite" class="result-card">
+    <div class="result-header">
+      <h2><i class="fas fa-file-alt"></i> Trámite Encontrado</h2>
+      <span class="badge" [ngClass]="'badge-' + getPrioridadClass(tramite.prioridad)">
+        {{ tramite.prioridad }}
+      </span>
+    </div>
+
+    <div class="result-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Código RUT:</label>
+          <span class="value">{{ tramite.codigoRUT }}</span>
+        </div>
+        <div class="info-item">
+          <label>Tipo de Trámite:</label>
+          <span class="value">{{ tramite.tipoTramiteDescripcion || tramite.tipoTramiteCodigo }}</span>
+        </div>
+        <div class="info-item">
+          <label>Estado Actual:</label>
+          <span class="value">
+            <span class="badge" [ngClass]="'badge-' + getEstadoClass(tramite.estado)">
+              {{ tramite.estado }}
+            </span>
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Fecha de Creación:</label>
+          <span class="value">{{ tramite.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Departamento Actual:</label>
+          <span class="value">{{ tramite.departamentoActualNombre || 'No asignado' }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="tramite.historial && tramite.historial.length > 0" class="timeline-section">
+        <h3><i class="fas fa-history"></i> Historial de Movimientos</h3>
+        <div class="timeline">
+          <div *ngFor="let evento of tramite.historial; let i = index" class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-accion">{{ evento.accion }}</span>
+                <span class="timeline-fecha">{{ evento.fechaAccion | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="timeline-body">
+                <p *ngIf="evento.observacion">{{ evento.observacion }}</p>
+                <p class="timeline-usuario">
+                  <i class="fas fa-user"></i> {{ evento.usuarioAccion?.username || 'Sistema' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="tramite.documentos && tramite.documentos.length > 0" class="documents-section">
+        <h3><i class="fas fa-paperclip"></i> Documentos Adjuntos</h3>
+        <div class="documents-list">
+          <div *ngFor="let doc of tramite.documentos" class="document-item">
+            <i class="fas fa-file"></i>
+            <span>{{ doc.nombreArchivo }}</span>
+            <small class="text-muted">({{ doc.estado }})</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="notFound" class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    No se encontró ningún trámite con el Código RUT: <strong>{{ codigoRUTBusqueda }}</strong>
+  </div>
+</div>

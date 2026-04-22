@@ -1,0 +1,271 @@
+.consulta-publica-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      color: #2c3e50;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #6c757d;
+      font-size: 1rem;
+    }
+  }
+
+  .search-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+
+    .search-form {
+      .input-group {
+        display: flex;
+        gap: 0.5rem;
+
+        .input-rut {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          font-size: 1.1rem;
+          text-transform: uppercase;
+          transition: border-color 0.3s;
+
+          &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+          }
+        }
+
+        .btn {
+          padding: 0.75rem 2rem;
+          font-weight: 600;
+          border-radius: 8px;
+        }
+      }
+    }
+  }
+
+  .result-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+
+    .result-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+    }
+
+    .result-body {
+      padding: 2rem;
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+
+        .info-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+
+          label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .value {
+            color: #2c3e50;
+            font-size: 1rem;
+          }
+        }
+      }
+
+      .timeline-section,
+      .documents-section {
+        margin-top: 2rem;
+
+        h3 {
+          color: #2c3e50;
+          font-size: 1.25rem;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+      }
+
+      .timeline {
+        position: relative;
+        padding-left: 2rem;
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: 6px;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: #e0e0e0;
+        }
+
+        .timeline-item {
+          position: relative;
+          margin-bottom: 1.5rem;
+
+          .timeline-marker {
+            position: absolute;
+            left: -2rem;
+            top: 0.25rem;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #007bff;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+
+          .timeline-content {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 3px solid #007bff;
+
+            .timeline-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 0.5rem;
+
+              .timeline-accion {
+                font-weight: 600;
+                color: #2c3e50;
+              }
+
+              .timeline-fecha {
+                font-size: 0.875rem;
+                color: #6c757d;
+              }
+            }
+
+            .timeline-body {
+              p {
+                margin: 0.25rem 0;
+                color: #495057;
+              }
+
+              .timeline-usuario {
+                font-size: 0.875rem;
+                color: #6c757d;
+                margin-top: 0.5rem;
+              }
+            }
+          }
+        }
+      }
+
+      .documents-list {
+        .document-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem;
+          background: #f8f9fa;
+          border-radius: 6px;
+          margin-bottom: 0.5rem;
+
+          i {
+            color: #007bff;
+          }
+
+          small {
+            margin-left: auto;
+          }
+        }
+      }
+    }
+  }
+
+  .alert {
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    i {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .consulta-publica-container {
+    padding: 1rem;
+
+    .search-card {
+      padding: 1.5rem;
+
+      .input-group {
+        flex-direction: column;
+
+        .btn {
+          width: 100%;
+        }
+      }
+    }
+
+    .result-card {
+      .result-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+      }
+
+      .result-body {
+        padding: 1.5rem;
+
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+  }
+}

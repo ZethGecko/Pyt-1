@@ -1,0 +1,804 @@
+// Import color functions
+@use 'sass:color';
+
+// Variables (consistentes con el primer ejemplo)
+$primary-color: #2563eb;
+$primary-hover: #1d4ed8;
+$secondary-color: #64748b;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$background-color: #f8fafc;
+$card-background: #ffffff;
+$border-color: #e2e8f0;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+$shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+$shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+$shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+$transition-fast: 150ms ease;
+$transition-normal: 250ms ease;
+$border-radius: 0.5rem;
+$border-radius-lg: 0.75rem;
+
+// Page container
+.gestion-expedientes {
+  padding: 1.5rem;
+  background-color: $background-color;
+  min-height: 100vh;
+}
+
+// Header
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .page-subtitle {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  }
+}
+
+// Back button
+.btn-back {
+  width: 40px;
+  height: 40px;
+  border-radius: $border-radius-lg;
+  background-color: $card-background;
+  border: 1px solid $border-color;
+  color: $text-secondary;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background-color: #f1f5f9;
+    color: $text-primary;
+    transform: translateX(-2px);
+  }
+}
+
+// SVG Icon styles
+.btn-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.alert-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+// Messages
+.messages {
+  margin-bottom: 1rem;
+
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: $border-radius;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &.alert-error {
+      background-color: #fef2f2;
+      color: $danger-color;
+      border: 1px solid #fecaca;
+    }
+
+    &.alert-success {
+      background-color: #f0fdf4;
+      color: $success-color;
+      border: 1px solid #bbf7d0;
+    }
+  }
+}
+
+// Stats cards
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  .stat-card {
+    background: $card-background;
+    border-radius: $border-radius-lg;
+    padding: 1.25rem;
+    border: 1px solid $border-color;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: box-shadow $transition-normal;
+
+    &:hover {
+      box-shadow: $shadow-md;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius;
+      background-color: #dbeafe;
+      color: $primary-color;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      &.success {
+        background-color: #dcfce7;
+        color: $success-color;
+      }
+
+      &.warning {
+        background-color: #fef3c7;
+        color: $warning-color;
+      }
+    }
+
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $text-primary;
+        line-height: 1.2;
+      }
+
+      .stat-label {
+        font-size: 0.875rem;
+        color: $text-secondary;
+      }
+    }
+  }
+}
+
+// Filters section
+.filters-section {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  padding: 1.25rem;
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+
+    label {
+      font-size: 0.875rem;
+      color: $text-secondary;
+      font-weight: 500;
+    }
+
+    select {
+      padding: 0.625rem 2rem 0.625rem 0.75rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      font-size: 0.875rem;
+      background-color: white;
+      cursor: pointer;
+      transition: border-color $transition-fast;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2364748b' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      background-size: 1.25rem;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+      }
+    }
+
+    .filter-input {
+      padding: 0.625rem 0.75rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      font-size: 0.875rem;
+      color: $text-primary;
+      background: $card-background;
+      transition: all $transition-fast;
+
+      &::placeholder {
+        color: $text-muted;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+    }
+  }
+}
+
+// Loading container
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  margin-bottom: 1.5rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    color: $text-secondary;
+    font-size: 0.875rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+// Table
+.table-container {
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    background-color: #f1f5f9;
+
+    th {
+      padding: 0.875rem 1rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: $text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid $border-color;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background-color $transition-fast;
+
+      &:hover {
+        background-color: #f8fafc;
+      }
+
+      td {
+        padding: 1rem;
+        font-size: 0.875rem;
+        color: $text-primary;
+        border-bottom: 1px solid $border-color;
+        vertical-align: middle;
+
+        &.actions {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: $text-muted;
+
+      svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        margin: 0;
+      }
+    }
+  }
+}
+
+// Código badge
+.codigo-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: #f1f5f9;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $text-primary;
+  font-family: monospace;
+}
+
+// Empresa cell
+.empresa-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .empresa-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+    color: $primary-color;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .empresa-nombre {
+    font-weight: 500;
+    color: $text-primary;
+  }
+}
+
+// Solicitudes badge
+.solicitudes-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: #f1f5f9;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $text-secondary;
+}
+
+// Fecha cell
+.fecha-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $text-secondary;
+
+  .fecha-icon {
+    width: 16px;
+    height: 16px;
+    color: $text-muted;
+  }
+}
+
+// Badges
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+
+  &.badge-abierto {
+    background-color: #dcfce7;
+    color: $success-color;
+    border: 1px solid #bbf7d0;
+  }
+
+  &.badge-proceso {
+    background-color: #fef3c7;
+    color: $warning-color;
+    border: 1px solid #fde68a;
+  }
+
+  &.badge-cerrado {
+    background-color: #f1f5f9;
+    color: $text-secondary;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+// Action buttons
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: $border-radius;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &.btn-view {
+    background-color: #dbeafe;
+    color: $primary-color;
+
+    &:hover {
+      background-color: $primary-color;
+      color: white;
+    }
+  }
+
+  &.btn-cerrar {
+    background-color: #fef3c7;
+    color: $warning-color;
+
+    &:hover {
+      background-color: $warning-color;
+      color: white;
+    }
+  }
+}
+
+// Pagination
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+
+  .page-info {
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+}
+
+// Buttons
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: $border-radius;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all $transition-fast;
+
+  &.btn-primary {
+    background-color: $primary-color;
+    color: white;
+
+    &:hover {
+      background-color: $primary-hover;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-secondary {
+    background-color: $secondary-color;
+    color: white;
+
+    &:hover {
+      background-color: color.adjust($secondary-color, $lightness: -10%);
+    }
+  }
+
+  &.btn-outline {
+    background-color: transparent;
+    border: 1px solid $border-color;
+    color: $text-secondary;
+
+    &:hover {
+      background-color: #f1f5f9;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Modal
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: $shadow-lg;
+  animation: slideIn 0.2s ease;
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid $border-color;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+      font-size: 1.25rem;
+      color: $text-primary;
+
+      .modal-title-icon {
+        width: 24px;
+        height: 24px;
+        color: $primary-color;
+      }
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      color: $text-secondary;
+      cursor: pointer;
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: $border-radius;
+      transition: all $transition-fast;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        background-color: $border-color;
+        color: $text-primary;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+
+    .modal-description {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+
+      label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-primary;
+        margin-bottom: 0.375rem;
+      }
+
+      select, textarea {
+        width: 100%;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid $border-color;
+        border-radius: $border-radius;
+        font-size: 0.875rem;
+        color: $text-primary;
+        background: $card-background;
+        transition: border-color $transition-fast;
+        font-family: inherit;
+
+        &:focus {
+          outline: none;
+          border-color: $primary-color;
+          box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+        }
+
+        &::placeholder {
+          color: $text-muted;
+        }
+      }
+
+      select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2364748b' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 1.25rem;
+        padding-right: 2.5rem;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid $border-color;
+  }
+}
+
+// Spinner small
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .gestion-expedientes {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-left {
+      width: 100%;
+    }
+
+    .btn-primary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+
+    .filter-group {
+      width: 100%;
+    }
+  }
+
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .data-table {
+    thead {
+      display: none;
+    }
+
+    tbody {
+      tr {
+        display: block;
+        padding: 1rem;
+        border-bottom: 2px solid $border-color;
+
+        td {
+          display: flex;
+          align-items: center;
+          padding: 0.5rem 0;
+          border-bottom: 1px dashed $border-color;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:before {
+            content: attr(data-label);
+            font-weight: 600;
+            width: 120px;
+            min-width: 120px;
+            color: $text-secondary;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+          }
+
+          &.actions {
+            flex-wrap: wrap;
+            justify-content: flex-start;
+          }
+        }
+      }
+    }
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+}

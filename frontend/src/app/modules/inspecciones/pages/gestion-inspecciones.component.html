@@ -1,0 +1,346 @@
+<div class="gestion-inspecciones">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Gestión de Inspecciones</h1>
+      <p class="page-subtitle">Administra las inspecciones programadas del sistema</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="irACanvas()">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Ficha de Inspección
+      </button>
+      <button class="btn btn-primary" (click)="abrirModalInspeccion()">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nueva Inspección
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ totalInspecciones }}</span>
+        <span class="stat-label">Total Inspecciones</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon" style="background-color: #dbeafe; color: #2563eb;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value" style="color: #2563eb;">{{ programadas }}</span>
+        <span class="stat-label">Programadas</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value" style="color: #10b981;">{{ realizadas }}</span>
+        <span class="stat-label">Realizadas</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon" style="background-color: #fee2e2; color: #dc2626;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value" style="color: #dc2626;">{{ canceladas }}</span>
+        <span class="stat-label">Canceladas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="messages" *ngIf="error || exito">
+    <div class="alert alert-error" *ngIf="error" (click)="error = null">
+      <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      {{ error }}
+    </div>
+    <div class="alert alert-success" *ngIf="exito" (click)="exito = null">
+      <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      {{ exito }}
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Empresa:</label>
+      <input 
+        type="text" 
+        [(ngModel)]="filtroEmpresa"
+        placeholder="Nombre de empresa" 
+        class="filter-input"
+      >
+    </div>
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select [(ngModel)]="filtroEstado">
+        <option value="">Todos los estados</option>
+        <option *ngFor="let estado of estadosInspeccion" [value]="estado.value">
+          {{ estado.label }}
+        </option>
+      </select>
+    </div>
+    <button class="btn btn-outline" (click)="limpiarFiltros()">
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Limpiar
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="cargando">
+    <div class="spinner"></div>
+    <span class="loading-text">Cargando inspecciones...</span>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-container" *ngIf="!cargando && inspeccionesFiltradas.length > 0">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Empresa</th>
+          <th>Fecha Programada</th>
+          <th>Hora</th>
+          <th>Lugar</th>
+          <th>Inspector</th>
+          <th>Estado</th>
+          <th>Resultado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let inspeccion of inspeccionesFiltradas">
+          <td>
+            <span class="codigo-badge">{{ inspeccion.codigo }}</span>
+          </td>
+          <td>
+            <div class="empresa-cell">
+              <div class="empresa-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+              </div>
+              <span class="empresa-nombre">{{ inspeccion.empresaNombre || 'Sin asignar' }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="fecha">{{ inspeccion.fechaProgramada | date:'dd/MM/yyyy' }}</span>
+          </td>
+          <td>
+            <span class="hora">{{ inspeccion.horaProgramada || '-' }}</span>
+          </td>
+          <td>
+            <span class="lugar">{{ inspeccion.lugar || 'Sin especificar' }}</span>
+          </td>
+          <td>
+            <span class="inspector">{{ inspeccion.inspectorNombre || 'Sin asignar' }}</span>
+          </td>
+          <td>
+            <span class="badge" 
+                  [class.badge-info]="inspeccion.estado === 'programada'"
+                  [class.badge-warning]="inspeccion.estado === 'en_proceso'"
+                  [class.badge-success]="inspeccion.estado === 'realizada'"
+                  [class.badge-danger]="inspeccion.estado === 'cancelada'">
+              {{ getEstadoFormateado(inspeccion.estado) }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" 
+                  [class.badge-success]="inspeccion.resultado === 'aprobado'"
+                  [class.badge-danger]="inspeccion.resultado === 'rechazado'"
+                  [class.badge-warning]="inspeccion.resultado === 'observado'"
+                  [class.badge-secondary]="!inspeccion.resultado">
+              {{ inspeccion.resultado || 'Sin resultado' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn-icon btn-view" (click)="realizarInspeccion(inspeccion)" title="Realizar inspección">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-edit" (click)="abrirModalInspeccion(inspeccion)" title="Editar">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-delete" (click)="cancelarInspeccion(inspeccion)" title="Cancelar">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sin resultados -->
+  <div class="empty-container" *ngIf="!cargando && inspeccionesFiltradas.length === 0">
+    <div class="empty-state">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      <p>No se encontraron inspecciones</p>
+      <span class="empty-hint">Programa una nueva inspección para comenzar</span>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button 
+      class="btn btn-outline" 
+      [disabled]="page === 0" 
+      (click)="cambiarPagina(page - 1)">
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Anterior
+    </button>
+    <span class="page-info">
+      Página {{ page + 1 }} de {{ totalPages }} ({{ totalElements }} registros)
+    </span>
+    <button 
+      class="btn btn-outline" 
+      [disabled]="page >= totalPages - 1" 
+      (click)="cambiarPagina(page + 1)">
+      Siguiente
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Modal: Nueva/Editar Inspección -->
+  <div class="modal-overlay" *ngIf="mostrandoModal" (click)="cerrarModal()">
+    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <svg class="modal-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path *ngIf="!modoEdicion" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            <path *ngIf="modoEdicion" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          {{ modoEdicion ? 'Editar Inspección' : 'Nueva Inspección' }}
+        </h2>
+        <button class="btn-close" (click)="cerrarModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="guardarInspeccion()">
+          <p class="modal-description">
+            {{ modoEdicion ? 'Actualiza los datos de la inspección' : 'Complete los datos para programar una nueva inspección' }}
+          </p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="expediente">Expediente *</label>
+              <select id="expediente" [(ngModel)]="nuevaInspeccion.expedienteId" name="expediente" required>
+                <option [ngValue]="0">Seleccione un expediente</option>
+                <option *ngFor="let exp of empresas" [ngValue]="exp.id">
+                  {{ exp.nombre }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="inspector">Inspector *</label>
+              <select id="inspector" [(ngModel)]="nuevaInspeccion.inspectorId" name="inspector" required>
+                <option [ngValue]="0">Seleccione un inspector</option>
+                <option *ngFor="let insp of inspectores" [ngValue]="insp.id">
+                  {{ insp.nombre }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="fecha">Fecha Programada *</label>
+              <input 
+                type="date" 
+                id="fecha"
+                [(ngModel)]="nuevaInspeccion.fechaProgramada"
+                name="fecha"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="hora">Hora *</label>
+              <input 
+                type="time" 
+                id="hora"
+                [(ngModel)]="nuevaInspeccion.horaProgramada"
+                name="hora"
+                required
+              >
+            </div>
+
+            <div class="form-group full-width">
+              <label for="lugar">Lugar *</label>
+              <input 
+                type="text" 
+                id="lugar"
+                [(ngModel)]="nuevaInspeccion.lugar"
+                name="lugar"
+                placeholder="Dirección o lugar de la inspección"
+                required
+              >
+            </div>
+
+            <div class="form-group full-width">
+              <label for="observaciones">Observaciones</label>
+              <textarea 
+                id="observaciones"
+                [(ngModel)]="nuevaInspeccion.observaciones"
+                name="observaciones"
+                rows="3"
+                placeholder="Observaciones adicionales..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" (click)="cerrarModal()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="cargando">
+              {{ modoEdicion ? 'Actualizar' : 'Programar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

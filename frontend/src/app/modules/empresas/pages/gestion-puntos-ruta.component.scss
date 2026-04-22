@@ -1,0 +1,696 @@
+// ============================================
+// ESTILOS ESPECÍFICOS - Puntos Ruta
+// ============================================
+// Los estilos generales de Tailwind están en styles.scss
+// Aquí solo definimos estilos específicos del componente
+
+// Loading overlay animation
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 10;
+}
+
+// Animación de spinner
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// Animación de slide in para modal
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-animate {
+  animation: slideIn 0.2s ease;
+}
+
+// Transiciones suaves para botones de acción
+.action-btn {
+  transition: all 0.15s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Estilo para inputs con iconos
+.input-with-icon {
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+// Badge de estado activo/inactivo
+.badge-activo {
+  @apply px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800;
+}
+
+.badge-inactivo {
+  @apply px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800;
+}
+
+// Badge de tipo de punto
+.badge-tipo {
+  @apply px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+}
+
+// Tabla responsiva
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #94a3b8;
+    }
+  }
+}
+
+// Espaciado para mensajes de error
+.error-message {
+  @apply flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700;
+}
+
+.success-message {
+  @apply flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700;
+}
+
+// Animación de gradiente para el header
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.header-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+// Hover effects para cards de estadísticas
+.stat-card {
+  @apply transition-all duration-300 ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+// Smooth transitions for table rows
+.table-row {
+  @apply transition-all duration-200;
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(147, 51, 234, 0.05));
+    transform: translateX(2px);
+  }
+}
+
+// Modal backdrop blur effect
+.modal-backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+// Custom scrollbar for modals
+.modal-content {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+  }
+}
+
+// Estilos para el empty state
+.empty-state {
+  @apply flex flex-col items-center justify-center py-12 text-center;
+
+  .empty-icon {
+    @apply w-16 h-16 text-slate-300 mb-4;
+  }
+
+  .empty-text {
+    @apply text-slate-500 text-lg;
+  }
+}
+
+// Estilos para la sección de geolocalización
+.location-card {
+  @apply bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm;
+
+  .location-icon {
+    @apply w-8 h-8 text-blue-600 mb-3;
+  }
+
+  .location-coords {
+    @apply font-mono text-sm bg-white px-3 py-2 rounded border;
+  }
+
+  .location-status {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+
+    &.available {
+      @apply bg-green-100 text-green-800;
+    }
+
+    &.unavailable {
+      @apply bg-red-100 text-red-800;
+    }
+
+    &.loading {
+      @apply bg-yellow-100 text-yellow-800;
+    }
+  }
+}
+
+// Estilos para el área de subida de archivos KML
+.upload-area {
+  @apply border-2 border-dashed border-slate-300 rounded-xl p-8 text-center transition-all duration-300 cursor-pointer;
+
+  &:hover {
+    @apply border-blue-400 bg-blue-50;
+  }
+
+  &.dragover {
+    @apply border-green-400 bg-green-50;
+  }
+
+  .upload-icon {
+    @apply w-12 h-12 text-slate-400 mb-4 mx-auto;
+  }
+
+  .upload-text {
+    @apply text-slate-600 font-medium mb-2;
+  }
+
+  .upload-subtext {
+    @apply text-slate-400 text-sm;
+  }
+}
+
+// Estilos para las tarjetas de ruta
+.route-card {
+  @apply bg-white border border-slate-200 rounded-xl p-6 shadow-sm transition-all duration-300;
+
+  &:hover {
+    @apply shadow-lg border-slate-300;
+  }
+
+  .route-header {
+    @apply flex items-start justify-between mb-4;
+
+    .route-icon {
+      @apply w-10 h-10 text-blue-600 mr-3;
+    }
+
+    .route-actions {
+      @apply flex gap-2;
+    }
+  }
+
+  .route-info {
+    .route-name {
+      @apply text-lg font-semibold text-slate-800 mb-1;
+    }
+
+    .route-company {
+      @apply text-sm text-slate-600 mb-2;
+    }
+
+    .route-details {
+      @apply grid grid-cols-2 gap-4 text-sm;
+
+      .detail-item {
+        .detail-label {
+          @apply text-slate-500;
+        }
+
+        .detail-value {
+          @apply font-medium text-slate-800;
+        }
+      }
+    }
+  }
+
+  .route-status {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-3;
+
+    &.activo {
+      @apply bg-green-100 text-green-800;
+    }
+
+    &.inactivo {
+      @apply bg-red-100 text-red-800;
+    }
+  }
+}
+
+// Estilos para los filtros y búsqueda
+.filters-section {
+  @apply bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6;
+
+  .filters-grid {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-4;
+  }
+
+  .filter-group {
+    .filter-label {
+      @apply block text-sm font-medium text-slate-700 mb-2;
+    }
+
+    .filter-input {
+      @apply w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all;
+    }
+  }
+}
+
+// Animación de entrada para elementos
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+// Estilos para botones primarios con gradiente
+.btn-primary {
+  @apply bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-all duration-200;
+
+  &:hover {
+    @apply from-blue-700 to-indigo-700 shadow-md transform translateY(-1px);
+  }
+
+  &:active {
+    @apply transform translateY(0);
+  }
+
+  &:disabled {
+    @apply from-slate-400 to-slate-500 cursor-not-allowed transform-none shadow-none;
+  }
+}
+
+.btn-secondary {
+  @apply bg-white border border-slate-300 text-slate-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-all duration-200;
+
+  &:hover {
+    @apply bg-slate-50 border-slate-400 shadow-md;
+  }
+
+  &:active {
+    @apply bg-slate-100;
+  }
+}
+
+// Estilos para notificaciones toast
+.toast {
+  @apply fixed top-4 right-4 z-50 max-w-sm;
+
+  &.success {
+    @apply bg-green-500 text-white;
+  }
+
+  &.error {
+    @apply bg-red-500 text-white;
+  }
+
+   &.info {
+     @apply bg-blue-500 text-white;
+   }
+
+   // MARKER CUSTOM STYLES - Fix Leaflet markers (using ::ng-deep to penetrate view encapsulation)
+   ::ng-deep .leaflet-marker-icon {
+     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+     transition: transform 0.2s ease;
+
+     &:hover {
+       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+       transform: scale(1.1);
+     }
+   }
+
+   ::ng-deep .leaflet-marker-shadow {
+     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+   }
+
+   // Custom marker pins
+   .marker-pin {
+     width: 30px;
+     height: 30px;
+     border-radius: 50% 50% 50% 0;
+     transform: rotate(-45deg);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+     transition: all 0.3s ease;
+
+     &:hover {
+       transform: rotate(-45deg) scale(1.15);
+       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+     }
+
+     svg {
+       transform: rotate(45deg);
+       width: 18px;
+       height: 18px;
+     }
+   }
+
+   // ============================================
+   // CONTROLES DE RUTAS - VS Code Explorer Style
+   // ============================================
+   .routes-controls {
+     background: white;
+     border: 1px solid #e2e8f0;
+     border-radius: 12px;
+     overflow: hidden;
+     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+     margin-bottom: 1.5rem;
+     transition: all 0.3s ease;
+   }
+
+   .routes-header {
+     display: flex;
+     align-items: center;
+     gap: 0.5rem;
+     padding: 0.875rem 1rem;
+     background: linear-gradient(to right, #f8fafc, #f1f5f9);
+     border-bottom: 1px solid #e2e8f0;
+     cursor: pointer;
+     user-select: none;
+     transition: all 0.2s ease;
+
+     &:hover {
+       background: linear-gradient(to right, #f1f5f9, #e2e8f0);
+     }
+
+     &:active {
+       transform: scale(0.99);
+     }
+   }
+
+   .routes-icon {
+     color: #64748b;
+     width: 1.125rem;
+     height: 1.125rem;
+     flex-shrink: 0;
+   }
+
+   .routes-title {
+     flex: 1;
+     font-size: 0.75rem;
+     font-weight: 700;
+     color: #475569;
+     text-transform: uppercase;
+     letter-spacing: 0.05em;
+     font-family: 'Inter', system-ui, sans-serif;
+   }
+
+   .routes-count {
+     background: #3b82f6;
+     color: white;
+     font-size: 0.688rem;
+     font-weight: 700;
+     padding: 0.125rem 0.5rem;
+     border-radius: 9999px;
+     min-width: 1.25rem;
+     text-align: center;
+   }
+
+   .chevron {
+     color: #64748b;
+     width: 0.875rem;
+     height: 0.875rem;
+     transition: transform 0.2s ease;
+
+     &.rotated {
+       transform: rotate(90deg);
+     }
+   }
+
+   .routes-list {
+     max-height: 400px;
+     overflow-y: auto;
+     padding: 0.5rem;
+
+     &::-webkit-scrollbar {
+       width: 6px;
+     }
+
+     &::-webkit-scrollbar-track {
+       background: transparent;
+     }
+
+     &::-webkit-scrollbar-thumb {
+       background: #cbd5e1;
+       border-radius: 3px;
+
+       &:hover {
+         background: #94a3b8;
+       }
+     }
+   }
+
+   .route-item {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     padding: 0.625rem 0.75rem;
+     border-radius: 8px;
+     margin-bottom: 0.375rem;
+     transition: all 0.15s ease;
+     border: 1px solid transparent;
+     cursor: pointer;
+
+     &:hover {
+       background: #f8fafc;
+       border-color: #e2e8f0;
+       transform: translateX(4px);
+     }
+
+     &.active {
+       background: linear-gradient(to right, #eff6ff, #dbeafe);
+       border-color: #93c5fd;
+       box-shadow: 0 0 0 1px #3b82f6;
+     }
+
+     &:last-child {
+       margin-bottom: 0;
+     }
+   }
+
+   .route-info {
+     display: flex;
+     align-items: center;
+     gap: 0.625rem;
+     flex: 1;
+     min-width: 0;
+   }
+
+   .route-color-indicator {
+     width: 12px;
+     height: 12px;
+     border-radius: 50%;
+     flex-shrink: 0;
+     box-shadow: 0 0 0 2px white, 0 2px 4px rgba(0, 0, 0, 0.15);
+   }
+
+   .route-details {
+     display: flex;
+     flex-direction: column;
+     min-width: 0;
+     gap: 0.125rem;
+   }
+
+   .route-name {
+     font-size: 0.813rem;
+     font-weight: 500;
+     color: #1e293b;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+   }
+
+   .route-points {
+     font-size: 0.688rem;
+     color: #64748b;
+     font-weight: 400;
+   }
+
+   .route-actions {
+     display: flex;
+     align-items: center;
+     gap: 0.5rem;
+     flex-shrink: 0;
+   }
+
+   .action-btn-icon {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     width: 28px;
+     height: 28px;
+     border-radius: 6px;
+     border: none;
+     background: transparent;
+     color: #64748b;
+     cursor: pointer;
+     transition: all 0.15s ease;
+
+     &:hover {
+       background: #e0e7ff;
+       color: #4f46e5;
+       transform: scale(1.1);
+     }
+
+     &.view-btn:hover {
+       background: #d1fae5;
+       color: #059669;
+     }
+
+     &:active {
+       transform: scale(0.95);
+     }
+   }
+
+   .status-dot {
+     width: 8px;
+     height: 8px;
+     border-radius: 50%;
+
+     &.active {
+       background: #10b981;
+       box-shadow: 0 0 0 2px #d1fae5;
+     }
+
+     &.inactive {
+       background: #ef4444;
+       box-shadow: 0 0 0 2px #fee2e2;
+     }
+   }
+
+   // Empty state
+   .routes-empty {
+     padding: 2rem 1rem;
+     text-align: center;
+     color: #64748b;
+     font-size: 0.875rem;
+   }
+
+   .toast-content {
+     @apply flex items-center gap-3 p-4 rounded-lg shadow-lg;
+   }
+ }
+
+// ============================================
+// ESTILOS MODAL KML - RUTAS PARSEADAS
+// ============================================
+.ruta-item {
+  @apply border rounded-xl p-4 transition-all;
+}
+
+.ruta-item.eliminada {
+  @apply border-red-300 bg-red-50 opacity-60 cursor-not-allowed;
+}
+
+.ruta-item.seleccionada {
+  @apply border-blue-500 bg-blue-100;
+}
+
+.ruta-item:not(.eliminada):hover {
+  @apply border-blue-300 bg-blue-50 cursor-pointer;
+}
+
+.ruta-item:not(.eliminada) {
+  @apply cursor-pointer;
+}
+
+// Badges
+.ruta-badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.ruta-badge-eliminada {
+  @apply bg-red-100 text-red-700;
+}
+
+.ruta-badge-seleccionada {
+  @apply bg-blue-100 text-blue-700;
+}
+
+// Botones de acción en tarjeta
+.ruta-action-btn {
+  @apply flex items-center justify-center w-9 h-9 rounded-lg transition-colors;
+}
+
+.ruta-action-btn.view {
+  @apply text-blue-600 hover:bg-blue-100;
+}
+
+.ruta-action-btn.delete {
+  @apply text-red-600 hover:bg-red-100;
+}
+
+.ruta-action-btn.restore {
+  @apply text-green-600 hover:bg-green-100;
+}

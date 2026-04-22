@@ -1,0 +1,340 @@
+<!-- sidebar.component.html -->
+<aside class="sidebar" [class.compact]="isCompactMode()">
+   <!-- Logo -->
+   <div class="sidebar-header">
+      <a routerLink="/" class="logo-wrapper">
+        <div class="logo-icon">
+          <app-icon name="shield" size="lg" customClass="text-white"></app-icon>
+        </div>
+        <div class="logo-text">
+          <h2 class="logo-title">MPSRJ.GTCV</h2>
+          <p class="logo-subtitle">Transporte</p>
+        </div>
+      </a>
+   </div>
+
+    <!-- Explorer title (VS Code style) -->
+    <div class="explorer-header">
+      <app-icon name="folder" size="xs" class="explorer-icon"></app-icon>
+      <span class="explorer-title">EXPLORER</span>
+    </div>
+
+   <!-- Navegación -->
+   <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <!-- Inicio (Expandible con páginas públicas) -->
+        <li class="nav-item has-submenu">
+          <button (click)="toggleMenu('inicio')" class="nav-link" [class.active]="expandedMenus().inicio">
+            <div class="nav-icon-wrapper">
+              <app-icon [name]="expandedMenus().inicio ? 'folder-open' : 'folder'" size="sm" customClass="nav-icon"></app-icon>
+            </div>
+            <span class="nav-text">Inicio</span>
+            <app-icon 
+              name="chevron-right" 
+              size="xs" 
+              class="nav-arrow" 
+              [class.rotated]="expandedMenus().inicio">
+            </app-icon>
+          </button>
+
+          @if (expandedMenus().inicio) {
+            <ul class="submenu">
+              <li class="submenu-item">
+                <a routerLink="/" routerLinkActive="active" class="submenu-link">
+                  <app-icon name="home" size="xs" class="submenu-icon"></app-icon>
+                  <span class="submenu-text">Página Principal</span>
+                </a>
+              </li>
+              <li class="submenu-item">
+                <a routerLink="/publicaciones" routerLinkActive="active" class="submenu-link">
+                  <app-icon name="newspaper" size="xs" class="submenu-icon"></app-icon>
+                  <span class="submenu-text">Publicaciones</span>
+                </a>
+              </li>
+              <li class="submenu-item">
+                <a routerLink="/busqueda-rutas" routerLinkActive="active" class="submenu-link">
+                  <app-icon name="map" size="xs" class="submenu-icon"></app-icon>
+                  <span class="submenu-text">Búsqueda de Rutas</span>
+                </a>
+              </li>
+              <li class="submenu-item">
+                <a routerLink="/seguimiento" routerLinkActive="active" class="submenu-link">
+                  <app-icon name="search" size="xs" class="submenu-icon"></app-icon>
+                  <span class="submenu-text">Seguimiento de Trámites</span>
+                </a>
+              </li>
+            </ul>
+          }
+        </li>
+
+        <!-- Dashboard -->
+        <li class="nav-item">
+          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+            <div class="nav-icon-wrapper">
+              <app-icon name="dashboard" size="sm" customClass="nav-icon"></app-icon>
+            </div>
+            <span class="nav-text">Dashboard</span>
+          </a>
+        </li>
+
+       <!-- Gestión Principal (Expandible) -->
+       <li class="nav-item has-submenu">
+         <button (click)="toggleMenu('gestion')" class="nav-link" [class.active]="expandedMenus().gestion">
+           <div class="nav-icon-wrapper">
+             <app-icon [name]="expandedMenus().gestion ? 'folder-open' : 'folder'" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Gestión</span>
+           <app-icon
+             name="chevron-right"
+             size="xs"
+             class="nav-arrow"
+             [class.rotated]="expandedMenus().gestion">
+           </app-icon>
+         </button>
+
+         @if (expandedMenus().gestion) {
+           <ul class="submenu">
+             <li class="submenu-item">
+               <a routerLink="/tramites" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="file-text" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Trámites</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/empresas" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="building" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Empresas</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/vehiculos" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="truck" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Vehículos</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/expedientes" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="folder" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Expedientes</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/inspecciones" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="clipboard-check" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Inspecciones</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/examenes" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="calendar" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Exámenes</span>
+               </a>
+             </li>
+           </ul>
+         }
+       </li>
+
+       <!-- Configuración (Expandible) -->
+       <li class="nav-item has-submenu">
+         <button (click)="toggleMenu('configuracion')" class="nav-link" [class.active]="expandedMenus().configuracion">
+           <div class="nav-icon-wrapper">
+             <app-icon [name]="expandedMenus().configuracion ? 'folder-open' : 'folder'" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Configuración</span>
+           <app-icon
+             name="chevron-right"
+             size="xs"
+             class="nav-arrow"
+             [class.rotated]="expandedMenus().configuracion">
+           </app-icon>
+         </button>
+
+         @if (expandedMenus().configuracion) {
+           <ul class="submenu">
+             <li class="submenu-item">
+               <a routerLink="/configuracion" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="settings" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">General</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/tipos-transporte" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="truck" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Tipos Transporte</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/tipos-tramite" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="edit" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Tipos de Trámite</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/requisitos-tupac" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="file-text" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Requisitos TUPA</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/tupac" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="clipboard" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">TUPA</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/departamentos" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="map-pin" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Departamentos</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/admin/users" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="users" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Usuarios</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/admin/roles" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="shield" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Roles</span>
+               </a>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/tipo-tramite-solicitante" routerLinkActive="active" class="submenu-link">
+                 <app-icon name="arrow-right" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Trámite-Solicitante</span>
+               </a>
+             </li>
+           </ul>
+         }
+       </li>
+
+       <!-- Enlaces directos -->
+       <li class="nav-item">
+         <a routerLink="/constancias" routerLinkActive="active" class="nav-link">
+           <div class="nav-icon-wrapper">
+             <app-icon name="file" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Constancias</span>
+         </a>
+       </li>
+
+       <li class="nav-item">
+         <a routerLink="/notificaciones" routerLinkActive="active" class="nav-link">
+           <div class="nav-icon-wrapper">
+             <app-icon name="bell" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Notificaciones</span>
+         </a>
+       </li>
+
+       <li class="nav-item">
+         <a routerLink="/solicitantes" routerLinkActive="active" class="nav-link">
+           <div class="nav-icon-wrapper">
+             <app-icon name="users" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Solicitantes</span>
+         </a>
+       </li>
+
+       <li class="nav-item">
+         <a routerLink="/puntos-ruta" routerLinkActive="active" class="nav-link">
+           <div class="nav-icon-wrapper">
+             <app-icon name="location" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Puntos Ruta</span>
+         </a>
+       </li>
+
+       <li class="nav-item">
+         <a routerLink="/reportes" routerLinkActive="active" class="nav-link">
+           <div class="nav-icon-wrapper">
+             <app-icon name="chart-bar" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Reportes</span>
+         </a>
+       </li>
+
+       <!-- Sección Cuenta -->
+       <li class="nav-section">
+         <span class="section-label">Cuenta</span>
+       </li>
+
+       <li class="nav-item">
+         <a routerLink="/perfil" routerLinkActive="active" class="nav-link">
+           <div class="nav-icon-wrapper">
+             <app-icon name="user" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Mi Perfil</span>
+         </a>
+       </li>
+
+       <!-- Preferencias Expandible -->
+       <li class="nav-item has-submenu">
+         <button (click)="toggleMenu('preferencias')" class="nav-link" [class.active]="expandedMenus().preferencias">
+           <div class="nav-icon-wrapper">
+             <app-icon [name]="expandedMenus().preferencias ? 'folder-open' : 'folder'" size="sm" customClass="nav-icon"></app-icon>
+           </div>
+           <span class="nav-text">Preferencias</span>
+           <app-icon
+             name="chevron-right"
+             size="xs"
+             class="nav-arrow"
+             [class.rotated]="expandedMenus().preferencias">
+           </app-icon>
+         </button>
+
+         @if (expandedMenus().preferencias) {
+           <ul class="submenu">
+             <li class="submenu-item">
+               <button class="submenu-link" (click)="toggleTheme()">
+                 <app-icon name="moon" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Tema: {{isDarkMode() ? 'Oscuro' : 'Claro'}}</span>
+               </button>
+             </li>
+             <li class="submenu-item">
+               <button class="submenu-link" (click)="toggleCompactMode()">
+                 <app-icon name="grid" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Modo: {{isCompactMode() ? 'Compacto' : 'Normal'}}</span>
+               </button>
+             </li>
+             <li class="submenu-item">
+               <button class="submenu-link" (click)="toggleNotifications()">
+                 <app-icon name="bell" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Notificaciones: {{notificationsEnabled() ? 'On' : 'Off'}}</span>
+               </button>
+             </li>
+             <li class="submenu-item">
+               <a routerLink="/configuracion" class="submenu-link">
+                 <app-icon name="settings" size="xs" class="submenu-icon"></app-icon>
+                 <span class="submenu-text">Más opciones...</span>
+               </a>
+             </li>
+           </ul>
+         }
+       </li>
+     </ul>
+   </nav>
+
+   <!-- Footer del sidebar -->
+   <div class="sidebar-footer">
+     <div class="user-info">
+       <div class="user-avatar">
+         <span>{{getUserInitial()}}</span>
+       </div>
+       <div class="user-details">
+         <p class="user-name">{{authState.currentUser()?.username}}</p>
+         <p class="user-role">{{authState.userRole()}}</p>
+       </div>
+     </div>
+
+     <div class="user-actions">
+       <button class="action-btn settings" title="Configuración">
+         <app-icon name="settings" size="sm"></app-icon>
+       </button>
+       <button class="action-btn logout" title="Cerrar sesión">
+         <app-icon name="log-out" size="sm"></app-icon>
+       </button>
+     </div>
+   </div>
+</aside>

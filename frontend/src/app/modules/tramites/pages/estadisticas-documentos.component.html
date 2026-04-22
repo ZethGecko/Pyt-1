@@ -1,0 +1,102 @@
+<div class="p-6">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Estadísticas de Documentos</h1>
+    <p class="text-gray-600 mt-1">Resumen de documentos por estado</p>
+  </div>
+
+  @if (cargando) {
+    <div class="flex justify-center items-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <span class="ml-3 text-gray-600">Cargando estadísticas...</span>
+    </div>
+  } @else if (error) {
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-center">
+        <div class="text-red-400 text-2xl mr-3">⚠️</div>
+        <div>
+          <h3 class="text-red-800 font-medium">Error</h3>
+          <p class="text-red-700 text-sm">{{error}}</p>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <!-- Tarjetas de estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total -->
+      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Documentos</p>
+            <p class="text-3xl font-bold text-gray-900 mt-2">{{totalDocumentos}}</p>
+          </div>
+          <div class="bg-blue-100 rounded-full p-3">
+            <span class="text-2xl">📄</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aprobados -->
+      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Aprobados</p>
+            <p class="text-3xl font-bold text-green-600 mt-2">{{aprobados}}</p>
+          </div>
+          <div class="bg-green-100 rounded-full p-3">
+            <span class="text-2xl">✅</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- En Revisión -->
+      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">En Revisión</p>
+            <p class="text-3xl font-bold text-yellow-600 mt-2">{{enRevision}}</p>
+          </div>
+          <div class="bg-yellow-100 rounded-full p-3">
+            <span class="text-2xl">⏳</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rechazados -->
+      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Rechazados</p>
+            <p class="text-3xl font-bold text-red-600 mt-2">{{rechazados}}</p>
+          </div>
+          <div class="bg-red-100 rounded-full p-3">
+            <span class="text-2xl">❌</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico simple de barras -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Distribución por Estado</h2>
+      <div class="space-y-4">
+        @for (item of [
+          { label: 'Aprobados', value: aprobados, color: 'bg-green-500', textColor: 'text-green-600' },
+          { label: 'En Revisión', value: enRevision, color: 'bg-yellow-500', textColor: 'text-yellow-600' },
+          { label: 'Rechazados', value: rechazados, color: 'bg-red-500', textColor: 'text-red-600' }
+        ]; track $index) {
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="font-medium text-gray-700">{{item.label}}</span>
+              <span class="font-bold {{item.textColor}}">{{item.value}}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div class="{{item.color}} h-2.5 rounded-full" 
+                   [style.width.%]="totalDocumentos > 0 ? (item.value / totalDocumentos * 100) : 0">
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

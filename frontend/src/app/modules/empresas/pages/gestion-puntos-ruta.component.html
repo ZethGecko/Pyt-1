@@ -1,0 +1,507 @@
+<div class="gestion-puntos-ruta min-h-screen bg-slate-50 p-6">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="page-title">
+          <a routerLink="/empresas" class="btn btn-ghost mr-3">
+            <app-icon name="arrow-left" size="lg"></app-icon>
+          </a>
+          Gestión de Rutas
+        </h1>
+        <p class="page-subtitle">Administra rutas geográficas y asigna a empresas transportistas</p>
+      </div>
+    </div>
+    <div class="flex gap-3">
+        <input
+          type="file"
+          #fileInput
+          accept=".kml,.kmz"
+          (change)="onFileSelected($event)"
+          style="display: none;">
+        <button class="btn btn-primary" (click)="fileInput.click()">
+          <app-icon name="upload" size="md"></app-icon>
+          Subir KML
+        </button>
+      @if (currentLocation) {
+        <div class="location-card">
+          <div class="location-icon">
+            <app-icon name="map-pin" size="lg"></app-icon>
+          </div>
+          <div class="location-coords">
+            {{ currentLocation.lat.toFixed(4) }}, {{ currentLocation.lng.toFixed(4) }}
+          </div>
+          <span class="location-status available">Disponible</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  @if (error || success) {
+    <div class="mb-6">
+      @if (error) {
+        <div class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 cursor-pointer hover:bg-red-100 transition-colors" (click)="clearMessages()">
+          <app-icon name="alert-circle" size="md" customClass="text-red-500"></app-icon>
+          <span class="flex-1">{{ error }}</span>
+          <app-icon name="x" size="sm" customClass="text-red-400"></app-icon>
+        </div>
+      }
+      @if (success) {
+        <div class="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 cursor-pointer hover:bg-green-100 transition-colors" (click)="clearMessages()">
+          <app-icon name="check-circle" size="md" customClass="text-green-500"></app-icon>
+          <span class="flex-1">{{ success }}</span>
+          <app-icon name="x" size="sm" customClass="text-green-400"></app-icon>
+        </div>
+      }
+    </div>
+  }
+
+   <!-- Filters -->
+   <div class="filters-bar">
+     <div class="search-box">
+       <input type="text" [(ngModel)]="filtroNombre" (ngModelChange)="onFiltroChange($event)" placeholder="Buscar por nombre de ruta..." class="search-input">
+     </div>
+     <button class="btn btn-secondary" (click)="cargarRutas()">
+       <app-icon name="refresh" size="md"></app-icon>
+       Actualizar
+     </button>
+   </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-3xl font-bold">{{ totalRutas }}</p>
+          <p class="text-blue-100 text-sm">Total Rutas</p>
+        </div>
+        <div class="flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl">
+          <app-icon name="route" size="xl" customClass="text-white"></app-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-3xl font-bold">{{ rutasActivas }}</p>
+          <p class="text-green-100 text-sm">Rutas Activas</p>
+        </div>
+        <div class="flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl">
+          <app-icon name="check-circle" size="xl" customClass="text-white"></app-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-3xl font-bold">{{ rutasAsignadas }}</p>
+          <p class="text-purple-100 text-sm">Asignadas</p>
+        </div>
+        <div class="flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl">
+          <app-icon name="building" size="xl" customClass="text-white"></app-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-3xl font-bold">{{ rutasSinAsignar }}</p>
+          <p class="text-orange-100 text-sm">Sin Asignar</p>
+        </div>
+        <div class="flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl">
+          <app-icon name="alert-circle" size="xl" customClass="text-white"></app-icon>
+        </div>
+      </div>
+    </div>
+   </div>
+
+   <!-- Mapa -->
+   <div class="card" [style.display]="cargando ? 'none' : 'block'">
+    <div class="loading-overlay" *ngIf="cargando">
+      <div class="flex flex-col items-center justify-center p-12">
+        <div class="relative">
+          <div class="w-16 h-16 border-4 border-blue-200 rounded-full animate-spin border-t-blue-500"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <app-icon name="route" size="lg" customClass="text-blue-500"></app-icon>
+          </div>
+        </div>
+        <p class="mt-4 text-slate-600 font-medium">Cargando rutas...</p>
+      </div>
+    </div>
+
+     <!-- Controles de Rutas en Mapa -->
+     <div class="routes-controls-section">
+       <div class="routes-controls" *ngIf="!cargando">
+         <div class="routes-header" (click)="toggleRoutesAccordion()">
+           <app-icon [name]="routesAccordionOpen ? 'folder-open' : 'folder'" size="sm" class="routes-icon"></app-icon>
+           <span class="routes-title">RUTAS EN MAPA</span>
+           <span class="routes-count">{{ rutas.length }}</span>
+           <app-icon name="chevron-right" size="xs" class="chevron" [class.rotated]="routesAccordionOpen"></app-icon>
+         </div>
+
+          @if (routesAccordionOpen) {
+            <div class="routes-list">
+           @for (ruta of getRutasFiltradas(); track ruta.idRuta) {
+               <div class="route-item" [class.active]="routeLayers.has(ruta.idRuta)">
+                 <div class="route-info" (click)="toggleRutaVisibility(ruta)">
+                   <div class="route-color-indicator" [style.background]="getRouteColor(ruta.idRuta)"></div>
+                   <div class="route-details">
+                     <span class="route-name">{{ ruta.nombre }}</span>
+                     <span class="route-points">{{ ruta.puntosRuta?.length || 0 }} puntos</span>
+                   </div>
+                 </div>
+                 <div class="route-actions">
+                   <button class="action-btn-icon view-btn"
+                           title="Ver solo esta ruta"
+                           (click)="verSoloRuta(ruta)">
+                     <app-icon name="eye" size="xs"></app-icon>
+                   </button>
+                   @if (ruta.estado === 'ACTIVO') {
+                     <span class="status-dot active"></span>
+                   } @else {
+                     <span class="status-dot inactive"></span>
+                   }
+                 </div>
+               </div>
+             }
+           </div>
+         }
+       </div>
+
+       <!-- Mapa -->
+       <div class="card" [style.display]="cargando ? 'none' : 'block'">
+         <div class="card-header">
+           <h3 class="text-lg font-semibold text-slate-800">Mapa de Rutas</h3>
+         </div>
+         <div class="card-body">
+           <div #mapContainer id="map" style="height: 400px; width: 100%; border-radius: 0.5rem;"></div>
+         </div>
+       </div>
+     </div>
+
+    <div class="overflow-x-auto" *ngIf="!cargando">
+      <table class="w-full">
+        <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">ID</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Nombre</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Empresa</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Tipo</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Estado</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (ruta of getRutasFiltradas(); track ruta.idRuta) {
+            <tr class="table-row group">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">#{{ ruta.idRuta }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                    <app-icon name="route" size="sm" customClass="text-blue-600"></app-icon>
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ ruta.nombre || '-' }}</p>
+                    @if (ruta.descripcion) {
+                      <p class="text-xs text-slate-500 truncate max-w-48">{{ ruta.descripcion }}</p>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-sm">
+                @if (ruta.empresaNombre) {
+                  <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                      <app-icon name="building" size="sm" customClass="text-green-600"></app-icon>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-slate-900">{{ ruta.empresaNombre }}</p>
+                      @if (ruta.empresaRuc) {
+                        <p class="text-xs text-slate-500">{{ ruta.empresaRuc }}</p>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <button class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition-colors" (click)="abrirModalAsignar(ruta)">
+                    <app-icon name="plus" size="xs"></app-icon>
+                    Asignar empresa
+                  </button>
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                @if (ruta.tipo) {
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                    {{ ruta.tipo }}
+                  </span>
+                } @else {
+                  <span class="text-slate-400">-</span>
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  @if (ruta.estado === 'ACTIVO') {
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></div>
+                      Activo
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                      <div class="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5"></div>
+                      Inactivo
+                    </span>
+                  }
+                </div>
+              </td>
+               <td class="px-6 py-4 whitespace-nowrap">
+                 <div class="flex items-center gap-2">
+                   <button class="flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110"
+                           (click)="verRuta(ruta)"
+                           title="Ver en mapa">
+                     <app-icon name="eye" size="sm"></app-icon>
+                   </button>
+                   <button class="flex items-center justify-center w-8 h-8 text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110"
+                           (click)="abrirModalAsignar(ruta)"
+                           title="Editar asignación">
+                     <app-icon name="edit" size="sm"></app-icon>
+                   </button>
+                   <button class="flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                           (click)="eliminarRuta(ruta.idRuta)"
+                           title="Eliminar">
+                     <app-icon name="trash" size="sm"></app-icon>
+                   </button>
+                 </div>
+               </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-6 py-16 text-center">
+                <div class="flex flex-col items-center">
+                  <div class="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl mb-4">
+                    <app-icon name="route" size="3xl" customClass="text-blue-500"></app-icon>
+                  </div>
+                  <h3 class="text-lg font-semibold text-slate-900 mb-2">No hay rutas registradas</h3>
+                  <p class="text-slate-500 mb-6 max-w-md">Comienza subiendo un archivo KML para crear tus primeras rutas y asignarlas a empresas.</p>
+                  <button class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium shadow-lg" (click)="abrirModalUpload()">
+                    <app-icon name="upload" size="md"></app-icon>
+                    Subir primera ruta
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+
+   <!-- Modal Seleccionar Ruta -->
+   @if (mostrarModalSeleccionRuta) {
+     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrarModalSeleccionRuta()">
+       <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto modal-animate" (click)="$event.stopPropagation()">
+         <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white rounded-t-3xl">
+           <div class="flex items-center justify-between">
+             <div class="flex items-center gap-3">
+               <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl">
+                 <app-icon name="route" size="lg" customClass="text-white"></app-icon>
+               </div>
+               <div>
+                 <h2 class="text-xl font-bold">Seleccionar Ruta</h2>
+                 <p class="text-blue-100 text-sm">Elige la ruta que deseas importar</p>
+               </div>
+             </div>
+             <button class="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white hover:bg-white/20 rounded-xl transition-colors" (click)="cerrarModalSeleccionRuta()">
+               <app-icon name="x" size="lg"></app-icon>
+             </button>
+           </div>
+         </div>
+         <div class="p-6">
+           <!-- Lista de rutas disponibles -->
+           <div class="mb-4">
+             <p class="text-sm text-slate-600">
+               Se encontraron <span class="font-bold text-blue-600">{{ parsedRoutes.length }}</span> rutas en el archivo KML.
+               Selecciona una para previsualizar o elimina las que no necesites.
+             </p>
+           </div>
+
+            <div class="space-y-3">
+              @for (route of parsedRoutes; track $index) {
+                <div class="ruta-item"
+                     [class.eliminada]="route.eliminada"
+                     [class.seleccionada]="selectedRouteIndex === $index && !route.eliminada"
+                     (click)="!route.eliminada && seleccionarRutaDesdeTarjeta($index)">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2">
+                        <h3 class="text-lg font-semibold text-slate-800">{{ route.name }}</h3>
+                        @if (route.eliminada) {
+                          <span class="ruta-badge ruta-badge-eliminada">Eliminada</span>
+                        } @else if (selectedRouteIndex === $index) {
+                          <span class="ruta-badge ruta-badge-seleccionada">Seleccionada</span>
+                        }
+                      </div>
+                      @if (route.description) {
+                        <p class="text-sm text-slate-600 mt-1">{{ route.description }}</p>
+                      }
+                      <div class="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                        <span class="inline-flex items-center gap-1">
+                          <app-icon name="map-pin" size="xs"></app-icon>
+                          {{ route.points.length }} puntos
+                        </span>
+                        @if (route.points.length > 0) {
+                          <span class="inline-flex items-center gap-1">
+                            <app-icon name="navigation" size="xs"></app-icon>
+                            Inicio: {{ route.points[0].lat.toFixed(4) }}, {{ route.points[0].lng.toFixed(4) }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      @if (!route.eliminada) {
+                        <button class="ruta-action-btn view"
+                                title="Ver en mapa"
+                                (click)="previewRouteInModal($index); $event.stopPropagation()">
+                          <app-icon name="eye" size="sm"></app-icon>
+                        </button>
+                        <button class="ruta-action-btn delete"
+                                title="Eliminar de la lista"
+                                (click)="eliminarRutaParseada($index); $event.stopPropagation()">
+                          <app-icon name="trash" size="sm"></app-icon>
+                        </button>
+                      } @else {
+                        <button class="ruta-action-btn restore"
+                                title="Restaurar"
+                                (click)="restaurarRutaParseada($index); $event.stopPropagation()">
+                          <app-icon name="refresh" size="sm"></app-icon>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+           </div>
+
+           @if (parsedRoutes.length === 0) {
+             <div class="text-center py-12">
+               <div class="flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mx-auto mb-4">
+                 <app-icon name="alert-circle" size="2xl" customClass="text-slate-400"></app-icon>
+               </div>
+               <p class="text-slate-500">No hay rutas disponibles. Carga un archivo KML.</p>
+             </div>
+           }
+
+            <div class="flex justify-end gap-3 pt-6 border-t border-slate-200 mt-6">
+              <button type="button" class="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium" (click)="cerrarModalSeleccionRuta()">
+                Cancelar
+              </button>
+              <button type="button" (click)="previewSelectedRoute()" [disabled]="!puedePrevisualizar" class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium shadow-lg"
+                      [ngClass]="{'opacity-50': !puedePrevisualizar, 'cursor-not-allowed': !puedePrevisualizar}">
+                Vista Previa en Mapa
+              </button>
+              <button type="button" (click)="guardarTodasRutas()" [disabled]="!puedeGuardarTodas" class="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all font-medium shadow-lg ml-3"
+                      [ngClass]="{'opacity-50': !puedeGuardarTodas, 'cursor-not-allowed': !puedeGuardarTodas}">
+                Guardar Todas
+              </button>
+              <button type="button" (click)="abrirModalAsignarEmpresa()" [disabled]="!puedeGuardar" class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 transition-all font-medium shadow-lg"
+                      [ngClass]="{'opacity-50': !puedeGuardar, 'cursor-not-allowed': !puedeGuardar}">
+                Asignar y Guardar
+              </button>
+            </div>
+         </div>
+       </div>
+     </div>
+   }
+
+  <!-- Modal Asignar Empresa -->
+  @if (mostrarModalAsignarEmpresa) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="cerrarModalAsignarEmpresa()">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto modal-animate" (click)="$event.stopPropagation()">
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 p-6 text-white rounded-t-3xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl">
+                <app-icon name="building" size="lg" customClass="text-white"></app-icon>
+              </div>
+              <div>
+                <h2 class='text-xl font-bold'>
+                  @if (asignacionModo === 'nueva') {
+                    Guardar Nueva Ruta
+                  } @else {
+                    Asignar Empresa
+                  }
+                </h2>
+                <p class='text-green-100 text-sm'>
+                  @if (asignacionModo === 'nueva') {
+                    Completa los datos para guardar la ruta
+                  } @else {
+                    Vincula la ruta a una empresa
+                  }
+                </p>
+              </div>
+            </div>
+            <button class="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white hover:bg-white/20 rounded-xl transition-colors" (click)="cerrarModalAsignarEmpresa()">
+              <app-icon name="x" size="lg"></app-icon>
+            </button>
+          </div>
+        </div>
+        <div class="p-6 space-y-6">
+          @if (asignacionModo === 'nueva') {
+            <div class='space-y-4'>
+              <div>
+                <label class='block text-sm font-semibold text-slate-700 mb-2'>Nombre de la Ruta</label>
+                <input type='text' [(ngModel)]='uploadForm.nombre' class='form-input w-full' placeholder='Ingrese nombre de la ruta'>
+              </div>
+              <div>
+                <label class='block text-sm font-semibold text-slate-700 mb-2'>Descripción (opcional)</label>
+                <textarea [(ngModel)]='uploadForm.descripcion' class='form-textarea w-full' rows='3' placeholder='Descripción de la ruta'></textarea>
+              </div>
+            </div>
+          } @else {
+            <div class='bg-slate-50 rounded-xl p-4'>
+              <div class='flex items-center gap-3'>
+                <div class='flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg'>
+                  <app-icon name='route' size='md' customClass='text-blue-600'></app-icon>
+                </div>
+                <div>
+                  <p class='font-semibold text-slate-900'>{{ rutaSeleccionada.nombre }}</p>
+                  <p class='text-sm text-slate-500'>{{ rutaSeleccionada.descripcion || 'Sin descripción' }}</p>
+                </div>
+              </div>
+            </div>
+          }
+            <div class="space-y-3">
+              <label class="block text-sm font-semibold text-slate-700">Seleccionar Empresa (opcional):</label>
+              <select
+                [(ngModel)]="uploadForm.empresaId"
+                name="empresaId"
+                class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+              >
+                <option [ngValue]="null">Seleccionar empresa...</option>
+                @for (empresa of empresas; track empresa.id) {
+                  <option [ngValue]="empresa.id">{{ empresa.nombre }}</option>
+                }
+              </select>
+            </div>
+          <div class="flex justify-end gap-3 pt-6 border-t border-slate-200">
+            <button type="button" class="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium" (click)="cerrarModalAsignarEmpresa()">
+              Cancelar
+            </button>
+            <button type='button' (click)='asignacionModo === "nueva" ? guardarNuevaRuta() : actualizarEmpresa()' [disabled]='!puedeGuardar' class='px-6 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl hover:from-green-600 hover:to-teal-700 disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:shadow-xl'>
+              <app-icon name='building' size='sm' customClass='mr-2'></app-icon>
+              @if (asignacionModo === 'nueva') {
+                Guardar Ruta
+              } @else {
+                Actualizar Empresa
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,189 @@
+<!-- Navbar - AHORA USANDO CLASES SCSS -->
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="navbar-content">
+      <div class="navbar-brand">
+        <div class="logo-wrapper">
+          <app-icon name="truck" size="md" customClass="text-white"></app-icon>
+        </div>
+        <div class="brand-text">
+          <h1 class="text-lg font-bold text-slate-800">{{title}}</h1>
+          <p class="text-xs text-slate-500 -mt-0.5">Gestión Integral</p>
+        </div>
+      </div>
+      
+      <!-- Menu de navegación -->
+      <div class="navbar-menu">
+        <a routerLink="/busqueda-rutas" class="navbar-menu-item">
+          <app-icon name="route" size="sm"></app-icon>
+          Rutas
+        </a>
+        <a routerLink="/publicaciones" class="navbar-menu-item">
+          <app-icon name="megaphone" size="sm"></app-icon>
+          Publicaciones
+        </a>
+        <a routerLink="/tramites" class="navbar-menu-item">
+          <app-icon name="file-text" size="sm"></app-icon>
+          Trámites
+        </a>
+        <a routerLink="/seguimiento" class="navbar-menu-item">
+          <app-icon name="search" size="sm"></app-icon>
+          Seguimiento
+        </a>
+      </div>
+      <div class="navbar-actions">
+        <a routerLink="/auth/login" class="btn-primary">
+          <app-icon name="login" size="sm"></app-icon>
+          Iniciar Sesión
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section - AHORA USANDO CLASES SCSS -->
+<div class="hero">
+  <div class="hero-container">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <span class="block">Sistema Integral de</span>
+        <span class="highlight block"> Gestión de Transporte</span>
+      </h1>
+      <p class="hero-description">
+        Plataforma centralizada para la gestión de empresas, vehículos, trámites y documentos del sector transporte.
+      </p>
+      <div class="hero-actions">
+        <a routerLink="/publicaciones" class="btn-secondary">
+          <app-icon name="megaphone" size="md"></app-icon>
+          Ver publicaciones
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-visual-wrapper">
+      <!-- Iconos decorativos -->
+      <div class="decorative-icon top-left">
+        <app-icon name="truck" size="2xl" customClass="text-white"></app-icon>
+      </div>
+      <div class="decorative-icon bottom-right">
+        <app-icon name="route" size="2xl" customClass="text-white"></app-icon>
+      </div>
+      <div class="decorative-icon center">
+        <app-icon name="building" size="2xl" customClass="text-white"></app-icon>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Services Section - AHORA USANDO CLASES SCSS -->
+<div class="services">
+  <div class="services-container">
+    <div class="services-header">
+      <h2>Servicios Disponibles</h2>
+      <p>Accede rápidamente a los servicios que necesitas</p>
+    </div>
+
+    <div class="services-grid">
+      @for (item of menuItems; track item.title) {
+        <a [routerLink]="item.route" class="services-card">
+          <div class="icon-wrapper" [ngClass]="item.color">
+            <app-icon name="{{item.icon}}" size="lg" customClass="text-white"></app-icon>
+          </div>
+          <h3>{{item.title}}</h3>
+          <p>{{item.description}}</p>
+          <div class="card-footer">
+            <span>Ver más</span>
+            <app-icon name="arrow-right" size="sm"></app-icon>
+          </div>
+        </a>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Features Section - AHORA USANDO CLASES SCSS -->
+<div class="features">
+  <div class="features-container">
+    <div class="features-header">
+      <h2>Características Principales</h2>
+      <p>Todo lo que necesitas en un solo lugar</p>
+    </div>
+
+    <div class="features-grid">
+      @for (feature of features; track feature.title) {
+        <div class="features-item">
+          <div class="icon-wrapper">
+            <app-icon name="{{feature.icon}}" size="md"></app-icon>
+          </div>
+          <div class="content">
+            <h3>{{feature.title}}</h3>
+            <p>{{feature.description}}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- CTA Section - AHORA USANDO CLASES SCSS -->
+<div class="cta">
+  <div class="cta-container">
+    <h2>¿Necesitas gestionar tu empresa de transporte?</h2>
+    <div class="cta-actions">
+      <a routerLink="/auth/login" class="btn-secondary">
+        <app-icon name="login" size="md"></app-icon>
+        Iniciar Sesión
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Footer - AHORA USANDO CLASES SCSS -->
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo-wrapper">
+          <div class="logo-icon">
+            <app-icon name="truck" size="md" customClass="text-white"></app-icon>
+          </div>
+          <h3>{{title}}</h3>
+        </div>
+        <p>Sistema desarrollado para la gestión integral del sector transporte.</p>
+      </div>
+      
+      <div class="footer-links">
+        <h4>Enlaces Rápidos</h4>
+        <ul>
+          <li><a routerLink="/">Inicio</a></li>
+          <li><a routerLink="/publicaciones">Publicaciones</a></li>
+          <li><a routerLink="/busqueda-rutas">Rutas</a></li>
+          <li><a routerLink="/auth/login">Iniciar Sesión</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-contact">
+        <h4>Contacto</h4>
+        <ul>
+          <li>
+            <app-icon name="mail" size="sm"></app-icon>
+            info&#64;transporte.gob
+          </li>
+          <li>
+            <app-icon name="phone" size="sm"></app-icon>
+            (123) 456-7890
+          </li>
+          <li>
+            <app-icon name="map-pin" size="sm"></app-icon>
+            Av. Principal #123
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>© 2024 Sistema de Gestión de Transporte. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</footer>

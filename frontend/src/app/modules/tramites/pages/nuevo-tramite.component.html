@@ -1,0 +1,369 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <!-- Columna Principal -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">Nuevo Trámite</h5>
+        </div>
+        <div class="card-body">
+          <form #tramiteForm="ngForm">
+            <!-- 1. TIPO DE TRÁMITE -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Tipo de Trámite *</label>
+              <select class="form-select" [(ngModel)]="tipoTramiteSeleccionado" (change)="onTipoTramiteSeleccionado(tipoTramiteSeleccionado)" [ngModelOptions]="{standalone: true}" required>
+                <option [ngValue]="null">Seleccione un tipo de trámite...</option>
+                <option *ngFor="let tipo of tiposTramite" [ngValue]="tipo">
+                  {{ tipo.codigo }} - {{ tipo.descripcion }}
+                </option>
+              </select>
+              <small class="text-muted" *ngIf="tipoTramiteSeleccionado">
+                Categoría: {{ tipoTramiteSeleccionado.categoria }}
+              </small>
+            </div>
+
+            <!-- 1.1 CÓDIGO RUT -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Código RUT *</label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="datosTramite.codigoRUT"
+                     [ngModelOptions]="{standalone: true}"
+                     placeholder="Ej: TRAM-2024-001"
+                     required>
+              <small class="text-muted">
+                Código único de identificación del trámite (RUT)
+              </small>
+            </div>
+
+            <!-- 2. TIPO DE SOLICITANTE -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tipo de Solicitante *</label>
+              <select class="form-select" [(ngModel)]="tipoSolicitanteSeleccionado" (change)="onTipoSolicitanteSeleccionado(tipoSolicitanteSeleccionado)" [ngModelOptions]="{standalone: true}" required>
+                <option [ngValue]="null">Seleccione un tipo...</option>
+                <option value="PersonaNatural">Persona Natural</option>
+                <option value="Empresa">Empresa</option>
+                <option value="Vehiculo">Vehículo / Gerente</option>
+              </select>
+            </div>
+
+            <!-- 2. SOLICITANTE -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Solicitante *</label>
+              
+              <div class="input-group">
+                <input type="text" class="form-control"
+                       [placeholder]="tipoSolicitanteSeleccionado === 'PersonaNatural' ? 'Buscar por Código RUT, nombres, apellidos...' : 'Buscar por nombre, RUC...'"
+                       [(ngModel)]="terminoBusquedaSolicitante"
+                       (input)="buscarSolicitantes(terminoBusquedaSolicitante)"
+                       (focus)="mostrarModalSolicitante = true"
+                       [disabled]="!tipoSolicitanteSeleccionado">
+                <button class="btn btn-outline-secondary" type="button" (click)="mostrarModalSolicitante = true" [disabled]="!tipoSolicitanteSeleccionado">
+                  <i class="bi bi-search"></i>
+                </button>
+                <button class="btn btn-success" type="button" (click)="abrirModalNuevaPersona()" title="Nuevo Solicitante"
+                        *ngIf="tipoSolicitanteSeleccionado === 'PersonaNatural'">
+                  <i class="bi bi-person-plus"></i> Nuevo
+                </button>
+              </div>
+
+              <!-- Solicitante seleccionado -->
+              <div class="mt-2" *ngIf="solicitanteSeleccionado">
+                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center gap-3">
+                    <div>
+                      <i class="bi" [class]="'bi-' + getIconoTipoSolicitante(solicitanteSeleccionado.tipo)"></i>
+                      <strong>{{ solicitanteSeleccionado.nombre }}</strong>
+                      <small class="text-muted ms-2">{{ solicitanteSeleccionado.identificacion }}</small>
+                    </div>
+                    <!-- Código RUT para Persona Natural -->
+                    <div *ngIf="solicitanteSeleccionado.tipo === 'PersonaNatural' && solicitanteDataCompleto?.datos?.dni" class="badge bg-primary">
+                      RUT: {{ solicitanteDataCompleto.datos.dni }}
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="solicitanteSeleccionado = null; datosTramite.solicitanteId = 0;">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. VALIDACIÓN DE REGLAS -->
+            <div class="mb-4" *ngIf="reglaPermiso && solicitanteSeleccionado">
+              <label class="form-label fw-semibold">Validación de Reglas</label>
+              
+              <div class="card border-0 bg-light">
+                <div class="card-body">
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <small class="text-muted">Permiso para tipo de solicitante:</small>
+                      <div>
+                        <span class="badge" [ngClass]="permisoSolicitante ? 'bg-success' : 'bg-danger'">
+                          {{ permisoSolicitante ? '✅ Permitido' : '❌ No Permitido' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">Empresa activa requerida:</small>
+                      <div>
+                        <span class="badge" [ngClass]="validacionesRegla.empresaActiva === undefined ? 'bg-secondary' : (validacionesRegla.empresaActiva ? 'bg-success' : 'bg-danger')">
+                          {{ validacionesRegla.empresaActiva === undefined ? 'N/A' : (validacionesRegla.empresaActiva ? '✅ Cumple' : '❌ No cumple') }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">Edad mínima:</small>
+                      <div>
+                        <span class="badge" [ngClass]="validacionesRegla.cumpleEdad === undefined ? 'bg-secondary' : (validacionesRegla.cumpleEdad ? 'bg-success' : 'bg-danger')">
+                          {{ validacionesRegla.cumpleEdad === undefined ? 'N/A' : (validacionesRegla.cumpleEdad ? '✅ Cumple' : '❌ No cumple') }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">Antigüedad vehículo:</small>
+                      <div>
+                        <span class="badge" [ngClass]="validacionesRegla.cumpleAntiguedad === undefined ? 'bg-secondary' : (validacionesRegla.cumpleAntiguedad ? 'bg-success' : 'bg-danger')">
+                          {{ validacionesRegla.cumpleAntiguedad === undefined ? 'N/A' : (validacionesRegla.cumpleAntiguedad ? '✅ Cumple' : '❌ No cumple') }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mensajes de validación -->
+                  <div class="mt-3" *ngIf="validacionesRegla.mensajes.length > 0">
+                    <small class="text-muted">Mensajes:</small>
+                    <ul class="mb-0 small">
+                      <li *ngFor="let msg of validacionesRegla.mensajes" [class]="msg.startsWith('❌') ? 'text-danger' : 'text-info'">
+                        {{ msg }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. PRIORIDAD Y OBSERVACIONES -->
+            <div class="mb-4">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Prioridad</label>
+                  <select class="form-select" [(ngModel)]="datosTramite.prioridad" [ngModelOptions]="{standalone: true}">
+                    <option *ngFor="let p of prioridades" [value]="p.value">{{ p.label }}</option>
+                  </select>
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label fw-semibold">Observaciones</label>
+                  <textarea class="form-control" rows="3" [(ngModel)]="datosTramite.observaciones" [ngModelOptions]="{standalone: true}" 
+                            placeholder="Observaciones adicionales..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. REQUISITOS -->
+            <div class="mb-4" *ngIf="requisitos.length > 0">
+              <label class="form-label fw-semibold">Documentos Requeridos</label>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Código</th>
+                      <th>Descripción</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let req of requisitos">
+                      <td><code>{{ req.codigo }}</code></td>
+                      <td>
+                        {{ req.descripcion }}
+                        <span class="badge bg-danger ms-1" *ngIf="req.obligatorio">Obligatorio</span>
+                        <span class="badge bg-info ms-1" *ngIf="req.esExamen">Examen</span>
+                      </td>
+                      <td>{{ req.tipoDocumento }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="{
+                          'bg-warning': req.estado === 'PENDIENTE',
+                          'bg-info': req.estado === 'PRESENTADO',
+                          'bg-primary': req.estado === 'EN_REVISION',
+                          'bg-success': req.estado === 'APROBADO',
+                          'bg-danger': req.estado === 'REPROBADO' || req.estado === 'OBSERVADO'
+                        }">
+                          {{ getLabelEstadoDocumento(req.estado) }}
+                        </span>
+                      </td>
+                      <td>
+                        <input type="file" class="form-control form-control-sm" 
+                               (change)="onArchivoSeleccionado($event, req.id)"
+                               [disabled]="documentosSubiendo.has(req.id) || req.estado !== 'PENDIENTE'">
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- BOTONES DE ACCIÓN -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <button type="button" class="action-btn delete" (click)="limpiarFormulario()" title="Limpiar formulario">
+                <i class="bi bi-x-circle"></i>
+                <span class="btn-text">Limpiar</span>
+              </button>
+              <div>
+                <button type="button" class="action-btn edit" (click)="crearTramite()"
+                        [disabled]="!esFormularioValido() || cargando || validando" title="Crear trámite">
+                  <span *ngIf="cargando || validando" class="spinner-border spinner-border-sm me-2"></span>
+                  <i class="bi bi-check-circle"></i>
+                  <span class="btn-text">Crear Trámite</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna Lateral -->
+    <div class="col-lg-4">
+      <!-- Información de Ayuda -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white">
+          <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información</h6>
+        </div>
+        <div class="card-body">
+          <small>
+            <p class="mb-1">Complete los campos obligatorios para crear un nuevo trámite.</p>
+            <p class="mb-1">El sistema validará automáticamente los permisos y reglas de negocio.</p>
+            <p class="mb-0">Los documentos obligatorios deben ser subidos antes de crear el trámite.</p>
+          </small>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <h6 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Resumen</h6>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0 small">
+            <li class="mb-2">
+              <strong>Tipo de trámite:</strong> 
+              <span *ngIf="tipoTramiteSeleccionado">{{ tipoTramiteSeleccionado.codigo }}</span>
+              <span *ngIf="!tipoTramiteSeleccionado" class="text-muted">No seleccionado</span>
+            </li>
+            <li class="mb-2">
+              <strong>Solicitante:</strong>
+              <span *ngIf="solicitanteSeleccionado">{{ solicitanteSeleccionado.nombre }}</span>
+              <span *ngIf="!solicitanteSeleccionado" class="text-muted">No seleccionado</span>
+            </li>
+            <li class="mb-2">
+              <strong>Documentos obligatorios:</strong>
+              {{ getRequisitosObligatoriosCount() }} / {{ getRequisitosSubidosCount() }} subidos
+            </li>
+            <li class="mb-0">
+              <strong>Estado validación:</strong> 
+              <span class="badge" [ngClass]="esFormularioValido() ? 'bg-success' : 'bg-warning'">
+                {{ esFormularioValido() ? '✅ Válido' : '⚠️ Pendiente' }}
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Búsqueda de Solicitantes -->
+  <div class="modal fade" [class.show]="mostrarModalSolicitante" [style.display]="mostrarModalSolicitante ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Buscar Solicitante</h5>
+          <button type="button" class="btn-close" (click)="mostrarModalSolicitante = false"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" class="form-control mb-3" placeholder="Escriba para buscar..."
+                 [(ngModel)]="terminoBusquedaSolicitante" (input)="buscarSolicitantes(terminoBusquedaSolicitante)">
+          
+          <div class="list-group" *ngIf="!buscandoSolicitante">
+            <button type="button" class="list-group-item list-group-item-action" 
+                    *ngFor="let sol of resultadosBusquedaSolicitante" 
+                    (click)="onSolicitanteSeleccionado(sol); mostrarModalSolicitante = false;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <i class="bi" [class]="'bi-' + getIconoTipoSolicitante(sol.tipo)"></i>
+                  <strong>{{ sol.nombre }}</strong>
+                  <small class="text-muted ms-2">{{ sol.identificacion }}</small>
+                </div>
+                <span class="badge" [class]="sol.tipo === 'PersonaNatural' ? 'bg-primary' : (sol.tipo === 'Empresa' ? 'bg-success' : 'bg-warning')">
+                  {{ formatTipoSolicitante(sol.tipo) }}
+                </span>
+              </div>
+            </button>
+            <div *ngIf="resultadosBusquedaSolicitante.length === 0" class="text-center py-4 text-muted">
+              No se encontraron resultados
+            </div>
+          </div>
+          
+          <div class="text-center py-4" *ngIf="buscandoSolicitante">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 mb-0">Buscando...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="mostrarModalSolicitante" *ngIf="mostrarModalSolicitante"></div>
+
+  <!-- Modal de Creación Rápida de Persona Natural -->
+  <div class="modal fade" [class.show]="mostrarFormularioPersonaNatural" [style.display]="mostrarFormularioPersonaNatural ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva Persona Natural</h5>
+          <button type="button" class="btn-close" (click)="mostrarFormularioPersonaNatural = false"></button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="mb-3">
+              <label class="form-label">DNI *</label>
+              <input type="number" class="form-control" [(ngModel)]="personaNaturalForm.dni">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nombres *</label>
+              <input type="text" class="form-control" [(ngModel)]="personaNaturalForm.nombres">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Apellidos *</label>
+              <input type="text" class="form-control" [(ngModel)]="personaNaturalForm.apellidos">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Género</label>
+              <select class="form-select" [(ngModel)]="personaNaturalForm.genero">
+                <option value="">Seleccione...</option>
+                <option value="MASCULINO">Masculino</option>
+                <option value="FEMENINO">Femenino</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Teléfono</label>
+              <input type="tel" class="form-control" [(ngModel)]="personaNaturalForm.telefono">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" [(ngModel)]="personaNaturalForm.email">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="mostrarFormularioPersonaNatural = false">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="crearPersonaNatural()" [disabled]="cargando">
+            <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+            Crear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="mostrarFormularioPersonaNatural" *ngIf="mostrarFormularioPersonaNatural"></div>
+</div>

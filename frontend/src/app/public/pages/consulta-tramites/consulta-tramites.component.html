@@ -1,0 +1,261 @@
+<div class="tramites-page">
+  <!-- Header mejorado (consistente) -->
+  <div class="page-header">
+    <div class="header-left">
+      <a routerLink="/" class="header-back-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </a>
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Trámites</h1>
+        <p class="page-subtitle">Consulta los trámites disponibles</p>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a routerLink="/" class="nav-link">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Inicio
+      </a>
+      <a routerLink="/busqueda-rutas" class="nav-link">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+        </svg>
+        Rutas
+      </a>
+      <a routerLink="/auth/login" class="btn btn-primary">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+        </svg>
+        Acceso Privado
+      </a>
+    </nav>
+  </div>
+
+  <!-- Contenido principal -->
+  <main class="main-content">
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <div class="hero-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <h1 class="hero-title">Catálogo de Trámites</h1>
+      <p class="hero-description">
+        Consulta los trámites disponibles, sus requisitos, tiempos estimados y costos.
+      </p>
+    </div>
+
+    <!-- Filtros de búsqueda (nuevo) -->
+    <div class="filters-section">
+      <div class="filter-group" style="flex: 2;">
+        <label>
+          <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Buscar trámite:
+        </label>
+        <input 
+          type="text" 
+          class="filter-input"
+          [(ngModel)]="filtroBusqueda"
+          placeholder="Nombre del trámite..."
+          (input)="filtrarTramites()"
+        >
+      </div>
+      <div class="filter-group">
+        <label>
+          <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+          </svg>
+          Tipo:
+        </label>
+        <select [(ngModel)]="filtroTipo" (change)="filtrarTramites()">
+          <option value="">Todos los trámites</option>
+          <option value="licencia">Licencias</option>
+          <option value="permiso">Permisos</option>
+          <option value="certificado">Certificados</option>
+          <option value="registro">Registros</option>
+        </select>
+      </div>
+      <span class="results-badge" *ngIf="tramitesFiltrados && tramitesFiltrados.length">
+        {{ tramitesFiltrados.length }} trámites
+      </span>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading-container" *ngIf="cargando">
+      <div class="spinner"></div>
+      <span class="loading-text">Cargando trámites...</span>
+    </div>
+
+    <!-- Lista de Trámites mejorada -->
+    <div class="tramites-list" *ngIf="!cargando && tramitesFiltrados && tramitesFiltrados.length > 0">
+      <div class="tramite-card" *ngFor="let tramite of tramitesFiltrados">
+        <!-- Header del trámite (clickeable) -->
+        <button 
+          class="tramite-header"
+          (click)="toggleTramite(tramite.id)"
+          [class.expanded]="tramiteExpandido === tramite.id"
+        >
+          <div class="header-left">
+            <div class="tramite-icon" [ngStyle]="{'background-color': tramite.color}">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getIconoPath(tramite.icono)"/>
+              </svg>
+            </div>
+            <div class="tramite-info">
+              <h3 class="tramite-nombre">{{ tramite.nombre }}</h3>
+              <p class="tramite-descripcion">{{ tramite.descripcion }}</p>
+            </div>
+          </div>
+          
+          <div class="header-right">
+            <div class="tramite-metadata">
+              <div class="metadata-item">
+                <svg class="metadata-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>{{ tramite.tiempoEstimado }}</span>
+              </div>
+              <div class="metadata-item">
+                <svg class="metadata-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="font-medium">{{ tramite.costo }}</span>
+              </div>
+            </div>
+            <svg 
+              class="chevron-icon" 
+              [class.rotated]="tramiteExpandido === tramite.id"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Detalles expandidos mejorados -->
+        <div class="tramite-details" *ngIf="tramiteExpandido === tramite.id">
+          <div class="details-content">
+            <!-- Requisitos -->
+            <div class="details-section">
+              <h4 class="section-title">
+                <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Requisitos necesarios
+              </h4>
+              <ul class="requisitos-list">
+                <li class="requisito-item" *ngFor="let requisito of tramite.requisitos">
+                  <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <span>{{ requisito }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Información adicional (nuevo) -->
+            <div class="details-section" *ngIf="tramite.informacionAdicional">
+              <h4 class="section-title">
+                <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Información importante
+              </h4>
+              <p class="info-text">{{ tramite.informacionAdicional }}</p>
+            </div>
+
+            <!-- Acciones -->
+            <div class="details-actions">
+              <a routerLink="/auth/login" class="btn btn-primary">
+                <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                Iniciar Trámite
+              </a>
+              <a routerLink="/auth/login" class="btn btn-outline">
+                <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Descargar Guía
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div class="empty-state" *ngIf="!cargando && tramitesFiltrados && tramitesFiltrados.length === 0">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <h3>No se encontraron trámites</h3>
+      <p>No hay trámites que coincidan con los criterios de búsqueda.</p>
+      <button class="btn btn-outline" (click)="limpiarFiltros()" *ngIf="filtroBusqueda || filtroTipo">
+        Limpiar filtros
+      </button>
+    </div>
+
+    <!-- Sección de ayuda mejorada -->
+    <div class="help-section">
+      <div class="help-card">
+        <div class="help-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="help-content">
+          <h2>¿Necesitas ayuda con tu trámite?</h2>
+          <p>
+            Si tienes dudas sobre los requisitos o necesitas asistencia, contacta a nuestro equipo de soporte.
+          </p>
+          <div class="help-actions">
+            <a routerLink="/auth/login" class="btn btn-primary">
+              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              Contactar Soporte
+            </a>
+            <a routerLink="/publicaciones" class="btn btn-outline-light">
+              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              Centro de Ayuda
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer mejorado -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <svg class="footer-logo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+        </svg>
+        <p>© 2024 Sistema de Gestión de Transporte</p>
+      </div>
+      <div class="footer-contact">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span>soporte@transporte.gob</span>
+      </div>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,100 @@
+:host {
+  display: block;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: box-shadow 0.15s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+}
+
+.table {
+  th {
+    font-weight: 600;
+    border-top: none;
+    background-color: #f8f9fa;
+  }
+
+  td {
+    vertical-align: middle;
+  }
+}
+
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.badge {
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+.form-control, .form-select {
+  border: 1px solid #dee2e6;
+  padding: 0.5rem 0.75rem;
+
+  &:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+}
+
+.form-switch .form-check-input {
+  width: 2.5em;
+  height: 1.25em;
+  cursor: pointer;
+}
+
+.modal {
+  z-index: 1055;
+  
+  .modal-dialog {
+    margin: 1.75rem auto;
+  }
+  
+  .modal-content {
+    border: none;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  }
+}
+
+.pagination {
+  .page-link {
+    cursor: pointer;
+    border: none;
+    color: #6c757d;
+
+    &:hover {
+      background-color: #e9ecef;
+      color: #495057;
+    }
+  }
+
+  .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+  }
+
+  .page-item.disabled .page-link {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  .btn-group-sm .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}

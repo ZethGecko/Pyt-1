@@ -1,0 +1,459 @@
+<div class="seguimiento-page">
+  <!-- Header mejorado -->
+  <div class="page-header">
+    <div class="header-left">
+      <a routerLink="/" class="header-back-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </a>
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Seguimiento de Trámites</h1>
+        <p class="page-subtitle">Consulta el estado de tus trámites en línea</p>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a routerLink="/" class="nav-link">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Inicio
+      </a>
+      <a routerLink="/publicaciones" class="nav-link">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+        </svg>
+        Publicaciones
+      </a>
+      <a routerLink="/auth/login" class="btn btn-primary">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+        </svg>
+        Acceso Privado
+      </a>
+    </nav>
+  </div>
+
+  <!-- Mensajes de error/éxito -->
+  <div class="messages" *ngIf="error || exito">
+    <div class="alert alert-error" *ngIf="error" (click)="error = null">
+      <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      {{ error }}
+    </div>
+    <div class="alert alert-success" *ngIf="exito" (click)="exito = null">
+      <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      {{ exito }}
+    </div>
+  </div>
+
+  <main class="main-content">
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <div class="hero-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+        </svg>
+      </div>
+      <h1 class="hero-title">Seguimiento de Trámites</h1>
+      <p class="hero-description">
+        Consulta el estado de tus trámites ingresando el código de seguimiento
+      </p>
+    </div>
+
+    <!-- Formulario de consulta -->
+    <div class="consulta-card">
+      <div class="consulta-header">
+        <svg class="consulta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <h2>Buscar Trámite</h2>
+      </div>
+
+      <form [formGroup]="seguimientoForm" (ngSubmit)="consultar()" class="consulta-form">
+        <div class="form-group">
+          <label for="codigo">
+            <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Código de Seguimiento
+          </label>
+          <div class="input-container">
+            <input
+              id="codigo"
+              type="text"
+              formControlName="codigo"
+              class="form-input"
+              placeholder="Ej: TRAM-2024-001"
+              [class.is-invalid]="seguimientoForm.get('codigo')?.invalid && seguimientoForm.get('codigo')?.touched"
+            />
+            <div class="input-hint" *ngIf="!seguimientoForm.get('codigo')?.touched">
+              <svg class="hint-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Mínimo 2 caracteres (ej: TRAM-2024-001)</span>
+            </div>
+          </div>
+          @if (seguimientoForm.get('codigo')?.invalid && seguimientoForm.get('codigo')?.touched) {
+            <div class="error-message">
+              <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Código inválido. Debe contener al menos 2 caracteres.</span>
+            </div>
+          }
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary btn-block"
+          [disabled]="seguimientoForm.invalid || cargando"
+        >
+          @if (!cargando) {
+            <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            Buscar
+          } @else {
+            <span class="spinner-small"></span>
+            Buscando...
+          }
+        </button>
+      </form>
+    </div>
+
+    <!-- Tabla de resultados -->
+    @if (cargando) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Buscando trámites...</p>
+      </div>
+    }
+
+    @if (!cargando && tramites.length > 0) {
+      <div class="resultado-card">
+        <div class="resultado-header">
+          <svg class="resultado-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <h2>Trámites Encontrados</h2>
+          <span class="resultado-badge badge-info">
+            {{ tramites.length }} resultado(s)
+          </span>
+        </div>
+
+         <div class="table-responsive">
+           <table class="resultado-table">
+             <thead>
+               <tr>
+                 <th>Código RUT</th>
+                 <th>Estado</th>
+                 <th>Departamento</th>
+                 <th>Fecha Registro</th>
+                 <th>Última Actualización</th>
+                 <th>Acciones</th>
+               </tr>
+             </thead>
+             <tbody>
+               @for (tramite of tramites; track tramite.id) {
+                 <tr [ngClass]="{
+                   'estado-aprobado': tramite.estado === 'aprobado',
+                   'estado-rechazado': tramite.estado === 'rechazado',
+                   'estado-observado': tramite.estado === 'observado',
+                   'estado-derivado': tramite.estado === 'derivado',
+                   'estado-registrado': tramite.estado === 'registrado'
+                 }">
+                   <td class="codigo" data-label="Código RUT">{{ tramite.codigoRUT }}</td>
+                   <td data-label="Estado">
+                     <span class="badge" [ngClass]="getBadgeClass(tramite.estado)">
+                       {{ formatEstado(tramite.estado) }}
+                     </span>
+                   </td>
+                   <td data-label="Departamento">{{ tramite.departamentoActualNombre || 'Sin asignar' }}</td>
+                   <td data-label="Fecha Registro">{{ formatDate(tramite.fechaRegistro) }}</td>
+                   <td data-label="Última Actualización">{{ formatDate(tramite.fechaActualizacion) }}</td>
+                   <td data-label="Acciones">
+                     <button (click)="verDetalle(tramite)" class="btn-detail">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                       </svg>
+                       Ver Detalle
+                     </button>
+                   </td>
+                 </tr>
+               }
+             </tbody>
+           </table>
+         </div>
+
+        <div class="resultado-footer">
+          <button (click)="nuevaConsulta()" class="btn btn-outline">
+            <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Nueva Búsqueda
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (!cargando && tramites.length === 0 && error) {
+      <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p>{{ error }}</p>
+      </div>
+    }
+
+    @if (!cargando && tramites.length === 0 && !error) {
+      <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <p>Ingresa un código para buscar trámites</p>
+      </div>
+    }
+
+    <!-- Información adicional -->
+    <div class="info-section">
+      <div class="info-card">
+        <div class="info-icon-large">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="info-content">
+          <h3>¿No tienes un código de seguimiento?</h3>
+          <p>
+            Para iniciar un nuevo trámite o si eres una empresa registrada, necesitas acceder al sistema privado.
+          </p>
+          <div class="info-actions">
+            <a routerLink="/auth/login" class="btn btn-primary">
+              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+              </svg>
+              Iniciar Sesión
+            </a>
+            <a routerLink="/tramites" class="btn btn-outline">
+              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              Ver Trámites
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Detalle del Trámite -->
+  @if (mostrarDetalle && tramiteDetalle) {
+    <div class="modal-overlay" (click)="cerrarDetalle()">
+      <div class="modal-content modal-extra_large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-area">
+            <div class="modal-icon view">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Detalle del Trámite</h2>
+              <p class="modal-subtitle">
+                {{ tramiteDetalle.tramite.codigoRUT }} - {{ formatEstado(tramiteDetalle.tramite.estado) }}
+              </p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="cerrarDetalle()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Información General -->
+          <div class="detail-section">
+            <h3>📋 Información General</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Código RUT:</span>
+                <span class="detail-value">{{ tramiteDetalle.tramite.codigoRUT }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Estado:</span>
+                <span class="badge" [ngClass]="getBadgeClass(tramiteDetalle.tramite.estado)">
+                  {{ formatEstado(tramiteDetalle.tramite.estado) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Prioridad:</span>
+                <span class="badge" [ngClass]="tramiteDetalle.tramite.prioridad === 'urgente' ? 'badge-danger' : 
+                                                      tramiteDetalle.tramite.prioridad === 'alta' ? 'badge-warning' : 
+                                                      tramiteDetalle.tramite.prioridad === 'baja' ? 'badge-success' : 'badge-primary'">
+                  {{ tramiteDetalle.tramite.prioridad | titlecase }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Departamento:</span>
+                <span class="detail-value">{{ tramiteDetalle.tramite.departamentoActualNombre || 'Sin asignar' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Fecha Registro:</span>
+                <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaRegistro) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Última Actualización:</span>
+                <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaActualizacion) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historial -->
+          @if (tramiteDetalle.historial && tramiteDetalle.historial.length > 0) {
+            <div class="detail-section mt-4">
+              <h3>🕒 Historial de Seguimiento</h3>
+              <div class="timeline">
+                @for (evento of tramiteDetalle.historial; track evento.id) {
+                  <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                      <div class="timeline-header">
+                        <strong>{{ evento.accion | titlecase }}</strong>
+                        <span class="timeline-date">{{ formatDate(evento.fechaAccion) }}</span>
+                      </div>
+                      <div class="timeline-body">
+                        <p>{{ evento.observacion || 'Sin observaciones' }}</p>
+                        <small class="text-muted">
+                          Usuario: {{ evento.usuarioAccion?.username || 'Sistema' }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Documentos -->
+          @if (tramiteDetalle.documentos && tramiteDetalle.documentos.length > 0) {
+            <div class="detail-section mt-4">
+              <h3>📄 Documentos</h3>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th>Fecha Subida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (doc of tramiteDetalle.documentos; track doc.id) {
+                      <tr>
+                        <td>{{ doc.nombreArchivo }}</td>
+                        <td>{{ doc.tipoDocumento }}</td>
+                        <td>
+                          <span class="badge" [ngClass]="doc.estado === 'aprobado' ? 'badge-success' : 
+                                                          doc.estado === 'rechazado' ? 'badge-danger' : 'badge-warning'">
+                            {{ doc.estado | titlecase }}
+                          </span>
+                        </td>
+                        <td>{{ formatDate(doc.fechaSubida) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
+          <!-- Revisiones de Requisitos -->
+          @if (tramiteDetalle.revisiones && tramiteDetalle.revisiones.length > 0) {
+            <div class="detail-section mt-4">
+              <h3>✅ Revisión de Requisitos</h3>
+              <div class="alert alert-info">
+                <strong>Estado de revisión:</strong>
+                @if (todasRevisionesPendientes()) {
+                  <span class="badge badge-warning">Pendiente de revisar</span>
+                } @else {
+                  <span class="badge badge-success">Revisado</span>
+                }
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Requisito</th>
+                      <th>Estado</th>
+                      <th>Observaciones</th>
+                      <th>Fecha Revisión</th>
+                      <th>Revisor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (rev of tramiteDetalle.revisiones; track rev.id) {
+                      <tr>
+                        <td>
+                          <strong>{{ rev.requisitoCodigo }}</strong>
+                          <br><small>{{ rev.requisitoDescripcion }}</small>
+                        </td>
+                        <td>
+                          <span class="badge" [ngClass]="getColorRevision(rev.estadoCumplimiento)">
+                            {{ getTextoRevision(rev.estadoCumplimiento) }}
+                          </span>
+                        </td>
+                        <td>{{ rev.observaciones || 'Sin observaciones' }}</td>
+                        <td>{{ rev.fechaRevision ? formatDate(rev.fechaRevision) : 'N/A' }}</td>
+                        <td>{{ rev.usuarioRevisor || 'N/A' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          } @else {
+            <div class="detail-section mt-4">
+              <h3>✅ Revisión de Requisitos</h3>
+              <div class="alert alert-warning">
+                <strong>Estado:</strong> No hay revisiones registradas para este trámite.
+              </div>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <svg class="footer-logo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <p>© 2024 Sistema de Gestión de Transporte</p>
+      </div>
+      <div class="footer-contact">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span>seguimiento&#64;transporte.gob</span>
+      </div>
+    </div>
+  </footer>
+</div>

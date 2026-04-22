@@ -1,0 +1,787 @@
+// tramites.component.scss
+@use 'sass:color';
+
+// Variables (consistentes)
+$primary-color: #2563eb;
+$primary-hover: #1d4ed8;
+$secondary-color: #64748b;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$background-color: #f8fafc;
+$card-background: #ffffff;
+$border-color: #e2e8f0;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+$shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+$shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+$shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+$transition-fast: 150ms ease;
+$transition-normal: 250ms ease;
+$border-radius: 0.5rem;
+$border-radius-lg: 0.75rem;
+
+// Container principal
+.tramites-page {
+  min-height: 100vh;
+  background-color: $background-color;
+}
+
+// Header (consistente)
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: $card-background;
+  border-bottom: 1px solid $border-color;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .header-back-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: $border-radius;
+      background-color: $background-color;
+      border: 1px solid $border-color;
+      color: $text-secondary;
+      transition: all $transition-fast;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        background-color: #f1f5f9;
+        color: $text-primary;
+        border-color: $text-muted;
+      }
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius-lg;
+      background: linear-gradient(135deg, #dbeafe, #eff6ff);
+      color: $primary-color;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .page-subtitle {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      color: $text-secondary;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: $border-radius;
+      transition: all $transition-fast;
+      text-decoration: none;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover {
+        background-color: #eff6ff;
+        color: $primary-color;
+      }
+    }
+  }
+}
+
+// Main content
+.main-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+// Hero section
+.hero-section {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  .hero-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $primary-color;
+    box-shadow: $shadow-md;
+
+    svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  .hero-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+  }
+
+  .hero-description {
+    font-size: 1.125rem;
+    color: $text-secondary;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+// Filtros
+.filters-section {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  padding: 1.25rem;
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.875rem;
+      color: $text-secondary;
+      font-weight: 500;
+    }
+
+    .filter-input {
+      padding: 0.625rem 0.75rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      font-size: 0.875rem;
+      color: $text-primary;
+      background: $card-background;
+      transition: all $transition-fast;
+
+      &::placeholder {
+        color: $text-muted;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+    }
+
+    select {
+      padding: 0.625rem 2rem 0.625rem 0.75rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      font-size: 0.875rem;
+      background-color: white;
+      cursor: pointer;
+      transition: border-color $transition-fast;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2364748b' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      background-size: 1.25rem;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+      }
+    }
+  }
+
+  .results-badge {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    background-color: $background-color;
+    padding: 0.5rem 1rem;
+    border-radius: $border-radius;
+    border: 1px solid $border-color;
+    white-space: nowrap;
+  }
+}
+
+// Lista de trámites
+.tramites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+// Tarjeta de trámite
+.tramite-card {
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  overflow: hidden;
+  transition: all $transition-normal;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: $text-muted;
+  }
+}
+
+// Header del trámite
+.tramite-header {
+  width: 100%;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: #f8fafc;
+  }
+
+  &.expanded {
+    background-color: #f8fafc;
+    border-bottom: 1px solid $border-color;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+
+    .tramite-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: white;
+      box-shadow: $shadow-sm;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .tramite-info {
+      text-align: left;
+
+      .tramite-nombre {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $text-primary;
+        margin: 0 0 0.25rem 0;
+      }
+
+      .tramite-descripcion {
+        font-size: 0.875rem;
+        color: $text-secondary;
+        margin: 0;
+      }
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+
+    .tramite-metadata {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+
+      .metadata-item {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.875rem;
+        color: $text-secondary;
+
+        .metadata-icon {
+          width: 16px;
+          height: 16px;
+          color: $primary-color;
+        }
+
+        .font-medium {
+          font-weight: 600;
+          color: $text-primary;
+        }
+      }
+    }
+
+    .chevron-icon {
+      width: 20px;
+      height: 20px;
+      color: $text-secondary;
+      transition: transform $transition-normal;
+
+      &.rotated {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+// Detalles del trámite
+.tramite-details {
+  background-color: #fafafa;
+  animation: slideDown $transition-normal;
+
+  .details-content {
+    padding: 1.5rem;
+  }
+
+  .details-section {
+    margin-bottom: 1.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin: 0 0 1rem 0;
+
+      .section-icon {
+        width: 16px;
+        height: 16px;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .requisitos-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.75rem;
+
+    .requisito-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: $text-secondary;
+
+      .check-icon {
+        width: 16px;
+        height: 16px;
+        color: $success-color;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .info-text {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    line-height: 1.6;
+    margin: 0;
+    padding: 1rem;
+    background-color: white;
+    border-radius: $border-radius;
+    border: 1px solid $border-color;
+  }
+
+  .details-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid $border-color;
+  }
+}
+
+// Sección de ayuda
+.help-section {
+  margin: 3rem 0;
+
+  .help-card {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-radius: $border-radius-lg;
+    padding: 2rem;
+    box-shadow: $shadow-lg;
+
+    .help-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: $border-radius;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+
+      svg {
+        width: 28px;
+        height: 28px;
+        color: white;
+      }
+    }
+
+    .help-content {
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 0.75rem 0;
+      }
+
+      p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+        max-width: 600px;
+      }
+    }
+
+    .help-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+  }
+}
+
+// Botones
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: $border-radius;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all $transition-fast;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &.btn-primary {
+    background: linear-gradient(135deg, $primary-color, $primary-hover);
+    color: white;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      background: linear-gradient(135deg, $primary-hover, color.adjust($primary-hover, $lightness: -5%));
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+
+  &.btn-outline {
+    background-color: white;
+    border: 1px solid $border-color;
+    color: $text-primary;
+
+    &:hover {
+      background-color: #f1f5f9;
+      border-color: $text-muted;
+    }
+  }
+
+  &.btn-outline-light {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.btn-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.label-icon {
+  width: 16px;
+  height: 16px;
+  color: $text-secondary;
+}
+
+// Estados de carga y vacío
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  margin-bottom: 3rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    color: $text-secondary;
+    font-size: 0.875rem;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: $card-background;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+  margin-bottom: 3rem;
+
+  svg {
+    width: 64px;
+    height: 64px;
+    color: $text-muted;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.875rem;
+    margin: 0 0 1.5rem 0;
+  }
+}
+
+// Footer
+.footer {
+  background-color: #0f172a;
+  margin-top: 4rem;
+  padding: 2rem 0;
+
+  .footer-content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .footer-logo {
+        width: 24px;
+        height: 24px;
+        color: $primary-color;
+      }
+
+      p {
+        color: #94a3b8;
+        font-size: 0.875rem;
+        margin: 0;
+      }
+    }
+
+    .footer-contact {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #64748b;
+      font-size: 0.875rem;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive
+@media (max-width: 1024px) {
+  .tramite-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .header-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+
+    .header-nav {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  .hero-title {
+    font-size: 1.75rem !important;
+  }
+
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+
+    .filter-group {
+      width: 100%;
+    }
+
+    .results-badge {
+      text-align: center;
+    }
+  }
+
+  .header-right {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+
+    .tramite-metadata {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  .requisitos-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .help-actions {
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .tramite-metadata {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .details-actions {
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

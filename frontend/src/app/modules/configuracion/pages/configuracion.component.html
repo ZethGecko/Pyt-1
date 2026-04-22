@@ -1,0 +1,75 @@
+<!-- Header -->
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <app-icon name="settings" size="lg"></app-icon>
+      </div>
+      <div class="header-text">
+        <h1 class="page-title">Configuración del Sistema</h1>
+        <p class="page-subtitle">Administra la configuración regulatoria del sistema de transporte</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Módulos Grid -->
+  <div class="modules-grid">
+    @for (modulo of modulos; track modulo.titulo) {
+      <a [routerLink]="modulo.ruta" 
+         class="module-card"
+         [class]="'module-' + modulo.color">
+        <div class="module-icon">
+          <app-icon [name]="modulo.icono" size="lg"></app-icon>
+        </div>
+        <div class="module-content">
+          <h3 class="module-title">{{ modulo.titulo }}</h3>
+          <p class="module-description">{{ modulo.descripcion }}</p>
+        </div>
+        <div class="module-arrow">
+          <app-icon name="chevron-right" size="sm"></app-icon>
+        </div>
+      </a>
+    }
+  </div>
+
+  <!-- Información del Sistema -->
+  <!-- <div class="system-info-card">
+    <div class="system-info-header">
+      <app-icon name="info" size="md" customClass="text-blue-600"></app-icon>
+      <h2 class="section-title">
+        Información del Sistema
+      </h2>
+    </div>
+    <div class="system-info-content">
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-icon">
+            <app-icon name="tag" size="sm"></app-icon>
+          </div>
+          <div class="info-text">
+            <p class="info-label">Versión del Sistema</p>
+            <p class="info-value">1.0.0</p>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">
+            <app-icon name="monitor" size="sm"></app-icon>
+          </div>
+          <div class="info-text">
+            <p class="info-label">Entorno</p>
+            <p class="info-value">Desarrollo Local</p>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">
+            <app-icon name="code" size="sm"></app-icon>
+          </div>
+          <div class="info-text">
+            <p class="info-label">API Backend</p>
+            <p class="info-value api-link">http://localhost:8080</p> -->
+          <!-- </div>
+        </div>
+      </div>
+    </div>
+  </div> -->
+</div>

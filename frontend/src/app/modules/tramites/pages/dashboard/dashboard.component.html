@@ -1,0 +1,196 @@
+<div class="dashboard-container">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>Mi Dashboard</h1>
+      <p class="subtitle">Trámites asignados a ti</p>
+    </div>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+    <div class="stat-card info">
+      <div class="stat-icon">🔍</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.enRevision }}</span>
+        <span class="stat-label">En Revisión</span>
+      </div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-icon">➡️</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.derivados }}</span>
+        <span class="stat-label">Derivados</span>
+      </div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.aprobados }}</span>
+        <span class="stat-label">Aprobados</span>
+      </div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.observados }}</span>
+        <span class="stat-label">Observados</span>
+      </div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-icon">⏰</div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.atrasados }}</span>
+        <span class="stat-label">Atrasados</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters-card card">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Estado</label>
+        <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+          <option value="">Todos</option>
+          @for (estado of getEstadosDisponibles(); track estado) {
+            <option [value]="estado">{{ estado | titlecase }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Prioridad</label>
+        <select [(ngModel)]="filtroPrioridad" (change)="aplicarFiltros()">
+          <option value="">Todas</option>
+          @for (prioridad of getPrioridadesDisponibles(); track prioridad) {
+            <option [value]="prioridad">{{ prioridad | titlecase }}</option>
+          }
+        </select>
+      </div>
+      <button (click)="limpiarFiltros()" class="btn btn-outline">Limpiar</button>
+    </div>
+  </div>
+
+  <!-- TABLA DE TRÁMITES -->
+  <div class="table-container card">
+    @if (cargando) {
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <span>Cargando trámites...</span>
+      </div>
+    } @else if (tramitesPaginados.length === 0) {
+      <div class="empty-state">
+        <p>No hay trámites asignados</p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Tipo</th>
+              <th>Solicitante</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Fecha Límite</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tramite of tramitesPaginados; track tramite.id) {
+              <tr>
+                <td>
+                  <span class="codigo-badge">{{ tramite.codigoRUT }}</span>
+                </td>
+                <td>
+                  <span>{{ tramite.tipoTramiteDescripcion }}</span>
+                </td>
+                <td>
+                  <span>{{ tramite.solicitanteNombre }}</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getColorEstado(tramite.estado)">
+                    {{ tramite.estado | titlecase }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="tramite.prioridad.toLowerCase()">
+                    {{ tramite.prioridad | titlecase }}
+                  </span>
+                </td>
+                <td>
+                  <span [class.text-danger]="tramite.estaAtrasado">
+                    {{ tramite.fechaLimite | date:'dd/MM/yyyy' }}
+                    @if (tramite.estaAtrasado) {
+                      <span class="badge badge-danger ml-1">Atrasado</span>
+                    }
+                  </span>
+                 </td>
+                  <td>
+                    <div class="action-buttons">
+                      <!-- Botón Revisar (único para iniciar revisión o abrir modal) -->
+                      <button (click)="abrirModalRevisar(tramite)"
+                              class="btn btn-sm btn-primary"
+                              title="Revisar requisitos del trámite"
+                              [disabled]="!puedeRevisarRequisitos(tramite)">
+                        📝 Revisar
+                      </button>
+                      <!-- Botón Observar -->
+                      <button (click)="cambiarEstado(tramite, 'observado')"
+                              class="btn btn-sm btn-outline"
+                              title="Observar trámite - Marcar con observaciones"
+                              [disabled]="tramite.estado !== 'en_revision' && tramite.estado !== 'registrado'">
+                        ⚠️ Observar
+                      </button>
+                      <!-- Botón Finalizar -->
+                      <button (click)="finalizarTramite(tramite)"
+                              class="btn btn-sm btn-success"
+                              title="Finalizar trámite - Requiere todos los requisitos aprobados"
+                              [disabled]="!puedeFinalizarTramite(tramite)">
+                        ✅ Finalizar
+                      </button>
+                    </div>
+                  </td>
+               </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINACIÓN -->
+      @if (paginasTotales > 1) {
+        <div class="pagination">
+          <button (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 1" class="btn btn-outline btn-sm">
+            Anterior
+          </button>
+          <span>Página {{ paginaActual }} de {{ paginasTotales }}</span>
+          <button (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === paginasTotales" class="btn btn-outline btn-sm">
+            Siguiente
+          </button>
+        </div>
+      }
+    }
+
+    <!-- Modal: Revisión de Requisitos -->
+    @if (mostrarModalRequisitos && tramiteParaRevisar) {
+      <div class="modal-overlay" (click)="cerrarModalRevisar()">
+        <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+          <app-revision-requisitos
+            [tramiteId]="tramiteParaRevisar.id"
+            [tramiteCodigoRUT]="tramiteParaRevisar.codigoRUT"
+            [tramiteTipoDescripcion]="tramiteParaRevisar.tipoTramiteDescripcion"
+            [tipoTramiteId]="tramiteParaRevisar.tipoTramiteId"
+            (cerrarModal)="cerrarModalRevisar()">
+          </app-revision-requisitos>
+        </div>
+      </div>
+    }
+  </div>
+</div>

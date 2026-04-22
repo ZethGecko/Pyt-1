@@ -1,0 +1,492 @@
+// Variables de color (usando las mismas que definiste antes)
+$blue-50: #eff6ff;
+$blue-100: #dbeafe;
+$blue-200: #bfdbfe;
+$blue-300: #93c5fd;
+$blue-400: #60a5fa;
+$blue-500: #3b82f6;
+$blue-600: #2563eb;
+$blue-700: #1d4ed8;
+$blue-800: #1e40af;
+
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+
+$white: #ffffff;
+$red-50: #fef2f2;
+$red-400: #f87171;
+$red-800: #991b1b;
+
+// Sombras
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
+
+// Gradientes
+$gradient-hero: linear-gradient(135deg, $blue-500 0%, $blue-600 100%);
+$gradient-light: linear-gradient(135deg, $blue-50 0%, $blue-100 100%);
+
+// Estilos principales
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+// Contenedor principal
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $blue-50 0%, $blue-100 50%, $blue-50 100%);
+  padding: 3rem 1rem;
+  position: relative;
+  overflow: hidden;
+
+  // Efecto de fondo con patrones
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233b82f6' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+// Tarjeta de login
+.login-card {
+  max-width: 28rem;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+// Header del login
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  .logo-wrapper {
+    width: 5rem;
+    height: 5rem;
+    margin: 0 auto 1.5rem;
+    background: $gradient-hero;
+    border-radius: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-lg;
+    position: relative;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.05) rotate(5deg);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -0.25rem;
+      background: linear-gradient(135deg, rgba($blue-500, 0.3), rgba($blue-600, 0.3));
+      border-radius: 1.5rem;
+      z-index: -1;
+      filter: blur(0.5rem);
+    }
+
+    svg {
+      width: 2.5rem;
+      height: 2.5rem;
+      color: $white;
+    }
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $gray-900;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.025em;
+  }
+
+  p {
+    color: $gray-600;
+    font-size: 0.95rem;
+  }
+}
+
+// Formulario
+.login-form {
+  background: rgba($white, 0.95);
+  backdrop-filter: blur(8px);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: $shadow-xl;
+  border: 1px solid rgba($blue-200, 0.3);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba($blue-300, 0.5);
+    box-shadow: 0 25px 30px -12px rgba($blue-500, 0.15);
+  }
+}
+
+// Grupos de formulario
+.form-group {
+  margin-bottom: 1.25rem;
+  position: relative;
+
+  label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $gray-700;
+    margin-bottom: 0.375rem;
+    margin-left: 0.25rem;
+  }
+}
+
+// Input wrapper
+.input-wrapper {
+  position: relative;
+
+  .input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $gray-400;
+    transition: color 0.2s ease;
+    z-index: 10;
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    border: 1.5px solid $gray-200;
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
+    color: $gray-900;
+    background: $white;
+    transition: all 0.2s ease;
+    outline: none;
+
+    &::placeholder {
+      color: $gray-400;
+      font-weight: 400;
+    }
+
+    &:focus {
+      border-color: $blue-500;
+      box-shadow: 0 0 0 4px rgba($blue-500, 0.1);
+    }
+
+    &.error {
+      border-color: $red-400;
+      
+      &:focus {
+        box-shadow: 0 0 0 4px rgba($red-400, 0.1);
+      }
+    }
+
+    &:hover:not(:focus) {
+      border-color: $blue-300;
+    }
+  }
+
+  // Efecto de enfoque en el icono
+  &:focus-within .input-icon {
+    color: $blue-500;
+  }
+}
+
+// Opciones del formulario
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.5rem 0;
+
+  .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 1.125rem;
+      height: 1.125rem;
+      border-radius: 0.25rem;
+      border: 1.5px solid $gray-300;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:checked {
+        background-color: $blue-600;
+        border-color: $blue-600;
+      }
+
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba($blue-500, 0.2);
+      }
+    }
+
+    span {
+      font-size: 0.9rem;
+      color: $gray-600;
+      user-select: none;
+    }
+  }
+
+  .forgot-link {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: $blue-600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+
+    &:hover {
+      color: $blue-700;
+      background: $blue-50;
+    }
+  }
+}
+
+// Botón de submit
+.btn-submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  background: $gradient-hero;
+  color: $white;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  // Efecto de brillo
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba($white, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, $blue-600 0%, $blue-700 100%);
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: linear-gradient(135deg, $blue-400 0%, $blue-500 100%);
+  }
+
+  .btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+    
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+}
+
+// Mensaje de error
+.error-message {
+  background: $red-50;
+  border: 1px solid rgba($red-400, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  animation: shake 0.5s ease;
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: $red-400;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  span {
+    color: $red-800;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    flex: 1;
+  }
+}
+
+// Footer del login
+.login-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+
+  p {
+    color: $gray-600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .support-link {
+    color: $blue-600;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    display: inline-block;
+
+    &:hover {
+      color: $blue-700;
+      background: $blue-50;
+    }
+  }
+}
+
+// Animaciones
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+// Elementos decorativos
+.decorative-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba($blue-400, 0.1), rgba($blue-500, 0.1));
+  filter: blur(3rem);
+  z-index: 1;
+  pointer-events: none;
+
+  &-1 {
+    width: 20rem;
+    height: 20rem;
+    top: -5rem;
+    left: -5rem;
+  }
+
+  &-2 {
+    width: 15rem;
+    height: 15rem;
+    bottom: -3rem;
+    right: -3rem;
+  }
+}
+
+// Responsive
+@media (max-width: 640px) {
+  .login-container {
+    padding: 2rem 1rem;
+  }
+
+  .login-header {
+    .logo-wrapper {
+      width: 4rem;
+      height: 4rem;
+
+      svg {
+        width: 2rem;
+        height: 2rem;
+      }
+    }
+
+    h2 {
+      font-size: 1.75rem;
+    }
+  }
+
+  .login-form {
+    padding: 1.5rem;
+  }
+
+  .form-options {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}
+
+// Utilidades adicionales
+.text-gradient {
+  background: $gradient-hero;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.shadow-soft {
+  box-shadow: $shadow-md;
+}
+
+.hover-lift {
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
