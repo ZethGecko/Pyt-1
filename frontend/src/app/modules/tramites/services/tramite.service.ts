@@ -185,9 +185,9 @@ export class TramiteService {
     );
   }
 
-  obtenerRequisitos(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
-    return this.http.get<RequisitoTUPAC[]>(`${this.requisitosUrl}/tipo/${tipoTramiteId}`);
-  }
+   obtenerRequisitos(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
+     return this.http.get<RequisitoTUPAC[]>(`${this.tiposTramiteUrl}/${tipoTramiteId}/requisitos`);
+   }
 
   obtenerRequisitosAsociadosATipoTramite(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
     return this.obtenerRequisitos(tipoTramiteId);

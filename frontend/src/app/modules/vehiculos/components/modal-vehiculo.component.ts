@@ -9,8 +9,7 @@ interface FormularioVehiculo {
   marca: string;
   modelo: string;
   color: string;
-  tipoTransporteId: number | null;
-  categoriaTransporteId: number | null;
+  subtipoTransporteId: number | null;
   empresaId: number | null;
 }
 
@@ -108,36 +107,22 @@ interface FormularioVehiculo {
                          placeholder="Blanco, Negro, Rojo, etc."
                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                
-                <!-- Tipo Transporte -->
-                <div class="form-group">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Tipo de Transporte *
-                  </label>
-                  <select [(ngModel)]="formulario.tipoTransporteId"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    <option [ngValue]="null">Seleccionar...</option>
-                    @for (tipo of tiposTransporte; track tipo.id) {
-                      <option [value]="tipo.id">{{ tipo.nombre }}</option>
-                    }
-                  </select>
-                </div>
-                
-                <!-- Categoría Transporte -->
-                <div class="form-group">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Categoría de Transporte *
-                  </label>
-                  <select [(ngModel)]="formulario.categoriaTransporteId"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    <option [ngValue]="null">Seleccionar...</option>
-                    @for (cat of categoriasTransporte; track cat.id) {
-                      <option [value]="cat.id">{{ cat.nombre }}</option>
-                    }
-                  </select>
-                </div>
-                
-                <!-- Empresa -->
+                 
+                 <!-- Subtipo Transporte -->
+                 <div class="form-group">
+                   <label class="block text-sm font-medium text-gray-700 mb-1">
+                     Subtipo de Transporte *
+                   </label>
+                   <select [(ngModel)]="formulario.subtipoTransporteId"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                     <option [ngValue]="null">Seleccionar...</option>
+                     @for (sub of subtiposTransporte; track sub.id) {
+                       <option [value]="sub.id">{{ sub.nombre }}</option>
+                     }
+                   </select>
+                 </div>
+                 
+                 <!-- Empresa -->
                 <div class="form-group">
                   <label class="block text-sm font-medium text-gray-700 mb-1">
                     Empresa (Opcional)
@@ -190,8 +175,7 @@ export class ModalVehiculoComponent implements OnInit {
   @Input() mostrando = false;
   @Input() vehiculo: VehiculoResponse | null = null;
   @Input() empresas: { id: number; razonSocial: string }[] = [];
-  @Input() tiposTransporte: { id: number; nombre: string }[] = [];
-  @Input() categoriasTransporte: { id: number; nombre: string }[] = [];
+  @Input() subtiposTransporte: { id: number; nombre: string }[] = [];
   @Output() cerrarModal = new EventEmitter<void>();
   @Output() vehiculoGuardado = new EventEmitter<void>();
   
@@ -211,68 +195,64 @@ export class ModalVehiculoComponent implements OnInit {
     this.inicializarFormulario();
   }
   
-  getEmptyForm(): FormularioVehiculo {
-    return {
-      placa: '',
-      fechaFabricacion: this.anioActual,
-      marca: '',
-      modelo: '',
-      color: '',
-      tipoTransporteId: null,
-      categoriaTransporteId: null,
-      empresaId: null
-    };
-  }
+   getEmptyForm(): FormularioVehiculo {
+     return {
+       placa: '',
+       fechaFabricacion: this.anioActual,
+       marca: '',
+       modelo: '',
+       color: '',
+       subtipoTransporteId: null,
+       empresaId: null
+     };
+   }
+   
+   inicializarFormulario(): void {
+     this.esEdicion = !!this.vehiculo;
+     
+     if (this.vehiculo) {
+       this.formulario = {
+         placa: this.vehiculo.placa || '',
+         fechaFabricacion: this.vehiculo.fechaFabricacion || this.anioActual,
+         marca: this.vehiculo.marca || '',
+         modelo: this.vehiculo.modelo || '',
+         color: this.vehiculo.color || '',
+         subtipoTransporteId: this.vehiculo.subtipoTransporteId || null,
+         empresaId: this.vehiculo.empresa?.id || null
+       };
+     } else {
+       this.formulario = this.getEmptyForm();
+     }
+     
+     this.error = null;
+   }
   
-  inicializarFormulario(): void {
-    this.esEdicion = !!this.vehiculo;
-    
-    if (this.vehiculo) {
-      this.formulario = {
-        placa: this.vehiculo.placa || '',
-        fechaFabricacion: this.vehiculo.fechaFabricacion || this.anioActual,
-        marca: this.vehiculo.marca || '',
-        modelo: this.vehiculo.modelo || '',
-        color: this.vehiculo.color || '',
-        tipoTransporteId: this.vehiculo.tipoTransporteId || null,
-        categoriaTransporteId: this.vehiculo.categoriaTransporteId || null,
-        empresaId: this.vehiculo.empresa?.id || null
-      };
-    } else {
-      this.formulario = this.getEmptyForm();
-    }
-    
-    this.error = null;
-  }
-  
-  validarFormulario(): boolean {
-    return !!this.formulario.placa &&
-           !!this.formulario.marca &&
-           !!this.formulario.modelo &&
-           !!this.formulario.fechaFabricacion &&
-           !!this.formulario.tipoTransporteId &&
-           !!this.formulario.categoriaTransporteId;
-  }
-  
-  guardar(): void {
-    if (!this.validarFormulario()) {
-      this.error = 'Por favor complete todos los campos requeridos';
-      return;
-    }
-    
-    this.cargando = true;
-    this.error = null;
-    
-    const data: VehiculoCreateRequest = {
-      placa: this.formulario.placa.toUpperCase(),
-      fechaFabricacion: this.formulario.fechaFabricacion,
-      marca: this.formulario.marca,
-      modelo: this.formulario.modelo,
-      color: this.formulario.color,
-      tipoTransporteId: this.formulario.tipoTransporteId!,
-      categoriaTransporteId: this.formulario.categoriaTransporteId!,
-      empresaId: this.formulario.empresaId ?? undefined
-    };
+   validarFormulario(): boolean {
+     return !!this.formulario.placa &&
+            !!this.formulario.marca &&
+            !!this.formulario.modelo &&
+            !!this.formulario.fechaFabricacion &&
+            !!this.formulario.subtipoTransporteId;
+   }
+   
+   guardar(): void {
+     if (!this.validarFormulario()) {
+       this.error = 'Por favor complete todos los campos requeridos';
+       return;
+     }
+     
+     this.cargando = true;
+     this.error = null;
+     
+     const data: VehiculoCreateRequest = {
+       placa: this.formulario.placa.toUpperCase(),
+       fechaFabricacion: this.formulario.fechaFabricacion,
+       marca: this.formulario.marca,
+       modelo: this.formulario.modelo,
+       color: this.formulario.color,
+       subtipoTransporteId: this.formulario.subtipoTransporteId!,
+       empresaId: this.formulario.empresaId ?? undefined
+     };
     
     if (this.esEdicion && this.vehiculo) {
       this.vehiculoService.actualizar(this.vehiculo.id, data).subscribe({

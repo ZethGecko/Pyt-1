@@ -22,8 +22,32 @@ export interface Ruta {
   gerenteResponsableNombre?: string;
   usuarioRegistraId?: number;
   usuarioRegistraNombre?: string;
-  puntosRuta?: any[];
+  puntosRuta?: Array<{
+    idPuntoRuta?: number;
+    nombre?: string;
+    descripcion?: string;
+    latitud: number;
+    longitud: number;
+    orden: number;
+    tipo?: string;
+    estado?: string;
+    fechaRegistro?: string;
+    fechaActualizacion?: string;
+    rutaId?: number;
+    usuarioRegistraId?: number;
+    usuarioRegistraNombre?: string;
+  }>;
   kmlContent?: string;
+}
+
+export interface RutaPageResponse {
+  content: Ruta[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
 }
 
 export interface RoutePreview {
@@ -46,9 +70,31 @@ export class RutaService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(): Observable<Ruta[]> {
-    return this.http.get<Ruta[]>(this.apiUrl);
-  }
+   getAll(): Observable<Ruta[]> {
+     return this.http.get<Ruta[]>(this.apiUrl);
+   }
+
+   getPaged(page: number, size: number): Observable<RutaPageResponse> {
+     // Spring Data Pageable usa base 0 para el número de página
+     const params = new HttpParams()
+       .set('page', (page - 1).toString())
+       .set('size', size.toString())
+       .set('sort', 'fechaRegistro,desc');
+     return this.http.get<RutaPageResponse>(this.apiUrl + '/paginado', { params });
+   }
+
+   searchPaged(term: string, page: number, size: number): Observable<RutaPageResponse> {
+     const params = new HttpParams()
+       .set('page', (page - 1).toString())
+       .set('size', size.toString())
+       .set('sort', 'fechaRegistro,desc')
+       .set('q', term);
+     return this.http.get<RutaPageResponse>(this.apiUrl + '/paginado', { params });
+   }
+
+   getCounts(): Observable<{total: number, activos: number, asignadas: number, sinAsignar: number}> {
+     return this.http.get<{total: number, activos: number, asignadas: number, sinAsignar: number}>(`${this.apiUrl}/conteos`);
+   }
 
   getById(id: number): Observable<Ruta> {
     return this.http.get<Ruta>(`${this.apiUrl}/${id}`);

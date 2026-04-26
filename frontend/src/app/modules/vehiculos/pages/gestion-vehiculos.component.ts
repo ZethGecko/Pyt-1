@@ -41,21 +41,20 @@ export class GestionVehiculosComponent implements OnInit {
     'baja': 'bg-red-100 text-red-800 border-red-200'
   };
   
-  nuevoVehiculo: Partial<VehiculoResponse> = {
-    placa: '',
-    marca: '',
-    modelo: '',
-    fechaFabricacion: 0,
-    color: '',
-    categoria: '',
-    pesoNeto: undefined,
-    tipoTransporteId: 0,
-    categoriaTransporteId: 0,
-    empresa: undefined,
-    activo: true,
-    estadoTecnico: '',
-    observaciones: ''
-  };
+   nuevoVehiculo: Partial<VehiculoResponse> = {
+     placa: '',
+     marca: '',
+     modelo: '',
+     fechaFabricacion: 0,
+     color: '',
+     categoria: '',
+     pesoNeto: undefined,
+     subtipoTransporteId: 0,
+     empresa: undefined,
+     activo: true,
+     estadoTecnico: '',
+     observaciones: ''
+   };
   
   filtroPlaca: string = '';
   filtroEstado: string = '';
@@ -103,27 +102,26 @@ export class GestionVehiculosComponent implements OnInit {
     });
   }
   
-  abrirModalCrear(): void {
-    this.nuevoVehiculo = {
-      placa: '',
-      marca: '',
-      modelo: '',
-      fechaFabricacion: 0,
-      color: '',
-      categoria: '',
-      pesoNeto: undefined,
-      tipoTransporteId: 0,
-      categoriaTransporteId: 0,
-      empresa: undefined,
-      activo: true,
-      estadoTecnico: '',
-      observaciones: ''
-    };
-    this.vehiculoEditando = null;
-    this.modoEdicion = false;
-    this.limpiarMensajes();
-    this.mostrandoModal = true;
-  }
+   abrirModalCrear(): void {
+     this.nuevoVehiculo = {
+       placa: '',
+       marca: '',
+       modelo: '',
+       fechaFabricacion: 0,
+       color: '',
+       categoria: '',
+       pesoNeto: undefined,
+       subtipoTransporteId: 0,
+       empresa: undefined,
+       activo: true,
+       estadoTecnico: '',
+       observaciones: ''
+     };
+     this.vehiculoEditando = null;
+     this.modoEdicion = false;
+     this.limpiarMensajes();
+     this.mostrandoModal = true;
+   }
   
   abrirModalEditar(vehiculo: VehiculoResponse): void {
     this.vehiculoEditando = { ...vehiculo };
@@ -237,31 +235,30 @@ export class GestionVehiculosComponent implements OnInit {
     return colores[vehiculo.estadoTecnico] || 'bg-green-100 text-green-800 border-green-200';
   }
   
-  abrirModalVehiculo(vehiculo?: VehiculoResponse): void {
-    if (vehiculo) {
-      this.modoEdicion = true;
-      this.vehiculoEditando = { ...vehiculo };
-    } else {
-      this.modoEdicion = false;
-      this.vehiculoEditando = null;
-      this.nuevoVehiculo = {
-        placa: '',
-        marca: '',
-        modelo: '',
-        fechaFabricacion: 0,
-        color: '',
-        categoria: '',
-        pesoNeto: undefined,
-        tipoTransporteId: 0,
-        categoriaTransporteId: 0,
-        empresa: undefined,
-        activo: true,
-        estadoTecnico: '',
-        observaciones: ''
-      };
-    }
-    this.mostrandoModal = true;
-  }
+   abrirModalVehiculo(vehiculo?: VehiculoResponse): void {
+     if (vehiculo) {
+       this.modoEdicion = true;
+       this.vehiculoEditando = { ...vehiculo };
+     } else {
+       this.modoEdicion = false;
+       this.vehiculoEditando = null;
+       this.nuevoVehiculo = {
+         placa: '',
+         marca: '',
+         modelo: '',
+         fechaFabricacion: 0,
+         color: '',
+         categoria: '',
+         pesoNeto: undefined,
+         subtipoTransporteId: 0,
+         empresa: undefined,
+         activo: true,
+         estadoTecnico: '',
+         observaciones: ''
+       };
+     }
+     this.mostrandoModal = true;
+   }
   
   guardarVehiculo(): void {
     if (!this.validarVehiculo()) return;
@@ -288,8 +285,7 @@ export class GestionVehiculosComponent implements OnInit {
       color: datosVehiculo.color || undefined,
       categoria: datosVehiculo.categoria || undefined,
       pesoNeto: datosVehiculo.pesoNeto || undefined,
-      tipoTransporteId: 1, // TODO: Obtener del formulario o configuración
-      categoriaTransporteId: 1, // TODO: Obtener del formulario o configuración
+      subtipoTransporteId: datosVehiculo.subtipoTransporteId || 1,
       empresaId: datosVehiculo.empresa?.id || undefined,
       observaciones: datosVehiculo.observaciones || undefined
     };

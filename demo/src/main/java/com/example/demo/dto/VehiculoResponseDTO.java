@@ -9,7 +9,7 @@ public class VehiculoResponseDTO {
     private String numeroChasis;
     private String marca;
     private String modelo;
-    private Integer anioFabricacion;
+    private Integer fechaFabricacion;
     private String color;
     private Integer capacidadPasajeros;
     private Double capacidadCarga;
@@ -43,7 +43,7 @@ public class VehiculoResponseDTO {
     public VehiculoResponseDTO() {}
 
     public VehiculoResponseDTO(Long idVehiculo, String placa, String numeroMotor, String numeroChasis,
-                              String marca, String modelo, Integer anioFabricacion, String color,
+                              String marca, String modelo, Integer fechaFabricacion, String color,
                               Integer capacidadPasajeros, Double capacidadCarga, String estado,
                               String observaciones, LocalDateTime fechaRegistro, LocalDateTime fechaActualizacion,
                               Long empresaId, String empresaNombre, String empresaRuc,
@@ -55,7 +55,7 @@ public class VehiculoResponseDTO {
         this.numeroChasis = numeroChasis;
         this.marca = marca;
         this.modelo = modelo;
-        this.anioFabricacion = anioFabricacion;
+        this.fechaFabricacion = fechaFabricacion;
         this.color = color;
         this.capacidadPasajeros = capacidadPasajeros;
         this.capacidadCarga = capacidadCarga;
@@ -91,8 +91,8 @@ public class VehiculoResponseDTO {
     public String getModelo() { return modelo; }
     public void setModelo(String modelo) { this.modelo = modelo; }
 
-    public Integer getAnioFabricacion() { return anioFabricacion; }
-    public void setAnioFabricacion(Integer anioFabricacion) { this.anioFabricacion = anioFabricacion; }
+    public Integer getFechaFabricacion() { return fechaFabricacion; }
+    public void setFechaFabricacion(Integer fechaFabricacion) { this.fechaFabricacion = fechaFabricacion; }
 
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }

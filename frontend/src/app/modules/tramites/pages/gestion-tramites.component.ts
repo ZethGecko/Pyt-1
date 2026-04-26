@@ -612,8 +612,8 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
     }
 
     if (tramite.estado === 'registrado') {
-      // Cambiar estado a 'en_revision' antes de abrir modal
-      this.tramiteService.cambiarEstado(tramite.id, 'en_revision', 'Inicio revisión de requisitos').subscribe({
+      // Cambiar estado a 'en_revision' sin motivo
+      this.tramiteService.cambiarEstado(tramite.id, 'en_revision').subscribe({
         next: () => {
           this.notificationService.showSuccess('Trámite en revisión');
           // Actualizar el tramite localmente
@@ -676,22 +676,7 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
     };
   }
 
-  // 🎯 CAMBIO DE ESTADO
-  cambiarEstado(tramite: TramiteEnriquecido, nuevoEstado: string): void {
-    const motivo = prompt(`Ingrese el motivo para cambiar el estado a ${nuevoEstado}:`);
-    if (!motivo) return;
 
-    this.tramiteService.cambiarEstado(tramite.id, nuevoEstado, motivo).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Estado actualizado exitosamente');
-        this.cargarTramites();
-      },
-      error: (err) => {
-        this.notificationService.showError('Error al cambiar estado: ' + (err.message || 'Error desconocido'));
-        console.error('Error cambiando estado:', err);
-      }
-    });
-  }
 
   // 🎯 UTILIDADES
   getEstadosDisponibles(): string[] {
@@ -829,31 +814,59 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
     // ========== REVISIÓN DE REQUISITOS ==========
 
     ejecutarAccion(tramite: TramiteEnriquecido, accion: string): void {
-    switch (accion) {
-      case 'aprobar':
-        if (this.puedeAprobar(tramite)) {
-          this.cambiarEstado(tramite, 'aprobado');
-        }
-        break;
-      case 'rechazar':
-        if (this.puedeRechazar(tramite)) {
-          this.cambiarEstado(tramite, 'rechazado');
-        }
-        break;
-       case 'observar':
-         if (this.puedeObservar(tramite)) {
-           this.cambiarEstado(tramite, 'observado');
-         }
-         break;
-       case 'derivar':
-         if (this.puedeDerivar(tramite)) {
-           this.abrirModalDerivar(tramite);
-         }
-         break;
-       default:
-         console.warn(`Acción no reconocida: ${accion}`);
-     }
-   }
+      switch (accion) {
+        case 'aprobar':
+          if (this.puedeAprobar(tramite)) {
+            this.tramiteService.aprobar(tramite.id).subscribe({
+              next: () => {
+                this.notificationService.showSuccess('Trámite aprobado exitosamente');
+                this.cargarTramites();
+              },
+              error: (err) => {
+                this.notificationService.showError('Error al aprobar el trámite');
+              }
+            });
+          }
+          break;
+        case 'rechazar':
+          if (this.puedeRechazar(tramite)) {
+            const motivo = prompt('Ingrese el motivo del rechazo:');
+            if (!motivo) return;
+            this.tramiteService.rechazar(tramite.id, motivo).subscribe({
+              next: () => {
+                this.notificationService.showSuccess('Trámite rechazado');
+                this.cargarTramites();
+              },
+              error: (err) => {
+                this.notificationService.showError('Error al rechazar el trámite');
+              }
+            });
+          }
+          break;
+        case 'observar':
+          if (this.puedeObservar(tramite)) {
+            const observaciones = prompt('Ingrese las observaciones para corrección:');
+            if (!observaciones) return;
+            this.tramiteService.observar(tramite.id, observaciones).subscribe({
+              next: () => {
+                this.notificationService.showSuccess('Trámite enviado a observación');
+                this.cargarTramites();
+              },
+              error: (err) => {
+                this.notificationService.showError('Error al observar el trámite');
+              }
+            });
+          }
+          break;
+        case 'derivar':
+          if (this.puedeDerivar(tramite)) {
+            this.abrirModalDerivar(tramite);
+          }
+          break;
+        default:
+          console.warn(`Acción no reconocida: ${accion}`);
+      }
+    }
 
   // Paginación
   cambiarPagina(pagina: number): void {

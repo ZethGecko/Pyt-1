@@ -405,8 +405,61 @@ $gradient-title: linear-gradient(135deg, $gray-800 0%, $blue-700 100%);
            
            &:last-child {
              border-bottom-right-radius: 0.75rem;
-           }
-         }
+  }
+}
+
+// ========== MODAL OVERLAY ==========
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+
+  .modal-content {
+    background: white;
+    border-radius: 1rem;
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+
+    &.modal-large {
+      max-width: 1400px;
+    }
+
+    &.modal-medium {
+      max-width: 800px;
+    }
+
+    &.modal-small {
+      max-width: 500px;
+    }
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
        }
      }
      

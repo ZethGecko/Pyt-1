@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -42,6 +43,7 @@ public class PuntoRuta {
     // Relaciones
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ruta_id")
+    @JsonBackReference
     private Ruta ruta;
 
     @ManyToOne(fetch = FetchType.LAZY)

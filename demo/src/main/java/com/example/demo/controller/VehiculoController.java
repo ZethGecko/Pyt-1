@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.VehiculoCreateRequest;
 import com.example.demo.dto.VehiculoResponseDTO;
+import com.example.demo.dto.VehiculoUpdateRequest;
 import com.example.demo.model.Vehiculo;
 import com.example.demo.service.VehiculoService;
 import org.springframework.http.ResponseEntity;
@@ -80,16 +82,16 @@ public class VehiculoController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping
-    public VehiculoResponseDTO crear(@RequestBody Vehiculo vehiculo) {
-        return toResponseDTO(vehiculoService.guardar(vehiculo));
+    public VehiculoResponseDTO crear(@RequestBody VehiculoCreateRequest request) {
+        Vehiculo vehiculo = vehiculoService.crearDesdeDTO(request);
+        return toResponseDTO(vehiculo);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<VehiculoResponseDTO> actualizar(@PathVariable Long id, @RequestBody Vehiculo vehiculo) {
-        vehiculo.setIdVehiculo(id);
+    public ResponseEntity<VehiculoResponseDTO> actualizar(@PathVariable Long id, @RequestBody VehiculoUpdateRequest request) {
         try {
-            Vehiculo actualizado = vehiculoService.guardar(vehiculo);
+            Vehiculo actualizado = vehiculoService.actualizarDesdeDTO(id, request);
             return ResponseEntity.ok(toResponseDTO(actualizado));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

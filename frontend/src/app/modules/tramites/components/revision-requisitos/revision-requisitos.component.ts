@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { combineLatest, Observable, of, Subject } from 'rxjs';
+import { combineLatest, Observable, of, Subject, forkJoin } from 'rxjs';
 import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
 import { RequisitoTramiteRevisionService, RequisitoRevision } from '../../services/requisito-tramite-revision.service';
 import { TramiteService } from '../../services/tramite.service';
@@ -26,6 +26,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   requisitos: RequisitoRevision[] = [];
+  originalRequisitos: RequisitoRevision[] = []; // Store initial state
   cargando = false;
   error: string | null = null;
   filtroEstado: string = '';
@@ -66,6 +67,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (requisitos: any[]) => {
         this.requisitos = requisitos as RequisitoRevision[];
+        this.originalRequisitos = JSON.parse(JSON.stringify(this.requisitos));
         this.cargando = false;
       },
       error: (err: any) => {
@@ -146,17 +148,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       this.notificationService.showWarning('No se puede aprobar un requisito sin documento asociado');
       return;
     }
-    const notas = prompt('Observaciones (opcional):');
-    this.revisionService.aprobarDocumento(requisito.id, { notasRevision: notas || undefined }).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Requisito aprobado');
-        this.cargarRequisitos();
-      },
-      error: (err: any) => {
-        this.notificationService.showError('Error al aprobar el requisito');
-        console.error('Error aprobando:', err);
-      }
-    });
+    requisito.estado = 'APROBADO';
   }
 
   reprobarRequisito(requisito: RequisitoRevision): void {
@@ -164,21 +156,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       this.notificationService.showWarning('No se puede reprobar un requisito sin documento asociado');
       return;
     }
-    const motivo = prompt('Motivo de la reprobación (requerido):');
-    if (!motivo) {
-      this.notificationService.showWarning('Debe ingresar un motivo');
-      return;
-    }
-    this.revisionService.reprobarDocumento(requisito.id, { motivo }).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Requisito reprobado');
-        this.cargarRequisitos();
-      },
-      error: (err: any) => {
-        this.notificationService.showError('Error al reprobar el requisito');
-        console.error('Error reprobando:', err);
-      }
-    });
+    requisito.estado = 'REPROBADO';
   }
 
   observarRequisito(requisito: RequisitoRevision): void {
@@ -186,26 +164,13 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       this.notificationService.showWarning('No se puede observar un requisito sin documento asociado');
       return;
     }
-    const observaciones = prompt('Observaciones para corregir:');
-    if (!observaciones) {
-      this.notificationService.showWarning('Debe ingresar observaciones');
-      return;
-    }
-    this.revisionService.observarDocumento(requisito.id, { observaciones }).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Requisito enviado a observación');
-        this.cargarRequisitos();
-      },
-      error: (err: any) => {
-        this.notificationService.showError('Error al observar el requisito');
-        console.error('Error observando:', err);
-      }
-    });
+    requisito.estado = 'OBSERVADO';
   }
 
    puedeEditarRequisito(requisito: RequisitoRevision): boolean {
-     if (requisito.id === 0) return false;
-     return ['PENDIENTE', 'OBSERVADO', 'PRESENTADO'].includes(requisito.estado);
+     // Mostrar botones para todos los requisitos, aunque no tengan documento.
+     // La validación de id > 0 se maneja en los métodos de acción con notificación.
+     return true;
    }
 
   getColorEstado(estado: string): string {
@@ -259,14 +224,62 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     return this.requisitos.filter(r => r.estado === 'REPROBADO').length;
   }
 
+  private aplicarCambiosDocumentos(): Observable<any>[] {
+    const operaciones: Observable<any>[] = [];
+    for (const req of this.requisitos) {
+      const original = this.originalRequisitos.find(r => r.id === req.id);
+      if (!original) continue;
+      if (req.id === 0) continue; // Skip requisitos sin documento
+      // Si hubo cambios en estado u observaciones
+      if (req.estado !== original.estado || req.observaciones !== original.observaciones) {
+        if (req.estado === 'APROBADO') {
+          operaciones.push(this.revisionService.aprobarDocumento(req.id, { notasRevision: req.observaciones || undefined }));
+        } else if (req.estado === 'OBSERVADO') {
+          operaciones.push(this.revisionService.observarDocumento(req.id, { observaciones: req.observaciones || '' }));
+        } else if (req.estado === 'REPROBADO') {
+          operaciones.push(this.revisionService.reprobarDocumento(req.id, { motivo: req.observaciones || '' }));
+        }
+        // Para otros estados no se envían cambios (no hay endpoint)
+      }
+    }
+    return operaciones;
+  }
+
   guardarYFinalizar(): void {
     if (!this.todosAprobados) {
       this.notificationService.showWarning('No se puede finalizar: todos los requisitos deben estar aprobados');
       return;
     }
 
-    if (confirm('¿Está seguro de finalizar este trámite? Todos los requisitos están aprobados.')) {
-      this.tramiteService.cambiarEstado(this.tramiteId, 'APROBADO', 'Trámite finalizado - todos los requisitos aprobados').pipe(
+    if (!confirm('¿Está seguro de finalizar este trámite? Todos los requisitos están aprobados.')) {
+      return;
+    }
+
+    const cambios = this.aplicarCambiosDocumentos();
+    if (cambios.length > 0) {
+      forkJoin(cambios).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          this.tramiteService.aprobar(this.tramiteId).pipe(
+            takeUntil(this.destroy$)
+          ).subscribe({
+            next: () => {
+              this.notificationService.showSuccess('Trámite finalizado exitosamente');
+              this.tramiteFinalizado.emit();
+              this.cerrarModal.emit();
+            },
+            error: (err) => {
+              this.notificationService.showError('Error al finalizar el trámite');
+            }
+          });
+        },
+        error: (err) => {
+          this.notificationService.showError('Error al actualizar los requisitos');
+        }
+      });
+    } else {
+      this.tramiteService.aprobar(this.tramiteId).pipe(
         takeUntil(this.destroy$)
       ).subscribe({
         next: () => {
@@ -285,18 +298,43 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     const motivo = prompt('Ingrese el motivo por el cual el trámite queda en observación:');
     if (!motivo) return;
 
-    this.tramiteService.cambiarEstado(this.tramiteId, 'OBSERVADO', motivo).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Trámite enviado a observación');
-        this.tramiteObservado.emit();
-        this.cerrarModal.emit();
-      },
-      error: (err) => {
-        this.notificationService.showError('Error al observar el trámite');
-      }
-    });
+    const cambios = this.aplicarCambiosDocumentos();
+    if (cambios.length > 0) {
+      forkJoin(cambios).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          this.tramiteService.observar(this.tramiteId, motivo).pipe(
+            takeUntil(this.destroy$)
+          ).subscribe({
+            next: () => {
+              this.notificationService.showSuccess('Trámite enviado a observación');
+              this.tramiteObservado.emit();
+              this.cerrarModal.emit();
+            },
+            error: (err) => {
+              this.notificationService.showError('Error al observar el trámite');
+            }
+          });
+        },
+        error: (err) => {
+          this.notificationService.showError('Error al actualizar los requisitos');
+        }
+      });
+    } else {
+      this.tramiteService.observar(this.tramiteId, motivo).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          this.notificationService.showSuccess('Trámite enviado a observación');
+          this.tramiteObservado.emit();
+          this.cerrarModal.emit();
+        },
+        error: (err) => {
+          this.notificationService.showError('Error al observar el trámite');
+        }
+      });
+    }
   }
 
   cerrar(): void {

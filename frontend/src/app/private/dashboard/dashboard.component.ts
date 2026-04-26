@@ -156,50 +156,51 @@ export class DashboardComponent implements OnInit {
     this.showRawToken.set(!this.showRawToken());
   }
 
-  // ========== ACCIONES DE TRÁMITE ==========
+   // ========== ACCIONES DE TRÁMITE ==========
 
-  puedeRevisarRequisitos(tramite: TramiteEnriquecido): boolean {
-    return ['registrado', 'en_revision', 'observado'].includes(tramite.estado);
-  }
+   puedeRevisarRequisitos(tramite: TramiteEnriquecido): boolean {
+     const estado = tramite.estado?.toLowerCase();
+     return ['registrado', 'en_revision', 'observado'].includes(estado);
+   }
 
-  abrirModalRevisar(tramite: TramiteEnriquecido): void {
-    if (tramite.estado !== 'registrado' && tramite.estado !== 'en_revision') {
-      this.notificationService.showWarning('Solo se pueden revisar trámites en estado "Registrado" o "En Revisión"');
-      return;
+    abrirModalRevisar(tramite: TramiteEnriquecido): void {
+      const estado = tramite.estado?.toLowerCase();
+      if (estado !== 'registrado' && estado !== 'en_revision' && estado !== 'observado') {
+        this.notificationService.showWarning('Solo se pueden revisar trámites en estado "Registrado", "En Revisión" u "Observado"');
+        return;
+      }
+
+      if (estado === 'registrado') {
+        // Iniciar revisión sin solicitar motivo
+        this.tramiteService.cambiarEstado(tramite.id, 'en_revision').pipe(
+          takeUntil(this.destroy$),
+          catchError(err => {
+            this.notificationService.showError('Error al iniciar revisión');
+            return of(null);
+          })
+        ).subscribe({
+          next: () => {
+            this.notificationService.showSuccess('Trámite en revisión');
+            const tramiteActualizado = { ...tramite, estado: 'en_revision' as const };
+            const listaActual = this.tramitesDepartamento();
+            const nuevaLista = listaActual.map(t => t.id === tramite.id ? tramiteActualizado : t);
+            this.tramitesDepartamento.set(nuevaLista);
+            this.tramiteParaRevisar.set(tramiteActualizado);
+            this.mostrarModalRequisitos.set(true);
+            this.cdr.detectChanges();
+          }
+        });
+      } else {
+        // Ya está en revisión o observado, abrir modal directamente
+        this.tramiteParaRevisar.set(tramite);
+        this.mostrarModalRequisitos.set(true);
+        this.cdr.detectChanges();
+      }
     }
 
-    if (tramite.estado === 'registrado') {
-      const motivo = prompt('Ingrese el motivo para iniciar la revisión:');
-      if (!motivo) return;
-
-      this.tramiteService.cambiarEstado(tramite.id, 'en_revision', motivo).pipe(
-        takeUntil(this.destroy$),
-        catchError(err => {
-          this.notificationService.showError('Error al iniciar revisión');
-          return of(null);
-        })
-      ).subscribe({
-        next: () => {
-          this.notificationService.showSuccess('Trámite en revisión');
-          const tramiteActualizado = { ...tramite, estado: 'en_revision' as const };
-          const listaActual = this.tramitesDepartamento();
-          const nuevaLista = listaActual.map(t => t.id === tramite.id ? tramiteActualizado : t);
-          this.tramitesDepartamento.set(nuevaLista);
-          this.tramiteParaRevisar.set(tramiteActualizado);
-          this.mostrarModalRequisitos.set(true);
-          this.cdr.detectChanges();
-        }
-      });
-    } else {
-      this.tramiteParaRevisar.set(tramite);
-      this.mostrarModalRequisitos.set(true);
-      this.cdr.detectChanges();
-    }
-  }
-
-  cerrarModalRevisar(): void {
-    this.mostrarModalRequisitos.set(false);
-    this.tramiteParaRevisar.set(null);
-    this.cargarTramitesDepartamento();
-  }
+   cerrarModalRevisar(): void {
+     this.mostrarModalRequisitos.set(false);
+     this.tramiteParaRevisar.set(null);
+     this.cargarTramitesDepartamento();
+   }
 }

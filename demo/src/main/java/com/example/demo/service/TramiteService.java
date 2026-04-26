@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.TramiteCreateRequest;
 import com.example.demo.dto.TramiteListadoDTO;
@@ -37,6 +38,7 @@ import com.example.demo.repository.UsersRepository;
 import com.example.demo.model.Departamento;
 
 @Service
+@Transactional(readOnly = true)
 public class TramiteService {
 
     @Autowired
@@ -213,6 +215,7 @@ public class TramiteService {
             .toList();
     }
 
+    @Transactional
     public Tramite crear(Tramite tramite) {
         System.out.println("[TramiteService] crear - Tramite antes de guardar:");
         System.out.println("[TramiteService] Empresa: " + tramite.getEmpresa());
@@ -275,6 +278,7 @@ public class TramiteService {
         return saved;
     }
 
+    @Transactional
     public Tramite crearDesdeRequest(TramiteCreateRequest request) {
         System.out.println("[TramiteService] crearDesdeRequest - Request: " + request);
         System.out.println("[TramiteService] tipoSolicitante: " + request.getTipoSolicitante());
@@ -363,6 +367,7 @@ public class TramiteService {
         return timestamp + "-" + random;
     }
 
+    @Transactional
     public Tramite actualizar(Long id, Tramite datos) {
         return repo.findById(id).map(tramite -> {
             if (datos.getCodigoRut() != null) tramite.setCodigoRut(datos.getCodigoRut());
@@ -382,6 +387,7 @@ public class TramiteService {
         }).orElse(null);
     }
 
+    @Transactional
     public Tramite actualizarDesdeRequest(Long id, TramiteUpdateRequest request) {
         return repo.findById(id).map(tramite -> {
             if (request.getCodigoRut() != null) tramite.setCodigoRut(request.getCodigoRut());
@@ -450,17 +456,27 @@ public class TramiteService {
         }).orElse(null);
     }
 
+    @Transactional
     public void eliminar(Long id) {
         repo.deleteById(id);
     }
 
+    @Transactional
     public Tramite cambiarEstado(Long id, String nuevoEstado, String motivo) {
         return repo.findById(id).map(tramite -> {
             tramite.setEstado(nuevoEstado);
             if (motivo != null && !motivo.trim().isEmpty()) {
-                tramite.setMotivoRechazo(motivo);
+                String estadoUpper = nuevoEstado.toUpperCase();
+                // Para estados finales aprobatorios u observacionales, guardar en observaciones
+                if (estadoUpper.equals("APROBADO") || estadoUpper.equals("OBSERVADO") || estadoUpper.equals("FINALIZADO")) {
+                    tramite.setObservaciones(motivo);
+                }
+                // Para estados de rechazo o cancelación, guardar en motivoRechazo
+                else if (estadoUpper.equals("RECHAZADO") || estadoUpper.equals("CANCELADO") || estadoUpper.equals("DERIVADO")) {
+                    tramite.setMotivoRechazo(motivo);
+                }
+                // Para EN_REVISION u otros, no se guarda nada (ignorar)
             }
-
             // Set default tipoTramite if null
             if (tramite.getTipoTramite() == null) {
                 TipoTramite defaultTipo = repoTipoTramite.findAll().stream()
@@ -471,12 +487,12 @@ public class TramiteService {
                     tramite.setTipoTramite(defaultTipo);
                 }
             }
-
             tramite.setFechaActualizacion(java.time.LocalDateTime.now());
             return repo.save(tramite);
         }).orElse(null);
     }
 
+    @Transactional
     public Tramite derivar(Long id, Long departamentoId, String motivo) {
         return repo.findById(id).map(tramite -> {
             tramite.setEstado("DERIVADO");
@@ -507,6 +523,7 @@ public class TramiteService {
         return cambiarEstado(id, "FINALIZADO", observaciones);
     }
 
+    @Transactional
     public Tramite cambiarPrioridad(Long id, String nuevaPrioridad) {
         return repo.findById(id).map(tramite -> {
             tramite.setPrioridad(nuevaPrioridad);
@@ -515,6 +532,7 @@ public class TramiteService {
         }).orElse(null);
     }
 
+    @Transactional
     public Tramite reingresar(Long id, String justificacion) {
         return repo.findById(id).map(tramite -> {
             tramite.setEstado("REINGRESADO");
@@ -524,6 +542,7 @@ public class TramiteService {
         }).orElse(null);
     }
 
+    @Transactional
     public void cancelar(Long id, String motivo) {
         cambiarEstado(id, "CANCELADO", motivo);
     }

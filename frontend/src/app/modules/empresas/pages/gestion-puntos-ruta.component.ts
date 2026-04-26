@@ -24,6 +24,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
   rutas: Ruta[] = [];
   empresas: any[] = [];
   cargando = false;
+  guardando = false;
   error: string | null = null;
   success: string | null = null;
 
@@ -35,6 +36,8 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
   mostrarModalAsignarEmpresa = false;
   mostrarModalUpload = false;
   rutaSeleccionada: Ruta | null = null;
+
+  isModalSeleccionMinimizado = false;
 
   parsedRoutes: RoutePreviewConEliminacion[] = [];
   selectedRouteIndex: number | null = null;
@@ -48,6 +51,24 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     empresaId: null as number | null
   };
 
+  filtroModalKML = '';
+
+  mostrarModalExito = false;
+  mensajeExito = '';
+
+  // Paginación
+  currentPage = 1;
+  pageSize = 15;
+  totalElements = 0;
+  totalPages = 0;
+  paginacionCargada = false;
+
+  // Conteos globales
+  totalRutasCount = 0;
+  rutasActivasCount = 0;
+  rutasAsignadasCount = 0;
+  rutasSinAsignarCount = 0;
+
   @ViewChild('mapContainer') mapContainer!: ElementRef;
   @ViewChild('fileInput') fileInput!: ElementRef;
   private map: L.Map | undefined;
@@ -57,18 +78,19 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
   private routeColors: Map<number, string> = new Map();
   private rutaPreview: Ruta | null = null;
 
-  routesAccordionOpen = true;
-
   constructor(private rutaService: RutaService, private empresaService: EmpresaService) {}
 
   ngOnInit(): void {
     this.cargarRutas();
     this.cargarEmpresas();
+    this.cargarConteos();
     this.getCurrentLocation();
   }
 
   ngAfterViewInit(): void {
-    this.initMap();
+    setTimeout(() => {
+      this.initMap();
+    }, 100);
   }
 
   ngOnDestroy(): void {
@@ -77,11 +99,63 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
-  get totalRutas(): number { return this.rutas.length; }
-  get rutasActivas(): number { return this.rutas.filter(r => r.estado === 'ACTIVO').length; }
-  get rutasAsignadas(): number { return this.rutas.filter(r => r.empresaNombre).length; }
-  get rutasSinAsignar(): number { return this.rutas.filter(r => !r.empresaNombre).length; }
+  // Getters para estadísticas
+  get totalRutas(): number { return this.totalRutasCount; }
+  get rutasActivas(): number { return this.rutasActivasCount; }
+  get rutasAsignadas(): number { return this.rutasAsignadasCount; }
+  get rutasSinAsignar(): number { return this.rutasSinAsignarCount; }
 
+  // Limpiar mapa (solo quita las capas de rutas del mapa, NO borra la lista)
+  limpiarMapa(): void {
+    this.clearRouteLayers();
+    // NO limpiamos rutas, totalElements, totalPages, currentPage
+    // Solo quitamos las capas del mapa
+  }
+
+  // Paginación
+  onPageSizeChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.cargarRutasPaginadas(1);
+  }
+
+  getPageNumbers(): (number | string)[] {
+    const pages: (number | string)[] = [];
+    const totalPages = this.totalPages;
+    const current = this.currentPage;
+    const delta = 2;
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (current > delta + 2) {
+        pages.push('...');
+      }
+      for (let i = Math.max(2, current - delta); i <= Math.min(totalPages - 1, current + delta); i++) {
+        pages.push(i);
+      }
+      if (current < totalPages - delta - 1) {
+        pages.push('...');
+      }
+      if (totalPages > 1) {
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  }
+
+  get rangeStart(): number {
+    if (this.totalElements === 0) return 0;
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get rangeEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalElements);
+  }
+
+  // Validaciones
   get puedeGuardar(): boolean {
     if (this.asignacionModo === 'nueva') {
       if (this.selectedRouteIndex === null) return false;
@@ -106,25 +180,38 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     return this.parsedRoutes.some(r => !r.eliminada);
   }
 
+  // Filtros y búsqueda
   onFiltroChange(value: string): void {
-    this.updateMap();
+    this.cargarRutasPaginadas(1);
   }
 
   getRutasFiltradas(): Ruta[] {
-    if (!this.filtroNombre?.trim()) return this.rutas;
-    const term = this.filtroNombre.toLowerCase();
-    return this.rutas.filter(r => r.nombre.toLowerCase().includes(term));
+    return this.rutas;
   }
 
+  // Carga de datos
   cargarRutas(): void {
+    this.cargarRutasPaginadas(1);
+  }
+
+  cargarRutasPaginadas(page: number): void {
     this.cargando = true;
     this.error = null;
     this.rutaPreview = null;
 
-    this.rutaService.getAll().subscribe({
-      next: (rutas: Ruta[]) => {
-        this.rutas = rutas;
-        console.log('Rutas cargadas:', this.rutas.length);
+    const termino = this.filtroNombre?.trim() || '';
+    const obs$ = termino
+      ? this.rutaService.searchPaged(termino, page, this.pageSize)
+      : this.rutaService.getPaged(page, this.pageSize);
+
+    obs$.subscribe({
+      next: (response: any) => {
+        this.rutas = response.content || [];
+        this.totalElements = response.totalElements || 0;
+        this.totalPages = response.totalPages || 0;
+        this.currentPage = (response.number || 0) + 1;
+        this.paginacionCargada = true;
+        console.log('Rutas cargadas página', this.currentPage, ':', this.rutas.length, 'Termino:', termino);
         this.cargando = false;
         this.updateMap();
         setTimeout(() => {
@@ -150,6 +237,20 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
+  cargarConteos(): void {
+    this.rutaService.getCounts().subscribe({
+      next: (conteos) => {
+        this.totalRutasCount = conteos.total || 0;
+        this.rutasActivasCount = conteos.activos || 0;
+        this.rutasAsignadasCount = conteos.asignadas || 0;
+        this.rutasSinAsignarCount = conteos.sinAsignar || 0;
+      },
+      error: (err) => {
+        console.error('Error cargando conteos:', err);
+      }
+    });
+  }
+
   getCurrentLocation(): void {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -169,6 +270,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  // Map methods
   abrirModalUpload(): void {
     this.fileInput.nativeElement.click();
   }
@@ -207,10 +309,6 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
         this.map!.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
       }
     }
-  }
-
-  toggleRoutesAccordion(): void {
-    this.routesAccordionOpen = !this.routesAccordionOpen;
   }
 
   clearRouteLayers(): void {
@@ -390,6 +488,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     }, 100);
   }
 
+  // Drag & drop
   onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -444,6 +543,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
+  // Previsualización
   previewSelectedRoute(): void {
     if (this.selectedRouteIndex === null) return;
     const idx = this.selectedRouteIndex;
@@ -502,7 +602,10 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.updateMap();
   }
 
+  // Modales
   abrirModalAsignarEmpresa(): void {
+    this.mostrarModalSeleccionRuta = false;
+
     if (this.selectedRouteIndex === null) return;
     const idx = this.selectedRouteIndex;
     if (idx < 0 || idx >= this.parsedRoutes.length) return;
@@ -512,6 +615,12 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
       this.error = 'No se puede asignar una ruta eliminada';
       return;
     }
+
+    this.uploadForm = {
+      nombre: selectedRoute.name,
+      descripcion: selectedRoute.description || '',
+      empresaId: null
+    };
 
     this.rutaSeleccionada = {
       idRuta: 0,
@@ -531,12 +640,18 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.asignacionModo = 'nueva';
   }
 
+  toggleMinimizarModalSeleccion(): void {
+    this.isModalSeleccionMinimizado = !this.isModalSeleccionMinimizado;
+  }
+
   cerrarModalSeleccionRuta(): void {
     this.rutaPreview = null;
     this.mostrarModalSeleccionRuta = false;
     this.parsedRoutes = [];
     this.selectedRouteIndex = null;
     this.selectedFile = null;
+    this.filtroModalKML = '';
+    this.isModalSeleccionMinimizado = false;
     this.updateMap();
   }
 
@@ -548,6 +663,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.updateMap();
   }
 
+  // Selección de rutas parseadas
   seleccionarRuta(index: number): void {
     if (index >= 0 && index < this.parsedRoutes.length) {
       const route = this.parsedRoutes[index];
@@ -561,6 +677,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.seleccionarRuta(index);
   }
 
+  // Ver ruta en mapa
   verRuta(ruta: Ruta): void {
     this.clearRouteLayers();
     this.addRutaToMap(ruta);
@@ -580,7 +697,9 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.asignacionModo = 'existente';
   }
 
+  // Guardado
   guardarNuevaRuta(): void {
+    if (this.guardando) return;
     if (this.selectedRouteIndex === null) return;
     const idx = this.selectedRouteIndex;
     if (idx < 0 || idx >= this.parsedRoutes.length) return;
@@ -588,14 +707,20 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     const selectedRoute = this.parsedRoutes[idx];
     if (!selectedRoute) return;
 
+    this.guardando = true;
+
     const rutaData: Partial<Ruta> = {
       nombre: this.uploadForm.nombre,
       descripcion: this.uploadForm.descripcion,
       estado: 'ACTIVO',
       puntosRuta: selectedRoute.points.map((p, i) => ({
+        nombre: 'Punto ' + (i + 1),
+        descripcion: '',
         latitud: p.lat,
         longitud: p.lng,
-        orden: i
+        orden: i + 1,
+        tipo: 'PARADA',
+        estado: 'ACTIVO'
       }))
     };
 
@@ -606,24 +731,31 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.rutaService.create(rutaData).subscribe({
       next: (savedRuta) => {
         this.success = 'Ruta guardada exitosamente';
+        this.mensajeExito = 'Ruta guardada exitosamente';
         this.rutaPreview = null;
         this.cerrarModalSeleccionRuta();
         this.cerrarModalAsignarEmpresa();
         this.cargarRutas();
+        this.cargarConteos();
+        this.mostrarModalExito = true;
+        this.guardando = false;
       },
       error: (err) => {
         this.error = 'Error al guardar ruta: ' + (err.message || 'Error desconocido');
+        this.guardando = false;
       }
     });
   }
 
   guardarTodasRutas(): void {
+    if (this.guardando) return;
     const rutasAGuardar = this.parsedRoutes.filter(r => !r.eliminada);
     if (rutasAGuardar.length === 0) {
       this.error = 'No hay rutas para guardar';
       return;
     }
 
+    this.guardando = true;
     let guardadas = 0;
     let errores = 0;
 
@@ -633,9 +765,13 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
         descripcion: route.description || '',
         estado: 'ACTIVO',
         puntosRuta: route.points.map((p, i) => ({
+          nombre: 'Punto ' + (i + 1),
+          descripcion: '',
           latitud: p.lat,
           longitud: p.lng,
-          orden: i
+          orden: i + 1,
+          tipo: 'PARADA',
+          estado: 'ACTIVO'
         }))
       };
 
@@ -644,8 +780,12 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
           guardadas++;
           if (guardadas === rutasAGuardar.length) {
             this.success = `${guardadas} rutas guardadas exitosamente`;
+            this.mensajeExito = `${guardadas} rutas guardadas exitosamente`;
             this.cerrarModalSeleccionRuta();
             this.cargarRutas();
+            this.cargarConteos();
+            this.mostrarModalExito = true;
+            this.guardando = false;
           }
         },
         error: (err) => {
@@ -653,6 +793,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
           console.error('Error guardando ruta', route.name, err);
           if (errores === rutasAGuardar.length) {
             this.error = 'Error al guardar todas las rutas';
+            this.guardando = false;
           }
         }
       });
@@ -672,6 +813,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
         this.success = 'Empresa asignada correctamente';
         this.cerrarModalAsignarEmpresa();
         this.cargarRutas();
+        this.cargarConteos();
       },
       error: (err) => {
         this.error = 'Error al asignar empresa: ' + (err.message || 'Error desconocido');
@@ -686,6 +828,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
       next: () => {
         this.success = 'Ruta eliminada correctamente';
         this.cargarRutas();
+        this.cargarConteos();
       },
       error: (err) => {
         this.error = 'Error al eliminar ruta: ' + (err.message || 'Error desconocido');
@@ -698,6 +841,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     this.success = null;
   }
 
+  // Gestión de rutas parseadas (KML)
   eliminarRutaParseada(index: number): void {
     if (index >= 0 && index < this.parsedRoutes.length) {
       const r = this.parsedRoutes[index];
@@ -733,5 +877,24 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
 
   ajustarIndiceSeleccion(): void {
     this.selectedRouteIndex = this.getPrimerIndiceDisponible();
+  }
+
+  get parsedRoutesFiltradas(): RoutePreviewConEliminacion[] {
+    if (!this.filtroModalKML?.trim()) {
+      return this.parsedRoutes;
+    }
+    const term = this.filtroModalKML.toLowerCase();
+    return this.parsedRoutes.filter(r =>
+      r.name.toLowerCase().includes(term) ||
+      (r.description && r.description.toLowerCase().includes(term))
+    );
+  }
+
+  get rutasNoEliminadasCount(): number {
+    return this.parsedRoutes.filter(r => !r.eliminada).length;
+  }
+
+  onFiltroModalChange(): void {
+    // El getter parsedRoutesFiltradas se actualiza automáticamente
   }
 }

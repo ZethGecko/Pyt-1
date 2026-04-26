@@ -1,7 +1,13 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.VehiculoCreateRequest;
 import com.example.demo.dto.VehiculoResponseDTO;
+import com.example.demo.dto.VehiculoUpdateRequest;
+import com.example.demo.model.Empresa;
+import com.example.demo.model.SubtipoTransporte;
 import com.example.demo.model.Vehiculo;
+import com.example.demo.repository.EmpresaRepository;
+import com.example.demo.repository.SubtipoTransporteRepository;
 import com.example.demo.repository.VehiculoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +22,12 @@ public class VehiculoService {
 
     @Autowired
     private VehiculoRepository repo;
+    
+    @Autowired
+    private EmpresaRepository empresaRepository;
+    
+    @Autowired
+    private SubtipoTransporteRepository subtipoTransporteRepository;
 
     public List<Vehiculo> listarTodos() {
         return repo.findAll();
@@ -222,4 +234,90 @@ public class VehiculoService {
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
-}
+    
+    // ========== OPERACIONES CON DTOs ==========
+    
+    /**
+     * Crea un vehículo a partir de un DTO, resolviendo las relaciones por ID.
+     */
+    public Vehiculo crearDesdeDTO(VehiculoCreateRequest dto) {
+        Vehiculo vehiculo = new Vehiculo();
+        mapDTOToEntity(dto, vehiculo);
+        return guardar(vehiculo);
+    }
+    
+    /**
+     * Actualiza un vehículo existente a partir de un DTO, resolviendo las relaciones por ID.
+     */
+    public Vehiculo actualizarDesdeDTO(Long id, VehiculoUpdateRequest dto) {
+        Vehiculo vehiculo = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vehículo no encontrado"));
+        mapDTOToEntity(dto, vehiculo);
+        vehiculo.setIdVehiculo(id);
+        return guardar(vehiculo);
+    }
+    
+    /**
+     * Mapea los campos del DTO (create o update) a la entidad Vehiculo,
+     * resolviendo las relaciones (Empresa, SubtipoTransporte) a partir de sus IDs.
+     */
+    private void mapDTOToEntity(VehiculoCreateRequest dto, Vehiculo vehiculo) {
+        if (dto.getPlaca() != null) vehiculo.setPlaca(dto.getPlaca());
+        if (dto.getNumeroMotor() != null) vehiculo.setNumeroMotor(dto.getNumeroMotor());
+        if (dto.getNumeroChasis() != null) vehiculo.setNumeroChasis(dto.getNumeroChasis());
+        if (dto.getMarca() != null) vehiculo.setMarca(dto.getMarca());
+        if (dto.getModelo() != null) vehiculo.setModelo(dto.getModelo());
+        if (dto.getFechaFabricacion() != null) vehiculo.setAnioFabricacion(dto.getFechaFabricacion());
+        if (dto.getColor() != null) vehiculo.setColor(dto.getColor());
+        if (dto.getCapacidadPasajeros() != null) vehiculo.setCapacidadPasajeros(dto.getCapacidadPasajeros());
+        if (dto.getCapacidadCarga() != null) vehiculo.setCapacidadCarga(dto.getCapacidadCarga());
+        if (dto.getEstado() != null) vehiculo.setEstado(dto.getEstado());
+        if (dto.getObservaciones() != null) vehiculo.setObservaciones(dto.getObservaciones());
+        
+        // Resolver Empresa
+        if (dto.getEmpresaId() != null) {
+            Empresa empresa = empresaRepository.findById(Math.toIntExact(dto.getEmpresaId()))
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + dto.getEmpresaId()));
+            vehiculo.setEmpresa(empresa);
+        }
+        
+        // Resolver SubtipoTransporte
+        if (dto.getSubtipoTransporteId() != null) {
+            SubtipoTransporte subtipo = subtipoTransporteRepository.findById(dto.getSubtipoTransporteId())
+                    .orElseThrow(() -> new RuntimeException("Subtipo de transporte no encontrado con ID: " + dto.getSubtipoTransporteId()));
+            vehiculo.setSubtipoTransporte(subtipo);
+        }
+    }
+    
+     /**
+      * Mapeo específico para actualización (reutiliza la lógica anterior pero 
+      * acepta VehiculoUpdateRequest que comparte getters).
+      */
+     private void mapDTOToEntity(VehiculoUpdateRequest dto, Vehiculo vehiculo) {
+         if (dto.getPlaca() != null) vehiculo.setPlaca(dto.getPlaca());
+         if (dto.getNumeroMotor() != null) vehiculo.setNumeroMotor(dto.getNumeroMotor());
+         if (dto.getNumeroChasis() != null) vehiculo.setNumeroChasis(dto.getNumeroChasis());
+         if (dto.getMarca() != null) vehiculo.setMarca(dto.getMarca());
+         if (dto.getModelo() != null) vehiculo.setModelo(dto.getModelo());
+         if (dto.getFechaFabricacion() != null) vehiculo.setAnioFabricacion(dto.getFechaFabricacion());
+         if (dto.getColor() != null) vehiculo.setColor(dto.getColor());
+         if (dto.getCapacidadPasajeros() != null) vehiculo.setCapacidadPasajeros(dto.getCapacidadPasajeros());
+         if (dto.getCapacidadCarga() != null) vehiculo.setCapacidadCarga(dto.getCapacidadCarga());
+         if (dto.getEstado() != null) vehiculo.setEstado(dto.getEstado());
+         if (dto.getObservaciones() != null) vehiculo.setObservaciones(dto.getObservaciones());
+         
+         // Resolver Empresa (si se proporciona ID, se actualiza; si es null, se deja como está)
+         if (dto.getEmpresaId() != null) {
+             Empresa empresa = empresaRepository.findById(Math.toIntExact(dto.getEmpresaId()))
+                     .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + dto.getEmpresaId()));
+             vehiculo.setEmpresa(empresa);
+         }
+         
+         // Resolver SubtipoTransporte
+         if (dto.getSubtipoTransporteId() != null) {
+             SubtipoTransporte subtipo = subtipoTransporteRepository.findById(dto.getSubtipoTransporteId())
+                     .orElseThrow(() -> new RuntimeException("Subtipo de transporte no encontrado con ID: " + dto.getSubtipoTransporteId()));
+             vehiculo.setSubtipoTransporte(subtipo);
+         }
+     }
+ }

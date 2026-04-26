@@ -6,6 +6,9 @@ import com.example.demo.model.Ruta;
 import com.example.demo.model.Users;
 import com.example.demo.repository.UsersRepository;
 import com.example.demo.service.RutaService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,6 +39,19 @@ public class RutaController {
         return rutaService.listarTodos().stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/paginado")
+    public Page<RutaResponseDTO> listarTodosPaginado(
+            @PageableDefault(size = 15, sort = "fechaRegistro") Pageable pageable,
+            @RequestParam(required = false) String q) {
+        Page<Ruta> pageResult;
+        if (q != null && !q.trim().isEmpty()) {
+            pageResult = rutaService.buscarPaginado(q.trim(), pageable);
+        } else {
+            pageResult = rutaService.listarTodosPaginado(pageable);
+        }
+        return pageResult.map(this::toResponseDTO);
     }
 
     @GetMapping("/activos")
@@ -89,6 +106,15 @@ public class RutaController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PostMapping
     public RutaResponseDTO crear(@RequestBody Ruta ruta) {
+        // Obtener usuario autenticado y setearlo como registrador
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            String username = ((UserDetails) authentication.getPrincipal()).getUsername();
+            Users currentUser = usersRepository.findByUsername(username);
+            if (currentUser != null) {
+                ruta.setUsuarioRegistra(currentUser);
+            }
+        }
         return toResponseDTO(rutaService.guardar(ruta));
     }
 
@@ -175,6 +201,16 @@ public class RutaController {
     public Map<String, Long> estadisticasPorEmpresa(@PathVariable Long empresaId) {
         Long total = rutaService.contarPorEmpresa(empresaId);
         return Map.of("totalRutas", total != null ? total : 0L);
+    }
+
+    @GetMapping("/conteos")
+    public Map<String, Long> getConteos() {
+        Map<String, Long> map = new HashMap<>();
+        map.put("total", rutaService.countTotal());
+        map.put("activos", rutaService.countActivos());
+        map.put("asignadas", rutaService.countAsignadas());
+        map.put("sinAsignar", rutaService.countSinAsignar());
+        return map;
     }
 
     private RutaResponseDTO toResponseDTO(Ruta r) {

@@ -5,11 +5,13 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.model.TipoTramite;
 import com.example.demo.repository.TipoTramiteRepository;
 
 @Service
+@Transactional(readOnly = true)
 public class TipoTramiteService {
 
     @Autowired
@@ -23,6 +25,7 @@ public class TipoTramiteService {
         return repo.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public TipoTramite buscarPorIdConTupac(Long id) {
         return repo.findByIdWithTupac(id);
     }
@@ -33,10 +36,12 @@ public class TipoTramiteService {
                 .findFirst();
     }
 
+    @Transactional
     public TipoTramite crear(TipoTramite tipo) {
         return repo.save(tipo);
     }
 
+    @Transactional
     public TipoTramite actualizar(Long id, TipoTramite datos) {
         return repo.findById(id).map(tipo -> {
             if (datos.getCodigo() != null) tipo.setCodigo(datos.getCodigo());
@@ -48,6 +53,7 @@ public class TipoTramiteService {
         }).orElse(null);
     }
 
+    @Transactional
     public void eliminar(Long id) {
         repo.deleteById(id);
     }

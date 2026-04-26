@@ -3,10 +3,12 @@ package com.example.demo.service;
 import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.repository.RequisitoTUPACRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class RequisitoTUPACService {
 
     private final RequisitoTUPACRepository requisitoTUPACRepository;
@@ -23,6 +25,7 @@ public class RequisitoTUPACService {
         return requisitoTUPACRepository.findAllActiveWithFetch();
     }
 
+    @Transactional
     public RequisitoTUPAC guardar(RequisitoTUPAC requisito) {
         return requisitoTUPACRepository.save(requisito);
     }
@@ -31,6 +34,7 @@ public class RequisitoTUPACService {
         return requisitoTUPACRepository.findById(id).orElse(null);
     }
 
+    @Transactional
     public void eliminar(Long id) {
         requisitoTUPACRepository.deleteById(id);
     }

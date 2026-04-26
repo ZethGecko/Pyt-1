@@ -9,6 +9,7 @@ import com.example.demo.service.RequisitoTUPACService;
 import com.example.demo.service.TipoTramiteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -99,6 +100,7 @@ public class TipoTramiteController {
         service.eliminar(id);
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/{id}/requisitos")
     public ResponseEntity<List<RequisitoTUPAC>> obtenerRequisitos(@PathVariable Long id) {
         TipoTramite tipo = service.buscarPorIdConTupac(id);
