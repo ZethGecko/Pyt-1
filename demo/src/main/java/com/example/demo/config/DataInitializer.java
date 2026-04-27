@@ -20,10 +20,8 @@ import com.example.demo.model.Empresa;
 import com.example.demo.model.Formatos;
 import com.example.demo.model.Gerente;
 import com.example.demo.model.PersonaNatural;
-import com.example.demo.model.PuntoRuta;
 import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.model.Roles;
-import com.example.demo.model.Ruta;
 import com.example.demo.model.SubtipoTransporte;
 import com.example.demo.model.TUPAC;
 import com.example.demo.model.TipoTramite;
@@ -36,18 +34,14 @@ import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.FormatosRepository;
 import com.example.demo.repository.GerenteRepository;
 import com.example.demo.repository.PersonaNaturalRepository;
-import com.example.demo.repository.PuntoRutaRepository;
 import com.example.demo.repository.RequisitoTUPACRepository;
 import com.example.demo.repository.RolesRepository;
-import com.example.demo.repository.RutaRepository;
 import com.example.demo.repository.SubtipoTransporteRepository;
-import com.example.demo.repository.TUCRepository;
 import com.example.demo.repository.TUPACRepository;
 import com.example.demo.repository.TipoTramiteRepository;
 import com.example.demo.repository.TipoTransporteRepository;
 import com.example.demo.repository.TramiteRepository;
 import com.example.demo.repository.UsersRepository;
-import com.example.demo.repository.VehiculoRepository;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
@@ -70,10 +64,6 @@ public class DataInitializer {
        @Autowired private CategoriaTransporteRepository categoriaTransporteRepository;
        @Autowired private TipoTransporteRepository tipoTransporteRepository;
        @Autowired private SubtipoTransporteRepository subtipoTransporteRepository;
-       @Autowired private VehiculoRepository vehiculoRepository;
-       @Autowired private PuntoRutaRepository puntoRutaRepository;
-       @Autowired private RutaRepository rutaRepository;
-       @Autowired private TUCRepository tucRepository;
         @Autowired private com.example.demo.service.TramiteService tramiteService;
         @Autowired private TramiteRepository tramiteRepository;
 
@@ -270,64 +260,6 @@ public class DataInitializer {
             System.out.println("Columna kml_content ya existe o error al agregar: " + e.getMessage());
         }
 
-        // 2.6. Inicializar datos de Rutas
-        if (rutaRepository.count() == 0L) {
-            List<Empresa> empresas = empresaRepository.findAll();
-            List<Gerente> gerentes = gerenteRepository.findAll();
-
-            if (!empresas.isEmpty() && !gerentes.isEmpty()) {
-                Empresa empresa1 = empresas.get(0);
-                Gerente gerente1 = gerentes.get(0);
-                Users user1 = usersRepository.findByUsername("superadmin");
-
-                Ruta ruta1 = new Ruta();
-                ruta1.setCodigo("RUTA-001");
-                ruta1.setNombre("Ruta Centro - Norte");
-                ruta1.setDescripcion("Ruta desde el centro hacia el norte de la ciudad");
-                ruta1.setDistanciaKm(25.5);
-                ruta1.setTiempoEstimadoMinutos(45);
-                ruta1.setEstado("ACTIVO");
-                ruta1.setTipo("URBANO");
-                ruta1.setObservaciones("Ruta principal");
-                ruta1.setEmpresa(empresa1);
-                ruta1.setGerenteResponsable(gerente1);
-                ruta1.setUsuarioRegistra(user1);
-                ruta1.setFechaRegistro(java.time.LocalDateTime.now());
-                rutaRepository.save(ruta1);
-
-                // Crear puntos de ruta para esta ruta
-                PuntoRuta punto1 = new PuntoRuta();
-                punto1.setNombre("Centro");
-                punto1.setDescripcion("Punto de inicio en el centro");
-                punto1.setLatitud(-12.0464);
-                punto1.setLongitud(-77.0428);
-                punto1.setOrden(1);
-                punto1.setTipo("ORIGEN");
-                punto1.setEstado("ACTIVO");
-                punto1.setRuta(ruta1);
-                punto1.setEmpresa(empresa1);
-                punto1.setUsuarioRegistra(user1);
-                punto1.setFechaRegistro(java.time.LocalDateTime.now());
-                puntoRutaRepository.save(punto1);
-
-                PuntoRuta punto2 = new PuntoRuta();
-                punto2.setNombre("Norte");
-                punto2.setDescripcion("Punto final en el norte");
-                punto2.setLatitud(-12.0264);
-                punto2.setLongitud(-77.0228);
-                punto2.setOrden(2);
-                punto2.setTipo("DESTINO");
-                punto2.setEstado("ACTIVO");
-                punto2.setRuta(ruta1);
-                punto2.setEmpresa(empresa1);
-                punto2.setUsuarioRegistra(user1);
-                punto2.setFechaRegistro(java.time.LocalDateTime.now());
-                puntoRutaRepository.save(punto2);
-
-                System.out.println("Ruta y puntos de ruta de ejemplo creados");
-            }
-        }
-
         // 3. Crear usuarios si no existen
         List<Departamento> deptos = departamentoRepository.findAll();
         if (deptos.size() >= 2) {
@@ -437,7 +369,7 @@ public class DataInitializer {
             gerente2.setDni(45678901);
             gerente2.setTelefono("912345678");
             gerente2.setWhatsapp("912345678");
-            gerente2.setPartidaElectronica("PE-234567");
+            gerente2.setPartidaElectronica( "PE-234567");
             gerente2.setInicioVigenciaPodre(LocalDate.now().minusYears(1));
             gerente2.setFinVigenciaPodre(LocalDate.now().plusYears(4));
             gerente2.setActivo(true);
@@ -770,15 +702,15 @@ public class DataInitializer {
 
     private Map<String, Object> buildTablePermissions(String roleName) {
         Map<String, Object> tablePerms = new HashMap<>();
-        String[] tablas = {
-            // Underscore tables
-            "tupac", "requisito_tupac", "formato", "tipo_tramite", "users", "roles", "departamento", "documento_tramite",
-            "categorias_transporte", "categoria_transporte", "grupo_presentacion", "examen", "inspeccion", "notificacion",
-            "expediente", "solicitud", "publicacion", "observacion_solicitud", "historial_tramite", "tramite",
-            "tipo_transporte", "subtipo_transporte",
-            // Hyphenated tables (as used in endpoints)
-            "categorias-transporte", "categoria-transporte", "tipos-transporte", "tipo-transporte", "subtipos-transporte", "subtipo-transporte"
-        };
+         String[] tablas = {
+             // Underscore tables
+             "tupac", "requisito_tupac", "formato", "tipo_tramite", "users", "roles", "departamento", "documento_tramite",
+             "categorias_transporte", "categoria_transporte", "grupo_presentacion", "examen", "inspeccion",
+             "expediente", "solicitud", "publicacion", "observacion_solicitud", "historial_tramite", "tramite",
+             "tipo_transporte", "subtipo_transporte",
+             // Hyphenated tables (as used in endpoints)
+             "categorias-transporte", "categoria-transporte", "tipos-transporte", "tipo-transporte", "subtipos-transporte", "subtipo-transporte"
+         };
         for (String tabla : tablas) {
             Map<String, Boolean> p = new HashMap<>();
             boolean canManageUsers = roleName.equals("SUPER_ADMIN");

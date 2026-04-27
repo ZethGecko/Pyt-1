@@ -304,10 +304,10 @@
                   {{ tramiteDetalle.tramite.prioridad | titlecase }}
                 </span>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Departamento:</span>
-                <span class="detail-value">{{ tramiteDetalle.tramite.departamentoActualNombre || 'Sin asignar' }}</span>
-              </div>
+               <div class="detail-item">
+                 <span class="detail-label">Departamento:</span>
+                 <span class="detail-value">{{ tramiteDetalle.tramite.departamentoActual?.nombre || 'Sin asignar' }}</span>
+               </div>
               <div class="detail-item">
                 <span class="detail-label">Fecha Registro:</span>
                 <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaRegistro) }}</span>
@@ -343,94 +343,76 @@
                 }
               </div>
             </div>
-          }
+           }
 
-          <!-- Documentos -->
-          @if (tramiteDetalle.documentos && tramiteDetalle.documentos.length > 0) {
-            <div class="detail-section mt-4">
-              <h3>📄 Documentos</h3>
-              <div class="table-responsive">
-                <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Tipo</th>
-                      <th>Estado</th>
-                      <th>Fecha Subida</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (doc of tramiteDetalle.documentos; track doc.id) {
-                      <tr>
-                        <td>{{ doc.nombreArchivo }}</td>
-                        <td>{{ doc.tipoDocumento }}</td>
-                        <td>
-                          <span class="badge" [ngClass]="doc.estado === 'aprobado' ? 'badge-success' : 
-                                                          doc.estado === 'rechazado' ? 'badge-danger' : 'badge-warning'">
-                            {{ doc.estado | titlecase }}
-                          </span>
-                        </td>
-                        <td>{{ formatDate(doc.fechaSubida) }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          }
-
-          <!-- Revisiones de Requisitos -->
-          @if (tramiteDetalle.revisiones && tramiteDetalle.revisiones.length > 0) {
-            <div class="detail-section mt-4">
-              <h3>✅ Revisión de Requisitos</h3>
-              <div class="alert alert-info">
-                <strong>Estado de revisión:</strong>
-                @if (todasRevisionesPendientes()) {
-                  <span class="badge badge-warning">Pendiente de revisar</span>
-                } @else {
-                  <span class="badge badge-success">Revisado</span>
-                }
-              </div>
-              <div class="table-responsive">
-                <table class="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Requisito</th>
-                      <th>Estado</th>
-                      <th>Observaciones</th>
-                      <th>Fecha Revisión</th>
-                      <th>Revisor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (rev of tramiteDetalle.revisiones; track rev.id) {
-                      <tr>
-                        <td>
-                          <strong>{{ rev.requisitoCodigo }}</strong>
-                          <br><small>{{ rev.requisitoDescripcion }}</small>
-                        </td>
-                        <td>
-                          <span class="badge" [ngClass]="getColorRevision(rev.estadoCumplimiento)">
-                            {{ getTextoRevision(rev.estadoCumplimiento) }}
-                          </span>
-                        </td>
-                        <td>{{ rev.observaciones || 'Sin observaciones' }}</td>
-                        <td>{{ rev.fechaRevision ? formatDate(rev.fechaRevision) : 'N/A' }}</td>
-                        <td>{{ rev.usuarioRevisor || 'N/A' }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          } @else {
-            <div class="detail-section mt-4">
-              <h3>✅ Revisión de Requisitos</h3>
-              <div class="alert alert-warning">
-                <strong>Estado:</strong> No hay revisiones registradas para este trámite.
-              </div>
-            </div>
-          }
+             <!-- Revisión de Requisitos y Exámenes (Bloque Unificado) -->
+             @if (tramiteDetalle.revisiones && tramiteDetalle.revisiones.length > 0) {
+               <div class="detail-section mt-4">
+                 <h3>✅ Revisión de Requisitos y Exámenes</h3>
+                 <div class="alert alert-info">
+                   <strong>Estado de revisión:</strong>
+                   @if (todasRevisionesPendientes()) {
+                     <span class="badge badge-warning">Pendiente de revisar</span>
+                   } @else {
+                     <span class="badge badge-success">Revisado</span>
+                   }
+                 </div>
+                 <div class="table-responsive">
+                   <table class="table table-sm">
+                     <thead>
+                       <tr>
+                         <th>Requisito / Examen</th>
+                         <th>Estado</th>
+                         <th>Fecha</th>
+                         <th>Responsable</th>
+                         <th>Observaciones</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       @for (rev of tramiteDetalle.revisiones; track rev.id) {
+                         <tr>
+                           <td>
+                             <strong>{{ rev.codigo }}</strong>
+                             <br><small>{{ rev.descripcion || rev.requisitoNombre }}</small>
+                           </td>
+                           <td>
+                             <span class="badge exam-badge" [ngClass]="'badge-' + getBadgeClassUnificado(getEstadoUnificado(rev))">
+                               {{ getEstadoUnificado(rev) }}
+                             </span>
+                           </td>
+                           <td>
+                             @if (esExamen(rev.codigo)) {
+                               @if (getInscripcionPorCodigo(rev.codigo)?.grupoPresentacion?.fecha) {
+                                 {{ getInscripcionPorCodigo(rev.codigo)?.grupoPresentacion?.fecha | date:'dd/MM/yyyy' }}
+                               } @else {
+                                 <span class="text-muted">N/A</span>
+                               }
+                             } @else {
+                               {{ rev.fechaRevision ? formatDate(rev.fechaRevision) : 'N/A' }}
+                             }
+                           </td>
+                           <td>
+                             @if (esExamen(rev.codigo)) {
+                               {{ getInscripcionPorCodigo(rev.codigo)?.grupoPresentacion?.codigo || 'N/A' }}
+                             } @else {
+                               {{ rev.revisionUsuarioNombre || 'N/A' }}
+                             }
+                           </td>
+                           <td>{{ rev.observaciones || 'Sin observaciones' }}</td>
+                         </tr>
+                       }
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+             } @else {
+               <div class="detail-section mt-4">
+                 <h3>✅ Revisión de Requisitos y Exámenes</h3>
+                 <div class="alert alert-warning">
+                   <strong>Estado:</strong> No hay revisiones registradas para este trámite.
+                 </div>
+               </div>
+             }
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>

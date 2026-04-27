@@ -73,15 +73,11 @@ public class Vehiculo {
     @JsonIgnore
     private TUC tuc;
 
-    @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Inspeccion> inspecciones;
+     @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
+     @JsonIgnore
+     private List<Inspeccion> inspecciones;
 
-    @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Constancia> constancias;
-
-    // Getters y setters
+     // Getters y setters
     public Long getIdVehiculo() { return idVehiculo; }
     public void setIdVehiculo(Long idVehiculo) { this.idVehiculo = idVehiculo; }
 
@@ -136,9 +132,6 @@ public class Vehiculo {
     public TUC getTuc() { return tuc; }
     public void setTuc(TUC tuc) { this.tuc = tuc; }
 
-    public List<Inspeccion> getInspecciones() { return inspecciones; }
-    public void setInspecciones(List<Inspeccion> inspecciones) { this.inspecciones = inspecciones; }
-
-    public List<Constancia> getConstancias() { return constancias; }
-    public void setConstancias(List<Constancia> constancias) { this.constancias = constancias; }
-}
+     public List<Inspeccion> getInspecciones() { return inspecciones; }
+     public void setInspecciones(List<Inspeccion> inspecciones) { this.inspecciones = inspecciones; }
+ }

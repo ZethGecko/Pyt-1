@@ -1,11 +1,11 @@
 package com.example.demo.service;
 
-import com.example.demo.model.TipoTransporte;
-import com.example.demo.repository.TipoTransporteRepository;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import com.example.demo.model.TipoTransporte;
+import com.example.demo.repository.TipoTransporteRepository;
 
 @Service
 public class TipoTransporteService {

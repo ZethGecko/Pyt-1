@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,27 +16,27 @@ import com.example.demo.dto.TramiteCreateRequest;
 import com.example.demo.dto.TramiteListadoDTO;
 import com.example.demo.dto.TramiteUpdateRequest;
 import com.example.demo.model.DocumentoTramite;
-import com.example.demo.model.HistorialTramite;
 import com.example.demo.model.Empresa;
 import com.example.demo.model.Gerente;
+import com.example.demo.model.HistorialTramite;
+import com.example.demo.model.InscripcionExamen;
 import com.example.demo.model.PersonaNatural;
+import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.model.TipoTramite;
 import com.example.demo.model.Tramite;
 import com.example.demo.model.Users;
+import com.example.demo.repository.DepartamentoRepository;
 import com.example.demo.repository.DocumentoTramiteRepository;
 import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.GerenteRepository;
 import com.example.demo.repository.HistorialTramiteRepository;
+import com.example.demo.repository.InscripcionExamenRepository;
 import com.example.demo.repository.PersonaNaturalRepository;
-import com.example.demo.repository.DocumentoTramiteRepository;
-import com.example.demo.repository.EmpresaRepository;
-import com.example.demo.repository.GerenteRepository;
-import com.example.demo.repository.PersonaNaturalRepository;
-import com.example.demo.repository.DepartamentoRepository;
 import com.example.demo.repository.TipoTramiteRepository;
 import com.example.demo.repository.TramiteRepository;
 import com.example.demo.repository.UsersRepository;
-import com.example.demo.model.Departamento;
+import com.example.demo.service.InscripcionExamenService;
+import com.example.demo.service.RequisitoTUPACService;
 
 @Service
 @Transactional(readOnly = true)
@@ -65,8 +66,17 @@ public class TramiteService {
      @Autowired
      private PersonaNaturalRepository personaNaturalRepo;
 
-     @Autowired
-     private DepartamentoRepository departamentoRepo;
+      @Autowired
+      private DepartamentoRepository departamentoRepo;
+
+      @Autowired
+      private RequisitoTUPACService requisitoService;
+
+      @Autowired
+      private InscripcionExamenService inscripcionExamenService;
+
+      @Autowired
+      private InscripcionExamenRepository inscripcionExamenRepository;
 
      public List<Tramite> listarTodos() {
         return repo.findAll();
@@ -90,81 +100,144 @@ public class TramiteService {
         return repo.findEnriquecidosByTermino(termino);
     }
 
-    public Map<String, Object> obtenerSeguimientoCompleto(String codigoRUT) {
-        Tramite tramite = repo.findByCodigoRutEnriquecido(codigoRUT);
-        if (tramite == null) {
-            return null;
-        }
+     public Map<String, Object> obtenerSeguimientoCompleto(String codigoRUT) {
+         Tramite tramite = repo.findByCodigoRutEnriquecido(codigoRUT);
+         if (tramite == null) {
+             return null;
+         }
 
-        // Limpiar colecciones del tramite para evitar recursión
-        tramite.setDocumentos(null);
-        tramite.setHistorialTramites(null);
-        tramite.setNotificaciones(null);
-        tramite.setObservacionesSolicitudes(null);
-        // Limpiar referencias en relaciones útiles para evitar ciclos
-        if (tramite.getDepartamentoActual() != null) {
-            tramite.getDepartamentoActual().setTramites(null);
-        }
-        if (tramite.getTipoTramite() != null) {
-            tramite.getTipoTramite().setTramites(null);
-            tramite.getTipoTramite().setExpedientes(null);
-        }
+         // Limpiar colecciones del tramite para evitar recursión
+         tramite.setDocumentos(null);
+         tramite.setHistorialTramites(null);
+         tramite.setObservacionesSolicitudes(null);
+         // Limpiar referencias en relaciones útiles para evitar ciclos
+         if (tramite.getDepartamentoActual() != null) {
+             tramite.getDepartamentoActual().setTramites(null);
+         }
+         if (tramite.getTipoTramite() != null) {
+             tramite.getTipoTramite().setTramites(null);
+             tramite.getTipoTramite().setExpedientes(null);
+         }
 
-        // Obtener historial con todas las relaciones
-        List<HistorialTramite> historial = historialRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
-        // Eliminar referencia circular
-        historial.forEach(h -> h.setTramite(null));
+         // Obtener historial con todas las relaciones
+         List<HistorialTramite> historial = historialRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
+         // Eliminar referencia circular
+         historial.forEach(h -> h.setTramite(null));
 
-        // Obtener documentos con todas las relaciones
-        List<DocumentoTramite> documentos = documentoRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
-        // Eliminar referencia circular y limpiar datos que causan ciclos
-        documentos.forEach(d -> {
-            d.setTramite(null);
-            if (d.getRequisito() != null) {
-                d.getRequisito().setDocumentos(null);
-                d.getRequisito().setGruposPresentacion(null);
-                d.getRequisito().setObservacionesSolicitudes(null);
-            }
-        });
+         // Obtener documentos con todas las relaciones
+         List<DocumentoTramite> documentos = documentoRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
+         // Eliminar referencia circular y limpiar datos que causan ciclos
+         documentos.forEach(d -> {
+             d.setTramite(null);
+             if (d.getRequisito() != null) {
+                 d.getRequisito().setDocumentos(null);
+                 d.getRequisito().setGruposPresentacion(null);
+                 d.getRequisito().setObservacionesSolicitudes(null);
+             }
+         });
 
-        // Transformar documentos a formato de revisión (RequisitoRevision)
-        List<Map<String, Object>> revisiones = documentos.stream().map(doc -> {
-            Map<String, Object> rev = new java.util.HashMap<>();
-            rev.put("id", doc.getIdDocumento());
-            rev.put("tramiteId", doc.getTramiteId());
-            rev.put("requisitoId", doc.getRequisitoId());
-            rev.put("estado", doc.getEstado());
-            rev.put("estadoFormateado", formatearEstado(doc.getEstado()));
-            rev.put("colorEstado", getColorEstado(doc.getEstado()));
-            rev.put("fechaPresentacion", doc.getFechaPresentacion());
-            rev.put("fechaRevision", doc.getFechaRevision());
-            rev.put("observaciones", doc.getObservaciones());
-            if (doc.getRequisito() != null) {
-                rev.put("requisitoNombre", doc.getRequisito().getDescripcion());
-                rev.put("codigo", doc.getRequisito().getCodigo());
-                rev.put("descripcion", doc.getRequisito().getDescripcion());
-                rev.put("tipoDocumento", doc.getRequisito().getTipoDocumento());
-                rev.put("obligatorio", doc.getRequisito().getObligatorio());
-                rev.put("esExamen", doc.getRequisito().getEsExamen());
-            } else {
-                rev.put("requisitoNombre", null);
-                rev.put("codigo", null);
-                rev.put("descripcion", null);
-                rev.put("tipoDocumento", null);
-                rev.put("obligatorio", null);
-                rev.put("esExamen", null);
-            }
-            rev.put("revisionUsuarioNombre", doc.getUsuarioRevisa() != null ? doc.getUsuarioRevisa().getUsername() : null);
-            return rev;
-        }).collect(java.util.stream.Collectors.toList());
+         // Obtener inscripciones de exámenes asociadas al trámite
+         List<InscripcionExamen> inscripciones = inscripcionExamenRepository.findByTramiteId(tramite.getIdTramite());
+         System.out.println("[TramiteService] Inscripciones encontradas para tramite " + tramite.getIdTramite() + ": " + inscripciones.size());
+         // Limpiar referencias circulares
+         inscripciones.forEach(ins -> {
+             ins.setTramite(null);
+             if (ins.getGrupoPresentacion() != null) {
+                 ins.getGrupoPresentacion().setDocumentosTramite(null); // Limpiar solo documentos, no inscripciones
+             }
+             if (ins.getPersona() != null) {
+                 ins.getPersona().setInscripciones(null);
+             }
+         });
 
-        Map<String, Object> response = new java.util.HashMap<>();
-        response.put("tramite", tramite);
-        response.put("historial", historial);
-        response.put("documentos", documentos);
-        response.put("revisiones", revisiones);
-        return response;
-    }
+         // Obtener requisitos del tipo de trámite (incluye exámenes)
+         // Relación: Tramite -> TipoTramite -> TUPAC -> RequisitoTUPAC
+         final Long tupacId = (tramite.getTipoTramite() != null && tramite.getTipoTramite().getTupac() != null) ?
+                 tramite.getTipoTramite().getTupac().getIdTupac() : null;
+
+         List<RequisitoTUPAC> requisitosTipo;
+         if (tupacId != null) {
+             requisitosTipo = requisitoService.listarActivos().stream()
+                 .filter(r -> r.getTupac() != null && tupacId.equals(r.getTupac().getIdTupac()))
+                 .collect(java.util.stream.Collectors.toList());
+         } else {
+             requisitosTipo = new java.util.ArrayList<>();
+         }
+
+         // Mapa de requisitoId a DocumentoTramite para rápida búsqueda
+         Map<Long, DocumentoTramite> docMap = documentos.stream()
+                 .filter(d -> d.getRequisito() != null)
+                 .collect(java.util.stream.Collectors.toMap(d -> d.getRequisito().getId(), d -> d));
+
+         // Mapa de requisitoId a InscripcionExamen para exámenes (un examen por requisito)
+         Map<Long, InscripcionExamen> inscripcionesMap = new java.util.HashMap<>();
+         for (InscripcionExamen ins : inscripciones) {
+             if (ins.getGrupoPresentacion() != null && ins.getGrupoPresentacion().getRequisitoExamen() != null) {
+                 Long reqId = ins.getGrupoPresentacion().getRequisitoExamen().getId();
+                 // Solo guardar la primera inscripción si hay múltiples (no debería ocurrir)
+                 if (!inscripcionesMap.containsKey(reqId)) {
+                     inscripcionesMap.put(reqId, ins);
+                 }
+             }
+         }
+
+         // Combinar requisitos con documentos e inscripciones (si existen) para generar revisiones
+         List<Map<String, Object>> revisiones = requisitosTipo.stream().map(req -> {
+             DocumentoTramite doc = docMap.get(req.getId());
+             InscripcionExamen ins = inscripcionesMap.get(req.getId());
+             Map<String, Object> rev = new java.util.HashMap<>();
+             rev.put("id", doc != null ? doc.getIdDocumento() : 0);
+             rev.put("tramiteId", tramite.getIdTramite());
+             rev.put("requisitoId", req.getId());
+             rev.put("esExamen", req.getEsExamen());
+             rev.put("codigo", req.getCodigo());
+             rev.put("descripcion", req.getDescripcion());
+             rev.put("requisitoNombre", req.getDescripcion());
+             rev.put("tipoDocumento", req.getTipoDocumento());
+             rev.put("obligatorio", req.getObligatorio());
+
+             if (doc != null) {
+                 rev.put("estado", doc.getEstado());
+                 rev.put("estadoFormateado", formatearEstado(doc.getEstado()));
+                 rev.put("colorEstado", getColorEstado(doc.getEstado()));
+                 rev.put("fechaPresentacion", doc.getFechaPresentacion());
+                 rev.put("fechaRevision", doc.getFechaRevision());
+                 rev.put("observaciones", doc.getObservaciones());
+                 rev.put("revisionUsuarioNombre", doc.getUsuarioRevisa() != null ? doc.getUsuarioRevisa().getUsername() : null);
+             } else if (ins != null) {
+                 // Mostrar datos del examen/inscripción
+                 rev.put("estado", ins.getEstado());
+                 rev.put("estadoFormateado", formatearEstado(ins.getEstado()));
+                 rev.put("colorEstado", getColorEstado(ins.getEstado()));
+                 rev.put("fechaPresentacion", ins.getFechaInscripcion());
+                 rev.put("fechaRevision", null);
+                 rev.put("observaciones", ins.getObservaciones());
+                 rev.put("revisionUsuarioNombre", null);
+                 rev.put("inscripcionId", ins.getIdInscripcion());
+                 rev.put("pagado", ins.getPagado());
+                 rev.put("resultado", ins.getResultado());
+                 rev.put("nota", ins.getNota());
+                 rev.put("grupoPresentacion", ins.getGrupoPresentacion());
+             } else {
+                 rev.put("estado", "PENDIENTE");
+                 rev.put("estadoFormateado", "Pendiente");
+                 rev.put("colorEstado", "warning");
+                 rev.put("fechaPresentacion", null);
+                 rev.put("fechaRevision", null);
+                 rev.put("observaciones", null);
+                 rev.put("revisionUsuarioNombre", null);
+             }
+             return rev;
+         }).collect(java.util.stream.Collectors.toList());
+
+         Map<String, Object> response = new java.util.HashMap<>();
+         response.put("tramite", tramite);
+         response.put("historial", historial);
+         response.put("documentos", documentos);
+         response.put("revisiones", revisiones);
+         response.put("inscripciones", inscripciones);
+         return response;
+     }
 
     // Mantener este para endpoint no-enriquecido
     public List<Tramite> buscarPorUsuarioRegistra(Long usuarioId) {

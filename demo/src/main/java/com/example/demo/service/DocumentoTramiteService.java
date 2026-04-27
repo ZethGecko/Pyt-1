@@ -2,24 +2,21 @@ package com.example.demo.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.model.DocumentoTramite;
-import com.example.demo.model.Tramite;
 import com.example.demo.model.Users;
 import com.example.demo.repository.DocumentoTramiteRepository;
 import com.example.demo.repository.TramiteRepository;
 import com.example.demo.repository.UsersRepository;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @Service
 public class DocumentoTramiteService {
@@ -83,7 +80,12 @@ public class DocumentoTramiteService {
             doc.setFechaActualizacion(LocalDateTime.now());
         }
         doc.setVersion(1L);
-        return repo.save(doc);
+        DocumentoTramite guardado = repo.save(doc);
+
+        // Actualizar estado del trámite
+        actualizarEstadoTramite(guardado.getTramiteId());
+
+        return guardado;
     }
 
     @Transactional
@@ -100,34 +102,53 @@ public class DocumentoTramiteService {
         doc.setEstado("EN_REVISION");
         doc.setIntentosRevision((doc.getIntentosRevision() != null ? doc.getIntentosRevision() : 0) + 1);
         doc.setFechaActualizacion(LocalDateTime.now());
-        return repo.save(doc);
+        DocumentoTramite guardado = repo.save(doc);
+
+        // Actualizar estado del trámite
+        actualizarEstadoTramite(guardado.getTramiteId());
+
+        return guardado;
     }
 
     @Transactional
     public DocumentoTramite aprobarDocumento(Long docId, Long usuarioId, String observaciones) {
         DocumentoTramite doc = repo.findById(docId)
                 .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado"));
-        if (!"EN_REVISION".equals(doc.getEstado()) && !"PRESENTADO".equals(doc.getEstado())) {
-            throw new IllegalArgumentException("El documento debe estar en EN_REVISION o PRESENTADO para ser aprobado");
-        }
+
+        // Se permite aprobar desde cualquier estado (superadmin puede forzar)
         Users usuario = usersRepo.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
         doc.setUsuarioRevisa(usuario);
         doc.setFechaRevision(LocalDateTime.now());
         doc.setEstado("APROBADO");
         if (observaciones != null) {
             doc.setObservaciones(observaciones);
         }
+
+        // Si estaba PENDIENTE, se considera que se presentó al aprobar
+        if (!"EN_REVISION".equals(doc.getEstado()) && !"PRESENTADO".equals(doc.getEstado())) {
+            doc.setFechaPresentacion(LocalDateTime.now());
+        }
+
         doc.setFechaActualizacion(LocalDateTime.now());
-        return repo.save(doc);
+        DocumentoTramite guardado = repo.save(doc);
+
+        // Actualizar estado del trámite
+        actualizarEstadoTramite(guardado.getTramiteId());
+
+        return guardado;
     }
 
     @Transactional
     public DocumentoTramite rechazarDocumento(Long docId, Long usuarioId, String observaciones, String motivo) {
         DocumentoTramite doc = repo.findById(docId)
                 .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado"));
+
+        // Se permite reprobar desde cualquier estado (superadmin puede forzar)
         Users usuario = usersRepo.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
         doc.setUsuarioRevisa(usuario);
         doc.setFechaRevision(LocalDateTime.now());
         doc.setEstado("REPROBADO");
@@ -141,27 +162,49 @@ public class DocumentoTramiteService {
         // Reset assignment
         doc.setUsuarioAsignado(null);
         doc.setFechaAsignacion(null);
+
+        // Si estaba PENDIENTE o cualquier otro, se considera presentación al reprobar
+        if (!"EN_REVISION".equals(doc.getEstado()) && !"PRESENTADO".equals(doc.getEstado())) {
+            doc.setFechaPresentacion(LocalDateTime.now());
+        }
+
         doc.setFechaActualizacion(LocalDateTime.now());
-        return repo.save(doc);
+        DocumentoTramite guardado = repo.save(doc);
+
+        // Actualizar estado del trámite
+        actualizarEstadoTramite(guardado.getTramiteId());
+
+        return guardado;
     }
 
     @Transactional
     public DocumentoTramite observarDocumento(Long docId, Long usuarioId, String observaciones) {
         DocumentoTramite doc = repo.findById(docId)
                 .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado"));
-        if (!"EN_REVISION".equals(doc.getEstado()) && !"PRESENTADO".equals(doc.getEstado())) {
-            throw new IllegalArgumentException("El documento debe estar en EN_REVISION o PRESENTADO para ser observado");
-        }
+        
+        // Se permite observación desde cualquier estado (superadmin puede forzar)
         Users usuario = usersRepo.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        
         doc.setUsuarioRevisa(usuario);
         doc.setFechaRevision(LocalDateTime.now());
         doc.setEstado("OBSERVADO");
         if (observaciones != null) {
             doc.setObservaciones(observaciones);
         }
+        
+        // Si el documento no estaba previamente presentado, se marca fecha de presentación
+        if (!"EN_REVISION".equals(doc.getEstado()) && !"PRESENTADO".equals(doc.getEstado())) {
+            doc.setFechaPresentacion(LocalDateTime.now());
+        }
+        
         doc.setFechaActualizacion(LocalDateTime.now());
-        return repo.save(doc);
+        DocumentoTramite guardado = repo.save(doc);
+
+        // Actualizar estado del trámite
+        actualizarEstadoTramite(guardado.getTramiteId());
+
+        return guardado;
     }
 
     @Transactional
@@ -184,7 +227,12 @@ public class DocumentoTramiteService {
         doc.setUsuarioRevisa(null);
         doc.setFechaRevision(null);
         doc.setFechaActualizacion(LocalDateTime.now());
-        return repo.save(doc);
+        DocumentoTramite guardado = repo.save(doc);
+
+        // Actualizar estado del trámite
+        actualizarEstadoTramite(guardado.getTramiteId());
+
+        return guardado;
     }
 
     @Transactional
@@ -319,5 +367,64 @@ public class DocumentoTramiteService {
             case "PRESENTADO": return "info";
             default: return "secondary";
         }
+    }
+
+    /**
+     * Actualiza el estado general del trámite basado en el estado de sus documentos.
+     * Considera solo los requisitos (no exámenes) para determinar el estado.
+     */
+    @Transactional
+    public void actualizarEstadoTramite(Long tramiteId) {
+        // Obtener todos los documentos del trámite
+        List<DocumentoTramite> documentos = repo.findByTramiteIdWithRequisito(tramiteId);
+
+        // Filtrar solo requisitos (no exámenes). Incluir los que tienen esExamen = false o null
+        List<DocumentoTramite> requisitos = documentos.stream()
+                .filter(doc -> doc.getRequisito() != null && !Boolean.TRUE.equals(doc.getRequisito().getEsExamen()))
+                .toList();
+
+        if (requisitos.isEmpty()) {
+            // No hay requisitos para evaluar, no se modifica el estado
+            return;
+        }
+
+        // Contar por estado
+        long aprobados = requisitos.stream()
+                .filter(doc -> "APROBADO".equals(doc.getEstado()))
+                .count();
+        long observados = requisitos.stream()
+                .filter(doc -> "OBSERVADO".equals(doc.getEstado()))
+                .count();
+        long reprobados = requisitos.stream()
+                .filter(doc -> "REPROBADO".equals(doc.getEstado()))
+                .count();
+        long pendientesPresentados = requisitos.stream()
+                .filter(doc -> "PENDIENTE".equals(doc.getEstado()) || "PRESENTADO".equals(doc.getEstado()))
+                .count();
+        long enRevision = requisitos.stream()
+                .filter(doc -> "EN_REVISION".equals(doc.getEstado()))
+                .count();
+
+        String nuevoEstado;
+        if (aprobados == requisitos.size()) {
+            nuevoEstado = "APROBADO";
+        } else if (reprobados > 0) {
+            nuevoEstado = "REPROBADO";
+        } else if (observados > 0) {
+            nuevoEstado = "OBSERVADO";
+        } else if (pendientesPresentados == requisitos.size()) {
+            nuevoEstado = "PENDIENTE";
+        } else if (enRevision > 0) {
+            nuevoEstado = "EN_REVISION";
+        } else {
+            nuevoEstado = "EN_REVISION";
+        }
+
+        // Actualizar el trámite
+        com.example.demo.model.Tramite tramite = tramiteRepository.findById(tramiteId)
+                .orElseThrow(() -> new IllegalArgumentException("Trámite no encontrado"));
+        tramite.setEstado(nuevoEstado);
+        tramite.setFechaActualizacion(LocalDateTime.now());
+        tramiteRepository.save(tramite);
     }
 }

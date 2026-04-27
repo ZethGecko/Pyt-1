@@ -25,12 +25,13 @@ export class InicioComponent implements OnInit {
 
   title = 'Sistema de Gestión de Transporte';
 
-  ngOnInit(): void {
-    // Si no está logueado, redirigir al login
-    if (!this.authState.isLoggedIn()) {
-      this.router.navigate(['/auth/login']);
-    }
-  }
+   ngOnInit(): void {
+     // Si está logueado, redirigir al dashboard privado (ya tiene sesión)
+     if (this.authState.isLoggedIn()) {
+       this.router.navigate(['/dashboard']);
+     }
+     // Si NO está logueado, se queda en la página pública (no hace nada)
+   }
   
   menuItems: MenuItem[] = [
     {

@@ -103,19 +103,15 @@ public class Tramite {
     @JsonIgnore
     private List<DocumentoTramite> documentos;
 
-    @OneToMany(mappedBy = "tramite", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<HistorialTramite> historialTramites;
+     @OneToMany(mappedBy = "tramite", cascade = CascadeType.ALL)
+     @JsonIgnore
+     private List<HistorialTramite> historialTramites;
 
-    @OneToMany(mappedBy = "tramite", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Notificacion> notificaciones;
+     @OneToMany(mappedBy = "tramite", cascade = CascadeType.ALL)
+     @JsonIgnore
+     private List<ObservacionSolicitud> observacionesSolicitudes;
 
-    @OneToMany(mappedBy = "tramite", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<ObservacionSolicitud> observacionesSolicitudes;
-
-    // Campo transitorio para facilitar al frontend
+     // Campo transitorio para facilitar al frontend
     @Transient
     private Long tipoTramiteId;
     
@@ -199,12 +195,9 @@ public class Tramite {
     public List<DocumentoTramite> getDocumentos() { return documentos; }
     public void setDocumentos(List<DocumentoTramite> documentos) { this.documentos = documentos; }
 
-    public List<HistorialTramite> getHistorialTramites() { return historialTramites; }
-    public void setHistorialTramites(List<HistorialTramite> historialTramites) { this.historialTramites = historialTramites; }
+     public List<HistorialTramite> getHistorialTramites() { return historialTramites; }
+     public void setHistorialTramites(List<HistorialTramite> historialTramites) { this.historialTramites = historialTramites; }
 
-    public List<Notificacion> getNotificaciones() { return notificaciones; }
-    public void setNotificaciones(List<Notificacion> notificaciones) { this.notificaciones = notificaciones; }
-
-    public List<ObservacionSolicitud> getObservacionesSolicitudes() { return observacionesSolicitudes; }
-    public void setObservacionesSolicitudes(List<ObservacionSolicitud> observacionesSolicitudes) { this.observacionesSolicitudes = observacionesSolicitudes; }
-}
+     public List<ObservacionSolicitud> getObservacionesSolicitudes() { return observacionesSolicitudes; }
+     public void setObservacionesSolicitudes(List<ObservacionSolicitud> observacionesSolicitudes) { this.observacionesSolicitudes = observacionesSolicitudes; }
+ }

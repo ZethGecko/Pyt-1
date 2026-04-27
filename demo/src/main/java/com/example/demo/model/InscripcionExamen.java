@@ -1,10 +1,13 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inscripcion_examen")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tramite"})
 public class InscripcionExamen {
 
     @Id
@@ -49,19 +52,20 @@ public class InscripcionExamen {
     private String observaciones;
 
     // Relaciones
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "persona_id", insertable = false, updatable = false)
     private PersonaNatural persona;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tramite_id", insertable = false, updatable = false)
     private Tramite tramite;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "grupo_presentacion_id", insertable = false, updatable = false)
     private GrupoPresentacion grupoPresentacion;
 
     // Getters y setters
+    @JsonProperty("id")
     public Long getIdInscripcion() { return idInscripcion; }
     public void setIdInscripcion(Long idInscripcion) { this.idInscripcion = idInscripcion; }
 

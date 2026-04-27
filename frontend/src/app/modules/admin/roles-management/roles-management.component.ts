@@ -67,19 +67,18 @@ export class RolesManagementComponent implements OnInit {
     { name: 'tipo_transporte', label: 'Tipos de Transporte' },
     { name: 'subtipo_transporte', label: 'Subtipos de Transporte' },
     { name: 'empresa', label: 'Empresas' },
-    { name: 'vehiculo', label: 'Vehículos' },
-    { name: 'tuc', label: 'TUCs' },
-    { name: 'tupac', label: 'TUPAC' },
-    { name: 'requisito', label: 'Requisitos' },
-    { name: 'tramite', label: 'Trámites' },
-    { name: 'expediente', label: 'Expedientes' },
-    { name: 'inspeccion', label: 'Inspecciones' },
-    { name: 'publicacion', label: 'Publicaciones' },
-    { name: 'notificacion', label: 'Notificaciones' },
-    { name: 'formato', label: 'Formatos' },
-    { name: 'usuario', label: 'Usuarios' },
-    { name: 'rol', label: 'Roles' },
-    { name: 'departamento', label: 'Departamentos' }
+     { name: 'vehiculo', label: 'Vehículos' },
+     { name: 'tuc', label: 'TUCs' },
+     { name: 'tupac', label: 'TUPAC' },
+     { name: 'requisito', label: 'Requisitos' },
+     { name: 'tramite', label: 'Trámites' },
+     { name: 'expediente', label: 'Expedientes' },
+     { name: 'inspeccion', label: 'Inspecciones' },
+     { name: 'publicacion', label: 'Publicaciones' },
+     { name: 'formato', label: 'Formatos' },
+     { name: 'usuario', label: 'Usuarios' },
+     { name: 'rol', label: 'Roles' },
+     { name: 'departamento', label: 'Departamentos' }
   ];
 
   // Hierarchy levels (Nivel 1 is system-only, not creatable)

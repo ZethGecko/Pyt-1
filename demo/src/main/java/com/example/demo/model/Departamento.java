@@ -32,16 +32,13 @@ public class Departamento {
     @OneToMany(mappedBy = "departamentoActual", cascade = CascadeType.ALL)
     private List<Tramite> tramites;
 
-    @OneToMany(mappedBy = "departamentoOrigen", cascade = CascadeType.ALL)
-    private List<HistorialTramite> historialesOrigen;
+     @OneToMany(mappedBy = "departamentoOrigen", cascade = CascadeType.ALL)
+     private List<HistorialTramite> historialesOrigen;
 
-    @OneToMany(mappedBy = "departamentoDestino", cascade = CascadeType.ALL)
-    private List<HistorialTramite> historialesDestino;
+     @OneToMany(mappedBy = "departamentoDestino", cascade = CascadeType.ALL)
+     private List<HistorialTramite> historialesDestino;
 
-    @OneToMany(mappedBy = "departamentoDestino", cascade = CascadeType.ALL)
-    private List<Notificacion> notificaciones;
-
-    // Getters y setters
+     // Getters y setters
     public Long getIdDepartamento() { return idDepartamento; }
     public void setIdDepartamento(Long idDepartamento) { this.idDepartamento = idDepartamento; }
 
@@ -63,12 +60,6 @@ public class Departamento {
     public List<Tramite> getTramites() { return tramites; }
     public void setTramites(List<Tramite> tramites) { this.tramites = tramites; }
 
-    public List<HistorialTramite> getHistorialesDestino() { return historialesDestino; }
-    public void setHistorialesDestino(List<HistorialTramite> historialesDestino) { this.historialesDestino = historialesDestino; }
-
-    public List<HistorialTramite> getHistorialesOrigen() { return historialesOrigen; }
-    public void setHistorialesOrigen(List<HistorialTramite> historialesOrigen) { this.historialesOrigen = historialesOrigen; }
-
-    public List<Notificacion> getNotificaciones() { return notificaciones; }
-    public void setNotificaciones(List<Notificacion> notificaciones) { this.notificaciones = notificaciones; }
-}
+     public List<HistorialTramite> getHistorialesOrigen() { return historialesOrigen; }
+     public void setHistorialesOrigen(List<HistorialTramite> historialesOrigen) { this.historialesOrigen = historialesOrigen; }
+ }

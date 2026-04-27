@@ -1,8 +1,5 @@
 package com.example.demo.dto;
 
-import com.example.demo.dto.DepartamentoResponseDTO;
-import com.example.demo.dto.RolResponseDTO;
-
 public class UserProfile {
     private Long id;
     private String username;

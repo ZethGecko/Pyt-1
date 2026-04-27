@@ -109,7 +109,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
               path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
               path.startsWith("/api/tramites/publico/") || path.startsWith("/api/tramites/buscar/enriquecidos") ||
               path.startsWith("/api/tramites/enriquecidos") || path.startsWith("/api/grupos-presentacion/") ||
-              path.startsWith("/api/inscripcion-examen/") || path.startsWith("/api/parametros-inspeccion/") ||
+              path.startsWith("/api/parametros-inspeccion/") ||
               path.startsWith("/api/fichas-inspeccion/") ||
               "OPTIONS".equalsIgnoreCase(request.getMethod())) {
               System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered");

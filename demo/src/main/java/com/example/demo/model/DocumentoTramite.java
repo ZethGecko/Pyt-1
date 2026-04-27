@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -71,6 +72,7 @@ public class DocumentoTramite {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tramite_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Tramite tramite;
 
     @ManyToOne(fetch = FetchType.LAZY)

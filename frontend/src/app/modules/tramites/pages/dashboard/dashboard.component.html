@@ -92,74 +92,87 @@
     } @else {
       <div class="overflow-x-auto">
         <table class="data-table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Tipo</th>
-              <th>Solicitante</th>
-              <th>Estado</th>
-              <th>Prioridad</th>
-              <th>Fecha Límite</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (tramite of tramitesPaginados; track tramite.id) {
-              <tr>
-                <td>
-                  <span class="codigo-badge">{{ tramite.codigoRUT }}</span>
-                </td>
-                <td>
-                  <span>{{ tramite.tipoTramiteDescripcion }}</span>
-                </td>
-                <td>
-                  <span>{{ tramite.solicitanteNombre }}</span>
-                </td>
-                <td>
-                  <span class="badge" [ngClass]="getColorEstado(tramite.estado)">
-                    {{ tramite.estado | titlecase }}
-                  </span>
-                </td>
-                <td>
-                  <span class="badge" [ngClass]="tramite.prioridad.toLowerCase()">
-                    {{ tramite.prioridad | titlecase }}
-                  </span>
-                </td>
-                <td>
-                  <span [class.text-danger]="tramite.estaAtrasado">
-                    {{ tramite.fechaLimite | date:'dd/MM/yyyy' }}
-                    @if (tramite.estaAtrasado) {
-                      <span class="badge badge-danger ml-1">Atrasado</span>
-                    }
-                  </span>
+           <thead>
+             <tr>
+               <th>Código</th>
+               <th>Tipo</th>
+               <th>Solicitante</th>
+               <th>Estado</th>
+               <th>Progreso</th>
+               <th>Responsable</th>
+               <th>Fecha Límite</th>
+               <th>Acciones</th>
+             </tr>
+           </thead>
+           <tbody>
+             @for (tramite of tramitesPaginados; track tramite.id) {
+               <tr [class]="'state-' + (tramite.estado || '').toLowerCase()">
+                 <td>
+                   <span class="codigo-badge">{{ tramite.codigoRUT }}</span>
                  </td>
-                  <td>
-                    <div class="action-buttons">
-                      <!-- Botón Revisar (único para iniciar revisión o abrir modal) -->
-                      <button (click)="abrirModalRevisar(tramite)"
-                              class="btn btn-sm btn-primary"
-                              title="Revisar requisitos del trámite"
-                              [disabled]="!puedeRevisarRequisitos(tramite)">
-                        📝 Revisar
-                      </button>
-                      <!-- Botón Observar -->
-                      <button (click)="cambiarEstado(tramite, 'observado')"
-                              class="btn btn-sm btn-outline"
-                              title="Observar trámite - Marcar con observaciones"
-                              [disabled]="tramite.estado !== 'en_revision' && tramite.estado !== 'registrado'">
-                        ⚠️ Observar
-                      </button>
-                      <!-- Botón Finalizar -->
-                      <button (click)="finalizarTramite(tramite)"
-                              class="btn btn-sm btn-success"
-                              title="Finalizar trámite - Requiere todos los requisitos aprobados"
-                              [disabled]="!puedeFinalizarTramite(tramite)">
-                        ✅ Finalizar
-                      </button>
-                    </div>
+                 <td>
+                   <span>{{ tramite.tipoTramiteDescripcion }}</span>
+                 </td>
+                 <td>
+                   <span>{{ tramite.solicitanteNombre }}</span>
+                 </td>
+                 <td>
+                   <span class="badge-state" [class]="getColorEstado(tramite.estado)">
+                     <span class="state-icon">{{ getIconoEstado(tramite.estado) }}</span>
+                     {{ tramite.estado | titlecase }}
+                   </span>
+                 </td>
+                 <td>
+                   <div class="progress-container" title="{{tramite.documentosAprobados || 0}}/{{tramite.totalDocumentos || 0}} requisitos aprobados">
+                     <div class="progress-bar" [style.width.%]="getPorcentajeCompletado(tramite)"></div>
+                     <span class="progress-text">{{ tramite.documentosAprobados || 0 }}/{{ tramite.totalDocumentos || 0 }}</span>
+                   </div>
+                 </td>
+                 <td>
+                   @if (tramite.usuarioResponsableNombre) {
+                     <div class="responsable-cell">
+                       <span class="user-icon">👤</span>
+                       <span class="user-name">{{ tramite.usuarioResponsableNombre }}</span>
+                     </div>
+                   } @else {
+                     <span class="no-assigned">Sin asignar</span>
+                   }
+                 </td>
+                 <td>
+                   <span [class.text-danger]="tramite.estaAtrasado">
+                     {{ tramite.fechaLimite | date:'dd/MM/yyyy' }}
+                     @if (tramite.estaAtrasado) {
+                       <span class="badge badge-danger ml-1">⏰ Atrasado</span>
+                     }
+                   </span>
                   </td>
-               </tr>
-            }
+                   <td>
+                     <div class="action-buttons">
+                       <!-- Botón Revisar (único para iniciar revisión o abrir modal) -->
+                       <button (click)="abrirModalRevisar(tramite)"
+                               class="btn btn-sm btn-primary"
+                               title="Revisar requisitos del trámite"
+                               [disabled]="!puedeRevisarRequisitos(tramite)">
+                         📝 Revisar
+                       </button>
+                       <!-- Botón Observar -->
+                       <button (click)="cambiarEstado(tramite, 'observado')"
+                               class="btn btn-sm btn-outline"
+                               title="Observar trámite - Marcar con observaciones"
+                               [disabled]="tramite.estado !== 'en_revision' && tramite.estado !== 'registrado'">
+                         ⚠️ Observar
+                       </button>
+                       <!-- Botón Finalizar -->
+                       <button (click)="finalizarTramite(tramite)"
+                               class="btn btn-sm btn-success"
+                               title="Finalizar trámite - Requiere todos los requisitos aprobados"
+                               [disabled]="!puedeFinalizarTramite(tramite)">
+                         ✅ Finalizar
+                       </button>
+                     </div>
+                   </td>
+                </tr>
+             }
           </tbody>
         </table>
       </div>

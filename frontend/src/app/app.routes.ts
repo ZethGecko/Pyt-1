@@ -101,19 +101,12 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/perfil/pages/perfil/perfil.component').then(m => m.PerfilComponent)
   },
 
-  // Privadas - Reportes
-  {
-    path: 'reportes',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/reportes/pages/reportes/reportes.component').then(m => m.ReportesComponent)
-  },
-
-  // Privadas - Configuración
-  {
-    path: 'configuracion',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/configuracion.component').then(m => m.ConfiguracionComponent)
-  },
+   // Privadas - Configuración
+   {
+     path: 'configuracion',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/configuracion/pages/configuracion.component').then(m => m.ConfiguracionComponent)
+   },
   {
     path: 'tipos-transporte',
     canActivate: [authGuard],
@@ -150,33 +143,12 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/configuracion/pages/gestion-requisitos-tupac.component').then(m => m.GestionRequisitosTUPACComponent)
   },
 
-  // Privadas - Notificaciones
-  {
-    path: 'notificaciones',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/notificaciones/pages/gestion-notificaciones.component').then(m => m.GestionNotificacionesComponent)
-  },
-
-  // Privadas - Solicitantes
-  {
-    path: 'solicitantes',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/solicitantes/pages/gestion-solicitantes.component').then(m => m.GestionSolicitantesComponent)
-  },
-
-  // Privadas - Constancias
-  {
-    path: 'constancias',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/vehiculos/pages/gestion-constancias.component').then(m => m.GestionConstanciasComponent)
-  },
-
-  // Privadas - Tipo Trámite Solicitante
-  {
-    path: 'tipo-tramite-solicitante',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/gestion-tipo-tramite-solicitante.component').then(m => m.GestionTipoTramiteSolicitanteComponent)
-  },
+   // Privadas - Tipo Trámite Solicitante
+   {
+     path: 'tipo-tramite-solicitante',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/configuracion/pages/gestion-tipo-tramite-solicitante.component').then(m => m.GestionTipoTramiteSolicitanteComponent)
+   },
 
   // Privadas - Personas Naturales
   {

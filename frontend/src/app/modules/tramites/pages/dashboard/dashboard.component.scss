@@ -143,31 +143,75 @@
     width: 100%;
     border-collapse: collapse;
     
-    th, td {
-      padding: 0.75rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    th {
-      background: #f9fafb;
-      font-weight: 600;
-      color: #374151;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    
-    td {
-      color: #1f2937;
+    thead {
+      background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
       
-      &:first-child {
-        font-weight: 500;
+      tr {
+        border-bottom: 1px solid #e5e7eb;
+        
+        th {
+          padding: 14px 16px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          text-align: left;
+        }
       }
     }
     
-    tr:hover {
-      background: #f9fafb;
+    tbody {
+      tr {
+        border-bottom: 1px solid #f3f4f6;
+        transition: background-color 0.15s;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        &:hover {
+          background: #f9fafb;
+        }
+        
+        // Colores de fondo por estado
+        &.state-registrado {
+          background: #fffbeb;
+        }
+        
+        &.state-en_revision {
+          background: #eff6ff;
+        }
+        
+        &.state-derivado {
+          background: #fffbeb;
+        }
+        
+        &.state-aprobado,
+        &.state-finalizado {
+          background: #ecfdf5;
+        }
+        
+        &.state-observado {
+          background: #fffbeb;
+        }
+        
+        &.state-rechazado,
+        &.state-cancelado {
+          background: #fef2f2;
+        }
+        
+        td {
+          padding: 14px 16px;
+          font-size: 13px;
+          color: #374151;
+          vertical-align: middle;
+          
+          &:first-child {
+            min-width: 250px;
+          }
+        }
+      }
     }
   }
   
@@ -287,6 +331,123 @@
   background: white;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+// Nuevos estilos para badge de estado con icono
+.badge-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+
+  .state-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  // Variantes de color
+  &.bg-green-100 {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d6;
+  }
+
+  &.bg-red-100 {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+  }
+
+  &.bg-yellow-100 {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+
+  &.bg-blue-100 {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #bfdbfe;
+  }
+
+  &.bg-indigo-100 {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+  }
+
+  &.bg-gray-100 {
+    background: #f3f4f6;
+    color: #374151;
+    border-color: #e5e7eb;
+  }
+}
+
+// Barra de progreso
+.progress-container {
+  position: relative;
+  width: 100px;
+  height: 22px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    transition: width 0.5s ease;
+    border-radius: 999px;
+
+    &.warning {
+      background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    &.danger {
+      background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+    }
+  }
+
+  .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: #374151;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+  }
+}
+
+// Celda de responsable
+.responsable-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .user-icon {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .user-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+  }
+}
+
+.no-assigned {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
 }
 
 @keyframes spin {

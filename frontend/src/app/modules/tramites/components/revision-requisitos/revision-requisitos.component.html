@@ -12,6 +12,48 @@
         <p class="modal-subtitle">
           Trámite: <span class="font-bold">{{ tramiteCodigoRUT }}</span> - {{ tramiteTipoDescripcion }}
         </p>
+         <!-- Estado actual del trámite y resumen rápido -->
+         <div class="estado-actual-indicator">
+           <div class="estado-header">
+             <span class="label-estado">Estado actual:</span>
+             <span class="badge badge-lg" [class]="'badge-' + (tramiteParaRevisar?.estado || '').toLowerCase()">
+               {{ tramiteParaRevisar?.estado | titlecase }}
+             </span>
+             @if (tramiteParaRevisar?.usuarioResponsableNombre) {
+               <span class="responsable-info">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                 </svg>
+                 {{ tramiteParaRevisar.usuarioResponsableNombre }}
+               </span>
+             }
+           </div>
+
+           <!-- Barra de progreso y estadísticas rápidas -->
+           <!-- <div class="progreso-resumen">
+             <div class="progress-track">
+               <div class="progress-fill" [style.width.%]="progresoPorcentaje"></div>
+             </div>
+             <div class="stats-quick">
+               <span class="stat-item approved">
+                 <span class="stat-icon">✅</span>
+                 <span class="stat-num">{{ aprobadosCount }}</span>
+               </span>
+               <span class="stat-item observed">
+                 <span class="stat-icon">⚠️</span>
+                 <span class="stat-num">{{ observadosCount }}</span>
+               </span>
+               <span class="stat-item rejected">
+                 <span class="stat-icon">❌</span>
+                 <span class="stat-num">{{ rechazadosCount }}</span>
+               </span>
+               <span class="stat-item pending">
+                 <span class="stat-icon">⏳</span>
+                 <span class="stat-num">{{ pendientesCount }}</span>
+               </span>
+             </div>
+           </div> -->
+         </div>
       </div>
     </div>
     <button class="modal-close" (click)="cerrarModal.emit()">
@@ -50,132 +92,139 @@
       </div>
     }
 
-    <!-- Lista de requisitos -->
-    @if (!cargando && !error && requisitos.length > 0) {
-      <!-- Filtros -->
-      <div class="filters-section">
-        <div class="filter-group">
-          <label>Estado:</label>
-          <select [(ngModel)]="filtroEstado" class="filter-select">
-            <option value="">Todos</option>
-            <option value="PENDIENTE">Pendiente</option>
-            <option value="PRESENTADO">Presentado</option>
-            <option value="EN_REVISION">En Revisión</option>
-            <option value="APROBADO">Aprobado</option>
-            <option value="OBSERVADO">Observado</option>
-            <option value="REPROBADO">Reprobado</option>
-          </select>
+      <!-- Contenido principal: Tabla de requisitos (sin división de columnas) -->
+      @if (!cargando && !error && requisitos.length > 0) {
+        <div class="requisitos-section">
+          <h3 class="section-title">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            Requisitos del Trámite
+          </h3>
+
+          <!-- Filtros -->
+          <div class="filters-section">
+            <div class="filter-group">
+              <label>Estado:</label>
+              <select [(ngModel)]="filtroEstado" class="filter-select">
+                <option value="">Todos</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="PRESENTADO">Presentado</option>
+                <option value="EN_REVISION">En Revisión</option>
+                <option value="APROBADO">Aprobado</option>
+                <option value="OBSERVADO">Observado</option>
+                <option value="REPROBADO">Reprobado</option>
+              </select>
+            </div>
+            <div class="stats-mini">
+              <span class="stat-badge">Total: {{ requisitosFiltrados.length }}</span>
+            </div>
+          </div>
+
+          <!-- Tabla de requisitos -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Requisito</th>
+                  <th>Estado</th>
+                  <th>Fecha Revisión</th>
+                  <th>Revisor</th>
+                  <th>Acciones</th>
+                  <th>Observaciones</th>
+                </tr>
+              </thead>
+               <tbody>
+                 @for (req of requisitosFiltrados; track req.requisitoId) {
+                  <tr [class]="'state-' + req.estado.toLowerCase()">
+                    <td>
+                      <div class="requisito-info">
+                        <strong>{{ req.requisitoNombre }}</strong>
+                        @if (req.codigo) {
+                          <small class="requisito-codigo">{{ req.codigo }}</small>
+                        }
+                        @if (req.esExamen) {
+                          <span class="badge-examen">Examen</span>
+                        }
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge" [class]="getColorEstado(req.estado)">
+                        {{ getIconoEstado(req.estado) }} {{ req.estadoFormateado || req.estado }}
+                      </span>
+                    </td>
+                    <td>
+                      {{ req.fechaRevision ? (req.fechaRevision | date:'dd/MM/yyyy HH:mm') : '--' }}
+                    </td>
+                    <td>
+                      {{ req.revisionUsuarioNombre || '--' }}
+                    </td>
+                    <td>
+                      <div class="action-buttons">
+                        <button (click)="aprobarRequisito(req)"
+                                class="btn-action btn-approve"
+                                title="Aprobar requisito">
+                          ✅ Aprobar
+                        </button>
+                        <button (click)="observarRequisito(req)"
+                                class="btn-action btn-obs"
+                                title="Observar requisito">
+                          ⚠️ Observar
+                        </button>
+                        <button (click)="reprobarRequisito(req)"
+                                class="btn-action btn-reject"
+                                title="Reprobar requisito">
+                          ❌ Reprobar
+                        </button>
+                      </div>
+                    </td>
+                     <td>
+                       <input type="text"
+                              class="form-control form-control-sm"
+                              [(ngModel)]="req.observaciones"
+                              placeholder="Observaciones">
+                     </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+           </div>
+         </div>
+       }
+
+  <!-- Sección de acciones finales -->
+  @if (!cargando && !error && requisitos.length > 0) {
+    <div class="final-actions">
+      <div class="actions-summary">
+        <div class="summary-item">
+          <span class="label">Total requisitos:</span>
+          <span class="value">{{ requisitos.length }}</span>
         </div>
-        <div class="stats-mini">
-          <span class="stat-badge">Total: {{ requisitosFiltrados.length }}</span>
+        <div class="summary-item">
+          <span class="label">Aprobados:</span>
+          <span class="value aprobados">{{ aprobadosCount }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Observados:</span>
+          <span class="value observados">{{ observadosCount }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Reprobados:</span>
+          <span class="value rechazados">{{ rechazadosCount }}</span>
         </div>
       </div>
 
-        <!-- Tabla de requisitos -->
-        <div class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Requisito</th>
-                <th>Estado</th>
-                <th>Fecha Revisión</th>
-                <th>Revisor</th>
-                <th>Acciones</th>
-                <th>Observaciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (req of requisitosFiltrados; track req.id) {
-                <tr [class]="'state-' + req.estado.toLowerCase()">
-                  <td>
-                    <div class="requisito-info">
-                      <strong>{{ req.requisitoNombre }}</strong>
-                      @if (req.codigo) {
-                        <small class="requisito-codigo">{{ req.codigo }}</small>
-                      }
-                      @if (req.esExamen) {
-                        <span class="badge-examen">Examen</span>
-                      }
-                    </div>
-                  </td>
-                   <td>
-                     <span class="badge" [class]="getColorEstado(req.estado)">
-                       {{ getIconoEstado(req.estado) }} {{ req.estadoFormateado || req.estado }}
-                     </span>
-                   </td>
-                  <td>
-                    {{ req.fechaRevision ? (req.fechaRevision | date:'dd/MM/yyyy HH:mm') : '--' }}
-                  </td>
-                  <td>
-                    {{ req.revisionUsuarioNombre || '--' }}
-                  </td>
-                   <td>
-                     <div class="action-buttons">
-                       <button (click)="aprobarRequisito(req)"
-                               class="btn-action btn-approve"
-                               title="Aprobar requisito">
-                         ✅ Aprobar
-                       </button>
-                       <button (click)="observarRequisito(req)"
-                               class="btn-action btn-obs"
-                               title="Observar requisito">
-                         ⚠️ Observar
-                       </button>
-                       <button (click)="reprobarRequisito(req)"
-                               class="btn-action btn-reject"
-                               title="Reprobar requisito">
-                         ❌ Reprobar
-                       </button>
-                     </div>
-                   </td>
-                   <td>
-                     <input type="text"
-                            class="form-control form-control-sm"
-                            [(ngModel)]="req.observaciones"
-                            placeholder="Observaciones"
-                            [disabled]="req.id === 0">
-                   </td>
-                 </tr>
-               }
-            </tbody>
-          </table>
-        </div>
-    }
-  </div>
-
-   <!-- Sección de acciones finales -->
-   @if (!cargando && !error && requisitos.length > 0) {
-     <div class="final-actions">
-       <div class="actions-summary">
-         <div class="summary-item">
-           <span class="label">Total requisitos:</span>
-           <span class="value">{{ requisitos.length }}</span>
-         </div>
-         <div class="summary-item">
-           <span class="label">Aprobados:</span>
-           <span class="value aprobados">{{ aprobadosCount }}</span>
-         </div>
-         <div class="summary-item">
-           <span class="label">Observados:</span>
-           <span class="value observados">{{ observadosCount }}</span>
-         </div>
-         <div class="summary-item">
-           <span class="label">Reprobados:</span>
-           <span class="value rechazados">{{ rechazadosCount }}</span>
-         </div>
-       </div>
-
-        <div class="final-buttons">
-          <button type="button" class="btn btn-outline" (click)="cerrar()">
-            Cancelar
-          </button>
-          <button type="button" class="btn btn-warning" (click)="guardarYObservar()">
-            ⚠️ Observar Trámite
-          </button>
-          <button type="button" class="btn btn-success" (click)="guardarYFinalizar()" [disabled]="!todosAprobados">
-            ✅ Revisado Completamente
-          </button>
-        </div>
+      <div class="final-buttons">
+        <button type="button" class="btn btn-outline" (click)="cerrar()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="guardarYObservar()">
+          ⚠️ Observar Trámite
+        </button>
+        <button type="button" class="btn btn-success" (click)="guardarYFinalizar()" [disabled]="!todosAprobados">
+          ✅ Revisado Completamente
+        </button>
       </div>
-    }
+    </div>
+  }
 </div>

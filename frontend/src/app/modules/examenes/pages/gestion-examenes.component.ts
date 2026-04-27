@@ -1,9 +1,11 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { IconComponent } from '../../../shared/components/ui/icon.component';
 import { GrupoPresentacionService, GrupoPresentacionCreateRequest, GrupoPresentacionUpdateRequest } from '../services/grupo-presentacion.service';
 import { InscripcionExamenService, PersonaNatural } from '../services/inscripcion-examen.service';
+import { InscripcionStateService } from '../services/inscripcion-state.service';
 import { PersonaNaturalService } from '../services/persona-natural.service';
 import { RequisitoTUPACService } from '../../configuracion/services/requisito-tupac.service';
 import { TramiteService } from '../../tramites/services/tramite.service';
@@ -624,18 +626,18 @@ interface DiaCalendario {
        }
 
        <!-- Modal de Detalles del Examen -->
-       @if (showDetallesModal() && examenDetalles) {
-         <div class="modal-overlay" (click)="showDetallesModal.set(false)">
-           <div class="modal-content detalles-modal" (click)="$event.stopPropagation()">
-             <div class="modal-header">
-               <h2>
-                 <app-icon name="info" size="md" customClass="mr-2"></app-icon>
-                 Detalles del Grupo
-               </h2>
-               <button class="modal-close" (click)="showDetallesModal.set(false)">
-                 <app-icon name="x" size="sm"></app-icon>
-               </button>
-             </div>
+        @if (showDetallesModal() && examenDetalles) {
+          <div class="modal-overlay" (click)="closeDetallesModal()">
+            <div class="modal-content detalles-modal" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>
+                  <app-icon name="info" size="md" customClass="mr-2"></app-icon>
+                  Detalles del Grupo
+                </h2>
+                <button class="modal-close" (click)="closeDetallesModal()">
+                  <app-icon name="x" size="sm"></app-icon>
+                </button>
+              </div>
              <div class="modal-body">
                <!-- Información del Grupo -->
                <div class="info-section">
@@ -707,14 +709,14 @@ interface DiaCalendario {
                              <td>
                                {{ inscripcion.fechaInscripcion ? (inscripcion.fechaInscripcion | date:'dd/MM/yyyy HH:mm') : 'N/A' }}
                              </td>
-                             <td>
-                               <span class="resultado-badge" [class]="getResultadoClass(inscripcion.resultado)">
-                                 <app-icon name="check-circle" size="xs" *ngIf="inscripcion.resultado === 'APROBADO'"></app-icon>
-                                 <app-icon name="x-circle" size="xs" *ngIf="inscripcion.resultado === 'DESAPROBADO'"></app-icon>
-                                 <app-icon name="clock" size="xs" *ngIf="!inscripcion.resultado || inscripcion.resultado === 'PENDIENTE'"></app-icon>
-                                 {{ inscripcion.resultado || 'Pendiente' }}
-                               </span>
-                             </td>
+                              <td>
+                                <span class="resultado-badge" [class]="getResultadoClass(inscripcion.estado)">
+                                  <app-icon name="check-circle" size="xs" *ngIf="inscripcion.estado === 'APROBADO'"></app-icon>
+                                  <app-icon name="x-circle" size="xs" *ngIf="inscripcion.estado === 'REPROBADO'"></app-icon>
+                                  <app-icon name="clock" size="xs" *ngIf="!inscripcion.estado || inscripcion.estado === 'PENDIENTE'"></app-icon>
+                                  {{ inscripcion.estado || 'Pendiente' }}
+                                </span>
+                              </td>
                              <td class="text-center">
                                @if (inscripcion.pagado) {
                                  <span class="pago-badge pagado">
@@ -755,9 +757,9 @@ interface DiaCalendario {
                  }
                </div>
              </div>
-             <div class="modal-footer">
-               <button class="btn btn-primary" (click)="showDetallesModal.set(false)">Cerrar</button>
-             </div>
+              <div class="modal-footer">
+                <button class="btn btn-primary" (click)="closeDetallesModal()">Cerrar</button>
+              </div>
            </div>
          </div>
        }
@@ -809,44 +811,58 @@ interface DiaCalendario {
                           <th class="text-right">Acciones</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        @for (inscripcion of resultadosFiltrados; track inscripcion.id) {
-                          <tr>
-                            <td>
-                              {{ inscripcion.fechaInscripcion | date:'dd/MM/yyyy HH:mm' }}
-                            </td>
-                            <td>
-                              {{ inscripcion.persona?.nombres }} {{ inscripcion.persona?.apellidos }}
-                              <br>
-                              <small class="text-gray-500">{{ inscripcion.persona?.dni }}</small>
-                            </td>
-                            <td>
-                              <span class="code-badge">
-                                {{ inscripcion.grupoPresentacion?.tipoExamen || inscripcion.grupoPresentacion?.codigo }}
-                              </span>
-                            </td>
-                            <td>
-                              <span class="state-badge" [class]="getExamStateClass(inscripcion.grupoPresentacion?.estado)">
-                                {{ getEstadoFormateado(inscripcion.grupoPresentacion?.estado) }}
-                              </span>
-                            </td>
-                            <td class="text-center">
-                              <input
-                                type="checkbox"
-                                [(ngModel)]="inscripcion.pagado"
-                                (change)="actualizarResultadoInscripcion(inscripcion)"
-                                [disabled]="!inscripcion.pagado"
-                                style="width: 16px; height: 16px; cursor: pointer;"
-                              >
-                            </td>
-                            <td class="text-right">
-                              <button class="btn btn-sm btn-secondary" (click)="verDetallesInscripcion(inscripcion)">
-                                <app-icon name="eye" size="sm"></app-icon>
-                              </button>
-                            </td>
-                          </tr>
-                        }
-                      </tbody>
+                       <tbody>
+                         @for (inscripcion of resultadosFiltrados; track inscripcion.id) {
+                           <tr>
+                             <td>
+                               {{ inscripcion.fechaInscripcion | date:'dd/MM/yyyy HH:mm' }}
+                             </td>
+                             <td>
+                               {{ inscripcion.persona?.nombres }} {{ inscripcion.persona?.apellidos }}
+                               <br>
+                               <small class="text-gray-500">{{ inscripcion.persona?.dni }}</small>
+                             </td>
+                             <td>
+                               <span class="code-badge">
+                                 {{ inscripcion.grupoPresentacion?.tipoExamen || inscripcion.grupoPresentacion?.codigo }}
+                               </span>
+                             </td>
+                             <td>
+                               <span class="state-badge" [class]="getExamStateClass(inscripcion.estado)">
+                                 {{ getEstadoFormateado(inscripcion.estado) }}
+                               </span>
+                             </td>
+                             <td class="text-center">
+                               <input
+                                 type="checkbox"
+                                 [(ngModel)]="inscripcion.pagado"
+                                 (change)="actualizarResultadoInscripcion(inscripcion)"
+                                 style="width: 16px; height: 16px; cursor: pointer;"
+                               >
+                             </td>
+                             <td class="text-right">
+                               <div class="action-buttons">
+                                @if (inscripcion.estado !== 'APROBADO') {
+                                  <button class="btn btn-sm btn-success" (click)="aprobarInscripcion(inscripcion)">
+                                    <app-icon name="check" size="sm"></app-icon>
+                                  </button>
+                                }
+                                @if (inscripcion.estado !== 'REPROBADO') {
+                                  <button class="btn btn-sm btn-danger" (click)="desaprobarInscripcion(inscripcion)">
+                                    <app-icon name="x" size="sm"></app-icon>
+                                  </button>
+                                }
+                                <button class="btn btn-sm btn-secondary" (click)="verDetallesInscripcion(inscripcion)">
+                                  <app-icon name="eye" size="sm"></app-icon>
+                                </button>
+                                <button class="btn btn-sm btn-danger" (click)="eliminarInscripcion(inscripcion)">
+                                  <app-icon name="trash" size="sm"></app-icon>
+                                </button>
+                               </div>
+                             </td>
+                           </tr>
+                         }
+                       </tbody>
                     </table>
                   </div>
                 }
@@ -2110,11 +2126,13 @@ interface DiaCalendario {
 export class GestionExamenesComponent implements OnInit {
   private grupoPresentacionService = inject(GrupoPresentacionService);
   private inscripcionService = inject(InscripcionExamenService);
+  private inscripcionStateService = inject(InscripcionStateService);
   private requisitoTUPACService = inject(RequisitoTUPACService);
   private personaNaturalService = inject(PersonaNaturalService);
   private tramiteService = inject(TramiteService);
   private notificationService = inject(NotificationService);
   private tipoTramiteService = inject(TipoTramiteService);
+  private inscripcionesPorGrupoSubscription?: Subscription;
 
   // State
   examenes = signal<Examen[]>([]);
@@ -2231,294 +2249,89 @@ export class GestionExamenesComponent implements OnInit {
    buscandoTramite = signal(false);
 
    ngOnInit(): void {
-     this.loadExamenes();
-     this.loadRequisitos();
-     this.loadTiposTramite();
-     // Seleccionar automáticamente el día de hoy al cargar
-     this.selectedDate.set(new Date());
-   }
+      this.loadExamenes();
+      this.loadRequisitos();
+      this.loadTiposTramite();
+      this.selectedDate.set(new Date());
+
+      // Suscribirse al estado global de inscripciones (para Resultados Recientes)
+      this.inscripcionStateService.getInscripciones().subscribe(inscripciones => {
+        // Ordenar por fecha de inscripción más reciente (sin mutar el array original)
+        const sorted = [...inscripciones]
+          .sort((a, b) => new Date(b.fechaInscripcion).getTime() - new Date(a.fechaInscripcion).getTime())
+          .slice(0, 50); // Limitar a los 50 más recientes
+        this.resultadosRecientes.set(sorted);
+      });
+    }
 
     getEmptyForm(): GrupoPresentacionCreateRequest {
-     return {
-       codigo: '',
-       requisitoExamenId: null as any,
-       fecha: '',
-       horaInicio: '',
-       horaFin: '',
-       capacidad: 20,
-       observaciones: ''
-     };
-   }
-
-  loadRequisitos(): void {
-    this.requisitoTUPACService.listarActivos().subscribe({
-      next: (requisitos: any[]) => {
-        // Filtrar solo los que son exámenes
-        const examenes = requisitos.filter((r: any) => r.esExamen);
-        this.requisitos.set(examenes);
-        
-        // Crear mapa para acceso rápido: id -> descripcion
-        this.requisitosMap.clear();
-        examenes.forEach((req: any) => {
-          this.requisitosMap.set(req.id, req);
-        });
-      },
-      error: (err: any) => {
-        console.error('Error cargando requisitos:', err);
-        this.requisitos.set([]);
-      }
-    });
-  }
-
-  loadTiposTramite(): void {
-    this.tipoTramiteService.listarTodos().subscribe({
-      next: (tipos: any[]) => {
-        this.tiposTramite = tipos;
-      },
-      error: (err) => {
-        console.error('Error cargando tipos de trámite:', err);
-        this.tiposTramite = [];
-      }
-    });
-  }
-
-   onRequisitoChange(event: any): void {
-     // Este método puede expandirse si necesitamos lógica adicional al seleccionar un requisito
-   }
-
-   getEmptyInscripcionForm() {
-     return {
-       dni: '',
-       codigoRUT: '',
-       tipoTramite: '',
-       // PersonaNatural fields (used when creating new person)
-       nombres: '',
-       apellidos: '',
-       genero: null,
-       telefono: '',
-       email: '',
-       // InscripcionExamen fields
-       resultado: 'PENDIENTE',
-       observaciones: '',
-       pagado: false
-     };
-   }
-
-   buscarPersonaPorDni(dniStr: string): void {
-    if (!dniStr || dniStr.length < 8) {
-      this.personaEncontrada = null;
-      return;
-    }
-    
-    const dni = parseInt(dniStr, 10);
-    if (isNaN(dni)) {
-      this.personaEncontrada = null;
-      return;
-    }
-    
-    this.buscandoDni.set(true);
-    this.personaNaturalService.buscarPorDni(dni).subscribe({
-      next: (persona) => {
-        if (persona) {
-          this.personaEncontrada = persona;
-          // Auto-fill the form with existing person data
-          this.inscripcionForm = {
-            ...this.inscripcionForm,
-            nombres: persona.nombres,
-            apellidos: persona.apellidos,
-            genero: persona.genero,
-            telefono: persona.telefono || '',
-            email: persona.email || ''
-          };
-        } else {
-          this.personaEncontrada = null;
-        }
-        this.buscandoDni.set(false);
-      },
-      error: (err: any) => {
-        console.error('Error buscando persona:', err);
-        this.personaEncontrada = null;
-        this.buscandoDni.set(false);
-      }
-    });
-  }
-
-  buscarTramitePorCodigoRUT(): void {
-    const codigoRUT = this.inscripcionForm.codigoRUT;
-    if (!codigoRUT || codigoRUT.trim() === '') {
-      return;
+      return {
+        codigo: '',
+        requisitoExamenId: null as any,
+        fecha: '',
+        horaInicio: '',
+        horaFin: '',
+        capacidad: 20,
+        observaciones: ''
+      };
     }
 
-    // Mostrar indicador de búsqueda
-    this.buscandoTramite.set(true);
+    getEmptyInscripcionForm(): any {
+      return {
+        dni: null,
+        grupoPresentacionId: null,
+        codigoRUT: '',
+        tipoTramite: '',
+        nombres: '',
+        apellidos: '',
+        fechaNacimiento: null,
+        genero: '',
+        telefono: '',
+        email: '',
+        direccion: '',
+        distrito: '',
+        provincia: '',
+        departamento: '',
+        nota: null,
+        resultado: 'PENDIENTE',
+        observaciones: '',
+        estado: 'PENDIENTE',
+        pagado: false
+      };
+    }
 
-    // Usar el endpoint específico para obtener el tipo de trámite
-    this.tramiteService.obtenerTipoTramitePorCodigoRUT(codigoRUT).subscribe({
-      next: (resultado: any) => {
-        this.buscandoTramite.set(false);
-
-        const tipoTramiteId = resultado.tipoTramiteId;
-        const tipoTramiteCodigo = resultado.tipoTramiteCodigo;
-        const tipoTramiteDescripcion = resultado.tipoTramiteDescripcion;
-
-        if (tipoTramiteId && tipoTramiteCodigo) {
-          // Buscar el tipo de trámite en la lista precargada por su ID
-          const tipo = this.tiposTramite.find((t: any) => t.id === tipoTramiteId);
-
-          if (tipo) {
-            this.inscripcionForm.tipoTramite = tipoTramiteCodigo;
-            this.notificationService.success(
-              `Tipo de trámite: ${tipoTramiteDescripcion}`,
-              'Éxito',
-              3000
-            );
-          } else {
-            // Si no se encuentra en la lista, intentar asignar directamente el código
-            this.inscripcionForm.tipoTramite = tipoTramiteCodigo;
-            this.notificationService.warning(
-              `Tipo de trámite "${tipoTramiteCodigo}" asignado (no encontrado en catálogo local)`,
-              'Advertencia',
-              3000
-            );
-          }
-        }
-      },
-      error: (err: any) => {
-        this.buscandoTramite.set(false);
-        this.notificationService.error('Error al buscar tipo de trámite', 'Error');
-        console.error('Error:', err);
-      }
-    });
-  }
-
-  openInscripcionModalForExam(exam: Examen): void {
-    this.selectedExam = exam;
-    this.inscripcionForm = this.getEmptyInscripcionForm();
-    this.personaEncontrada = null;
-    this.showInscripcionModal.set(true);
-    this.loadInscripciones();
-  }
-
-  openInscripcionModal(): void {
-    if (!this.selectedExam) return;
-    this.inscripcionForm = this.getEmptyInscripcionForm();
-    this.personaEncontrada = null;
-    this.showInscripcionModal.set(true);
-  }
-
-  closeInscripcionModal(): void {
-    this.showInscripcionModal.set(false);
-    this.inscripcionForm = this.getEmptyInscripcionForm();
-    this.personaEncontrada = null;
-  }
-
-   registrarInscripcion(): void {
-     if (!this.selectedExam) return;
-
-     const dni = parseInt(this.inscripcionForm.dni, 10);
-     if (isNaN(dni)) {
-       alert('DNI inválido');
-       return;
-     }
-
-     // Validar que se haya ingresado código RUT y tipo de trámite
-     if (!this.inscripcionForm.codigoRUT || !this.inscripcionForm.tipoTramite) {
-       alert('Debe ingresar el código RUT del trámite y el tipo de trámite');
-       return;
-     }
-
-     // VALIDACIÓN PREVENTIVA: Verificar si la persona ya está inscrita en este grupo
-     this.inscripcionService.buscarConFiltros({
-       grupoId: this.selectedExam.id,
-       dni: dni
-     }).subscribe({
-       next: (inscripcionesExistentes) => {
-         if (inscripcionesExistentes && inscripcionesExistentes.length > 0) {
-           // La persona ya está inscrita en este grupo
-           const inscripcionExistente = inscripcionesExistentes[0];
-           this.notificationService.warning(
-             `Esta persona (DNI: ${dni}) ya está inscrita en este grupo de examen. Fecha de inscripción: ${new Date(inscripcionExistente.fechaInscripcion).toLocaleDateString()}`,
-             'Inscripción duplicada',
-             5000
-           );
-           // No proceder con el registro
-           return;
-         }
-
-         // Si no está inscrita, proceder con el registro
-         const request = {
-           dni: dni,
-           grupoPresentacionId: this.selectedExam!.id,
-           codigoRUT: this.inscripcionForm.codigoRUT,
-           tipoTramite: this.inscripcionForm.tipoTramite,
-           nombres: this.inscripcionForm.nombres,
-           apellidos: this.inscripcionForm.apellidos,
-           genero: this.inscripcionForm.genero,
-           telefono: this.inscripcionForm.telefono,
-           email: this.inscripcionForm.email,
-           resultado: this.inscripcionForm.resultado,
-           observaciones: this.inscripcionForm.observaciones,
-           pagado: this.inscripcionForm.pagado
-         };
-
-         this.inscripcionService.registrarInscripcion(request).subscribe({
-            next: () => {
-              this.notificationService.success(
-                'Inscripción registrada exitosamente',
-                'Éxito',
-                3000
-              );
-              this.closeInscripcionModal();
-              this.loadInscripciones();
-              this.loadExamenes();
-            },
-           error: (err: any) => {
-             console.error('Error registrando inscripción:', err);
-             
-             // Manejar específicamente el error de duplicación (por si acaso)
-             if (err.status === 400 && err.error?.includes('ya está inscrita')) {
-               this.notificationService.error(
-                 'La persona ya está inscrita en este grupo de examen',
-                 'Inscripción duplicada',
-                 4000
-               );
-               // Recargar lista para mostrar estado actual
-               this.loadInscripciones();
-             } else {
-               this.notificationService.error(
-                 'Error al registrar la inscripción',
-                 'Error',
-                 3000
-               );
-             }
-           }
+   loadRequisitos(): void {
+     this.requisitoTUPACService.listarActivos().subscribe({
+       next: (requisitos: any[]) => {
+         // Filtrar solo los que son exámenes
+         const examenes = requisitos.filter((r: any) => r.esExamen);
+         this.requisitos.set(examenes);
+         
+         // Crear mapa para acceso rápido: id -> descripcion
+         this.requisitosMap.clear();
+         examenes.forEach((req: any) => {
+           this.requisitosMap.set(req.id, req);
          });
        },
        error: (err: any) => {
-         console.error('Error verificando inscripción existente:', err);
-         this.notificationService.error(
-           'No se pudo verificar si la persona ya está inscrita. Intente más tarde.',
-           'Error de verificación',
-          3000
-         );
+         console.error('Error cargando requisitos:', err);
+         this.requisitos.set([]);
        }
      });
-  }
+    }
 
-  loadInscripciones(): void {
-    if (!this.selectedExam) return;
-    
-    this.inscripcionService.buscarConFiltros({ grupoId: this.selectedExam.id }).subscribe({
-      next: (inscripciones) => {
-        this.inscritosDelGrupo.set(inscripciones);
-      },
-      error: (err: any) => {
-        console.error('Error cargando inscripciones:', err);
-      }
-    });
-  }
+    loadTiposTramite(): void {
+      this.tipoTramiteService.listarTodos().subscribe({
+        next: (tipos: any[]) => {
+          this.tiposTramite = tipos;
+        },
+        error: (err) => {
+          console.error('Error cargando tipos de trámite:', err);
+        }
+      });
+    }
 
-  loadExamenes(): void {
+   loadExamenes(): void {
     this.loading.set(true);
     this.error.set(null);
 
@@ -2778,11 +2591,14 @@ export class GestionExamenesComponent implements OnInit {
       });
     }
 
-    aprobarInscripcion(inscripcion: any): void {
-      this.inscripcionService.actualizarResultado(inscripcion.id, { resultado: 'APROBADO' }).subscribe({
-        next: () => {
+   aprobarInscripcion(inscripcion: any): void {
+      this.inscripcionService.actualizarInscripcion(inscripcion.id, {
+        estado: 'APROBADO',
+        pagado: inscripcion.pagado
+      }).subscribe({
+        next: (updatedInscripcion) => {
           this.notificationService.success('Inscripción aprobada', 'Éxito', 2000);
-          this.loadInscripciones();
+          this.inscripcionStateService.actualizarInscripcion(updatedInscripcion);
         },
         error: (err) => {
           console.error('Error aprobando inscripción:', err);
@@ -2791,27 +2607,30 @@ export class GestionExamenesComponent implements OnInit {
       });
     }
 
-    desaprobarInscripcion(inscripcion: any): void {
-      this.inscripcionService.actualizarResultado(inscripcion.id, { resultado: 'DESAPROBADO' }).subscribe({
-        next: () => {
-          this.notificationService.success('Inscripción desaprobada', 'Éxito', 2000);
-          this.loadInscripciones();
+   desaprobarInscripcion(inscripcion: any): void {
+      this.inscripcionService.actualizarInscripcion(inscripcion.id, {
+        estado: 'REPROBADO',
+        pagado: inscripcion.pagado
+      }).subscribe({
+        next: (updatedInscripcion) => {
+          this.notificationService.success('Inscripción reprobada', 'Éxito', 2000);
+          this.inscripcionStateService.actualizarInscripcion(updatedInscripcion);
         },
         error: (err) => {
-          console.error('Error desaprobando inscripción:', err);
-          this.notificationService.error('Error al desaprobar la inscripción', 'Error', 2000);
+          console.error('Error reprobando inscripción:', err);
+          this.notificationService.error('Error al reprobar la inscripción', 'Error', 2000);
         }
       });
     }
 
-    eliminarInscripcion(inscripcion: any): void {
+   eliminarInscripcion(inscripcion: any): void {
       if (!confirm('¿Está seguro de eliminar esta inscripción?')) {
         return;
       }
       this.inscripcionService.eliminarInscripcion(inscripcion.id).subscribe({
         next: () => {
           this.notificationService.success('Inscripción eliminada', 'Éxito', 2000);
-          this.loadInscripciones();
+          this.inscripcionStateService.eliminarInscripcion(inscripcion.id);
           this.loadExamenes(); // Para actualizar cupos
         },
         error: (err) => {
@@ -2907,45 +2726,70 @@ export class GestionExamenesComponent implements OnInit {
     this.showResultadosRecientesModal.set(false);
   }
 
-  loadResultadosRecientes(): void {
-    this.inscripcionService.buscarConFiltros({}).subscribe({
-      next: (inscripciones) => {
-        // Ordenar por fecha de inscripción más reciente
-        const sorted = inscripciones
-          .sort((a, b) => new Date(b.fechaInscripcion).getTime() - new Date(a.fechaInscripcion).getTime())
-          .slice(0, 50); // Limitar a los 50 más recientes
-        this.resultadosRecientes.set(sorted);
-      },
-      error: (err: any) => {
-        console.error('Error cargando resultados recientes:', err);
-        this.resultadosRecientes.set([]);
+    loadResultadosRecientes(): void {
+      this.inscripcionService.buscarConFiltros({}).subscribe({
+        next: (inscripciones) => {
+          // Actualizar state service, que notificará a los suscriptores (incluyendo este componente)
+          this.inscripcionStateService.setInscripciones(inscripciones);
+        },
+        error: (err: any) => {
+          console.error('Error cargando resultados recientes:', err);
+          this.inscripcionStateService.setInscripciones([]);
+        }
+      });
+    }
+
+    loadInscripciones(): void {
+      if (!this.selectedExam) return;
+
+      // Desuscribir suscripción anterior si existe
+      if (this.inscripcionesPorGrupoSubscription) {
+        this.inscripcionesPorGrupoSubscription.unsubscribe();
       }
-    });
-  }
 
-  actualizarResultadoInscripcion(inscripcion: any): void {
-    const request: Partial<any> = {
-      resultado: inscripcion.resultado,
-      observaciones: inscripcion.observaciones,
-      pagado: inscripcion.pagado
-    };
+      // Suscribirse al state
+      this.inscripcionesPorGrupoSubscription = this.inscripcionStateService
+        .getInscripcionesPorGrupo(this.selectedExam.id)
+        .subscribe(inscripciones => {
+          this.inscritosDelGrupo.set(inscripciones);
+        });
 
-    this.inscripcionService.actualizarInscripcion(inscripcion.id, request).subscribe({
-      next: () => {
-        // Recargar la lista para reflejar cambios
-        this.loadResultadosRecientes();
-      },
-      error: (err: any) => {
-        console.error('Error actualizando inscripción:', err);
-        alert('Error al actualizar la inscripción');
-      }
-    });
-  }
+      // Forzar carga desde backend
+      this.inscripcionStateService.cargarInscripcionesPorGrupo(this.selectedExam.id);
+    }
 
-  verDetallesInscripcion(inscripcion: any): void {
-    // Puede expandirse para mostrar más detalles o abrir otro modal
-    alert(`ID: ${inscripcion.id}\nPersona: ${inscripcion.persona?.nombres} ${inscripcion.persona?.apellidos}\nGrupo: ${inscripcion.grupoPresentacion?.codigo}\nResultado: ${inscripcion.resultado || 'Pendiente'}\nNota: ${inscripcion.nota || 'N/A'}\nPago: ${inscripcion.pagado ? 'Sí' : 'No'}`);
-  }
+   actualizarResultadoInscripcion(inscripcion: any): void {
+     // Solo actualiza pago y observaciones, NO modifica estado/resultado
+     const request = {
+       pagado: inscripcion.pagado,
+       observaciones: inscripcion.observaciones
+     };
+
+     this.inscripcionService.actualizarInscripcion(inscripcion.id, request).subscribe({
+       next: (updated) => {
+         this.inscripcionStateService.actualizarInscripcion(updated);
+       },
+       error: (err: any) => {
+         console.error('Error actualizando inscripción:', err);
+         alert('Error al actualizar la inscripción');
+       }
+     });
+   }
+
+   verDetallesInscripcion(inscripcion: any): void {
+     // Puede expandirse para mostrar más detalles o abrir otro modal
+     alert(`ID: ${inscripcion.id}\nPersona: ${inscripcion.persona?.nombres} ${inscripcion.persona?.apellidos}\nGrupo: ${inscripcion.grupoPresentacion?.codigo}\nEstado: ${inscripcion.estado || 'Pendiente'}\nResultado: ${inscripcion.resultado || 'N/A'}\nNota: ${inscripcion.nota || 'N/A'}\nPago: ${inscripcion.pagado ? 'Sí' : 'No'}`);
+   }
+
+   closeDetallesModal(): void {
+     this.showDetallesModal.set(false);
+     this.selectedExam = null;
+     if (this.inscripcionesPorGrupoSubscription) {
+       this.inscripcionesPorGrupoSubscription.unsubscribe();
+       this.inscripcionesPorGrupoSubscription = undefined;
+     }
+     this.inscritosDelGrupo.set([]);
+   }
 
    saveExam(): void {
      // Validar código del grupo
@@ -3040,11 +2884,11 @@ export class GestionExamenesComponent implements OnInit {
       this.fieldErrors.set(errors);
     }
 
-     viewExamDetails(exam: Examen): void {
+    viewExamDetails(exam: Examen): void {
+      this.selectedExam = exam;
       this.examenDetalles = exam;
-      this.selectedExam = exam; // Necesario para loadInscripciones()
       this.showDetallesModal.set(true);
-      this.loadInscripciones(); // Usar este en lugar de loadInscripcionesPorGrupo
+      this.loadInscripciones();
     }
    
    loadInscripcionesPorGrupo(grupoId: number): void {

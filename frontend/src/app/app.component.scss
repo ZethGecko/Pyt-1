@@ -259,34 +259,6 @@ $gradient-blue-light: linear-gradient(135deg, $blue-50 0%, $white 100%);
   }
 }
 
-/* Notificaciones */
-.notifications-wrapper {
-  position: relative;
-}
-
-.notification-btn {
-  position: relative;
-}
-
-.notification-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: $gradient-primary;
-  color: $white;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: $shadow-sm;
-  border: 2px solid $white;
-}
-
 /* Menú de usuario */
 .user-menu {
   display: flex;

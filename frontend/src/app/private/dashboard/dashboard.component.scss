@@ -812,16 +812,13 @@ $gradient-title: linear-gradient(135deg, $gray-800 0%, $blue-700 100%);
   &.vehicles {
     .icon-container { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: $purple-600; }
   }
-  &.profile {
-    .icon-container { background: linear-gradient(135deg, #fef3c7, #fde68a); color: $amber-600; }
-  }
-  &.tramites {
-    .icon-container { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: $blue-500; }
-  }
-  &.reportes {
-    .icon-container { background: linear-gradient(135deg, $gray-100, $gray-200); color: $gray-600; }
-  }
-}
+   &.profile {
+     .icon-container { background: linear-gradient(135deg, #fef3c7, #fde68a); color: $amber-600; }
+   }
+   &.tramites {
+     .icon-container { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: $blue-500; }
+   }
+ }
 
 .action-content {
   display: flex;

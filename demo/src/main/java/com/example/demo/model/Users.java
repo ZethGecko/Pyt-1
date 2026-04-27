@@ -85,27 +85,19 @@ public class Users {
     @JsonIgnore
     private List<Solicitud> solicitudesAprobadas;
 
-    @OneToMany(mappedBy = "usuarioRechaza", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Solicitud> solicitudesRechazadas;
+     @OneToMany(mappedBy = "usuarioRechaza", cascade = CascadeType.ALL)
+     @JsonIgnore
+     private List<Solicitud> solicitudesRechazadas;
 
-    @OneToMany(mappedBy = "usuarioRemitente", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Notificacion> notificacionesEnviadas;
+     @OneToMany(mappedBy = "usuarioActualizador", cascade = CascadeType.ALL)
+     @JsonIgnore
+     private List<Publicacion> publicacionesActualizadas;
 
-    @OneToMany(mappedBy = "usuarioDestinatario", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Notificacion> notificacionesRecibidas;
+     @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
+     @JsonIgnore
+     private List<Publicacion> publicacionesCreadas;
 
-    @OneToMany(mappedBy = "usuarioActualizador", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Publicacion> publicacionesActualizadas;
-
-    @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Publicacion> publicacionesCreadas;
-
-    // Constructors
+     // Constructors
     public Users() {
     }
 
@@ -254,31 +246,15 @@ public class Users {
         this.solicitudesAprobadas = solicitudesAprobadas;
     }
 
-    public List<Solicitud> getSolicitudesRechazadas() {
-        return solicitudesRechazadas;
-    }
+     public List<Solicitud> getSolicitudesRechazadas() {
+         return solicitudesRechazadas;
+     }
 
-    public void setSolicitudesRechazadas(List<Solicitud> solicitudesRechazadas) {
-        this.solicitudesRechazadas = solicitudesRechazadas;
-    }
+     public void setSolicitudesRechazadas(List<Solicitud> solicitudesRechazadas) {
+         this.solicitudesRechazadas = solicitudesRechazadas;
+     }
 
-    public List<Notificacion> getNotificacionesEnviadas() {
-        return notificacionesEnviadas;
-    }
-
-    public void setNotificacionesEnviadas(List<Notificacion> notificacionesEnviadas) {
-        this.notificacionesEnviadas = notificacionesEnviadas;
-    }
-
-    public List<Notificacion> getNotificacionesRecibidas() {
-        return notificacionesRecibidas;
-    }
-
-    public void setNotificacionesRecibidas(List<Notificacion> notificacionesRecibidas) {
-        this.notificacionesRecibidas = notificacionesRecibidas;
-    }
-
-    public List<Publicacion> getPublicacionesActualizadas() {
+     public List<Publicacion> getPublicacionesActualizadas() {
         return publicacionesActualizadas;
     }
 

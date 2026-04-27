@@ -1,7 +1,5 @@
 package com.example.demo.dto;
 
-import java.time.LocalDateTime;
-
 public class TUPACResponseDTO {
     private Long id;
     private String fechaVigencia;

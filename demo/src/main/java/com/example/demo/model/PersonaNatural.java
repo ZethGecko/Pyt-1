@@ -1,9 +1,17 @@
 package com.example.demo.model;
 
-import jakarta.persistence.*;
-import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "persona_natural")
@@ -42,6 +50,7 @@ public class PersonaNatural {
     private String observaciones;
 
     @OneToMany(mappedBy = "persona", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<InscripcionExamen> inscripciones;
 
     // Getters y setters
@@ -78,6 +87,7 @@ public class PersonaNatural {
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
 
+    @JsonIgnore
     public List<InscripcionExamen> getInscripciones() { return inscripciones; }
     public void setInscripciones(List<InscripcionExamen> inscripciones) { this.inscripciones = inscripciones; }
 }

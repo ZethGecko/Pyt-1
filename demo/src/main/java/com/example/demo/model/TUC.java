@@ -66,17 +66,12 @@ public class TUC {
     @JoinColumn(name = "tupac")
     private TUPAC tupac;
 
-    // Relación con Vehiculo
-    @JsonIgnore
-    @OneToMany(mappedBy = "tuc", cascade = CascadeType.ALL)
-    private List<Vehiculo> vehiculos;
+     // Relación con Vehiculo
+     @JsonIgnore
+     @OneToMany(mappedBy = "tuc", cascade = CascadeType.ALL)
+     private List<Vehiculo> vehiculos;
 
-    // Relación con Constancia
-    @JsonIgnore
-    @OneToMany(mappedBy = "tuc", cascade = CascadeType.ALL)
-    private List<Constancia> constancias;
-
-    // Getters y setters
+     // Getters y setters
     public Long getIdTuc() { return idTuc; }
     public void setIdTuc(Long idTuc) { this.idTuc = idTuc; }
 
@@ -122,9 +117,6 @@ public class TUC {
     public TUPAC getTupac() { return tupac; }
     public void setTupac(TUPAC tupac) { this.tupac = tupac; }
 
-    public List<Vehiculo> getVehiculos() { return vehiculos; }
-    public void setVehiculos(List<Vehiculo> vehiculos) { this.vehiculos = vehiculos; }
-
-    public List<Constancia> getConstancias() { return constancias; }
-    public void setConstancias(List<Constancia> constancias) { this.constancias = constancias; }
-}
+     public List<Vehiculo> getVehiculos() { return vehiculos; }
+     public void setVehiculos(List<Vehiculo> vehiculos) { this.vehiculos = vehiculos; }
+ }

@@ -108,14 +108,14 @@ export class ConsultaTramitesComponent {
     });
   }
 
-  private clasificarTipo(nombre: string): string {
-    const nombreLower = nombre.toLowerCase();
-    if (nombreLower.includes('licencia') || nombreLower.includes('conductor')) return 'licencia';
-    if (nombreLower.includes('permiso') || nombreLower.includes('renovación')) return 'permiso';
-    if (nombreLower.includes('certificado') || nombreLower.includes('constancia')) return 'certificado';
-    if (nombreLower.includes('registro') || nombreLower.includes('alta')) return 'registro';
-    return '';
-  }
+   private clasificarTipo(nombre: string): string {
+     const nombreLower = nombre.toLowerCase();
+     if (nombreLower.includes('licencia') || nombreLower.includes('conductor')) return 'licencia';
+     if (nombreLower.includes('permiso') || nombreLower.includes('renovación')) return 'permiso';
+     if (nombreLower.includes('certificado')) return 'certificado';
+     if (nombreLower.includes('registro') || nombreLower.includes('alta')) return 'registro';
+     return '';
+   }
 
   limpiarFiltros(): void {
     this.filtroBusqueda = '';

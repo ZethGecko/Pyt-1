@@ -167,45 +167,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  getColorEstado(estado: string): string {
-    return this.getEstadoColor(estado);
-  }
+   getEstadosDisponibles(): string[] {
+     return ['registrado', 'en_revision', 'derivado', 'aprobado', 'rechazado', 'observado', 'finalizado', 'cancelado'];
+   }
 
-  getEstadoColor(estado: string): string {
-    const estadoLower = (estado || '').toLowerCase();
-    if (['aprobado', 'finalizado'].includes(estadoLower)) return 'success';
-    if (['rechazado', 'cancelado'].includes(estadoLower)) return 'danger';
-    if (['observado', 'pendiente'].includes(estadoLower)) return 'warning';
-    if (['en_revision', 'derivado'].includes(estadoLower)) return 'info';
-    if (estadoLower === 'registrado') return 'primary';
-    return 'secondary';
-  }
+   getPrioridadesDisponibles(): string[] {
+     return ['urgente', 'alta', 'normal', 'baja'];
+   }
 
-  getEstadosDisponibles(): string[] {
-    return ['registrado', 'en_revision', 'derivado', 'aprobado', 'rechazado', 'observado', 'finalizado', 'cancelado'];
-  }
+   cambiarPagina(pagina: number): void {
+     this.paginaActual = pagina;
+     this.actualizarPaginacion();
+   }
 
-  getPrioridadesDisponibles(): string[] {
-    return ['urgente', 'alta', 'normal', 'baja'];
-  }
+   actualizarPaginacion(): void {
+     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+     const fin = inicio + this.itemsPorPagina;
+     this.tramitesPaginados = this.tramitesFiltrados.slice(inicio, fin);
+   }
 
-  cambiarPagina(pagina: number): void {
-    this.paginaActual = pagina;
-    this.actualizarPaginacion();
-  }
+   get paginasTotales(): number {
+     return Math.ceil(this.tramitesFiltrados.length / this.itemsPorPagina);
+   }
 
-  actualizarPaginacion(): void {
-    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-    const fin = inicio + this.itemsPorPagina;
-    this.tramitesPaginados = this.tramitesFiltrados.slice(inicio, fin);
-  }
-
-  get paginasTotales(): number {
-    return Math.ceil(this.tramitesFiltrados.length / this.itemsPorPagina);
-  }
-
-  // 🎯 REVISIÓN DE REQUISITOS
-  abrirModalRevisar(tramite: TramiteEnriquecido): void {
+   // 🎯 REVISIÓN DE REQUISITOS
+   abrirModalRevisar(tramite: TramiteEnriquecido): void {
     if (tramite.estado !== 'registrado' && tramite.estado !== 'en_revision') {
       this.notificationService.showWarning('Solo se pueden revisar trámites en estado "Registrado" o "En Revisión"');
       return;

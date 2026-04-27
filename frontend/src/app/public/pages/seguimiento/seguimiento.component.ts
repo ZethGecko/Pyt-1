@@ -160,80 +160,112 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
      }
    }
 
-   // ========== MÉTODOS PARA EL MODAL DE DETALLE ==========
+  // ========== MÉTODOS PARA EL MODAL DE DETALLE ==========
 
-   /**
-    * Abre el modal de detalle para un trámite específico
-    */
-   verDetalle(tramite: TramiteListado): void {
-     this.tramiteDetalle = null;
-     this.mostrarDetalle = true;
-     this.cargandoDetalle = true;
+  /**
+   * Abre el modal de detalle para un trámite específico
+   */
+  verDetalle(tramite: TramiteListado): void {
+    this.tramiteDetalle = null;
+    this.mostrarDetalle = true;
+    this.cargandoDetalle = true;
 
-     this.seguimientoService.obtenerSeguimientoCompleto(tramite.codigoRUT).subscribe({
-       next: (data) => {
-         this.tramiteDetalle = data;
-         this.cargandoDetalle = false;
-         // Forzar detección de cambios para asegurar que el modal se actualice inmediatamente
-         this.changeDetectorRef.detectChanges();
-       },
-       error: (err) => {
-         console.error('Error al cargar detalle del trámite:', err);
-         this.error = 'Error al cargar el detalle del trámite';
-         this.cargandoDetalle = false;
-         this.mostrarDetalle = false;
-         this.changeDetectorRef.detectChanges();
-       }
-     });
-   }
+    this.seguimientoService.obtenerSeguimientoCompleto(tramite.codigoRUT).subscribe({
+      next: (data) => {
+        this.tramiteDetalle = data;
+        this.cargandoDetalle = false;
+        // Forzar detección de cambios para asegurar que el modal se actualice inmediatamente
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar detalle del trámite:', err);
+        this.error = 'Error al cargar el detalle del trámite';
+        this.cargandoDetalle = false;
+        this.mostrarDetalle = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
 
-   /**
-    * Cierra el modal de detalle
-    */
-   cerrarDetalle(): void {
-     this.mostrarDetalle = false;
-     this.tramiteDetalle = null;
-   }
+  /**
+   * Cierra el modal de detalle
+   */
+  cerrarDetalle(): void {
+    this.mostrarDetalle = false;
+    this.tramiteDetalle = null;
+  }
 
-   /**
-    * Obtiene el color de badge para una revisión
-    */
-   getColorRevision(estado: string): string {
-     switch (estado) {
-       case 'cumple':
-         return 'success';
-       case 'no_cumple':
-         return 'danger';
-       case 'pendiente':
-         return 'warning';
-       default:
-         return 'secondary';
-     }
-   }
+  /**
+   * Verifica si todas las revisiones están en estado pendiente o en progreso (no finalizadas)
+   */
+  todasRevisionesPendientes(): boolean {
+    if (!this.tramiteDetalle?.revisiones || this.tramiteDetalle.revisiones.length === 0) {
+      return true;
+    }
+    // Estados que consideramos como "pendientes de revisar" (no finalizados)
+    const estadosPendientes = ['PENDIENTE', 'PRESENTADO', 'EN_REVISION'];
+    return this.tramiteDetalle.revisiones.every(r => estadosPendientes.includes(r.estado));
+  }
 
-   /**
-    * Obtiene el texto para una revisión
-    */
-   getTextoRevision(estado: string): string {
-     switch (estado) {
-       case 'cumple':
-         return '✅ Cumple';
-       case 'no_cumple':
-         return '❌ No cumple';
-       case 'pendiente':
-         return '⏳ Pendiente';
-       default:
-         return estado;
-     }
-   }
+  /**
+   * Obtiene el texto para una revisión
+   */
+  getTextoRevision(estado: string): string {
+    switch (estado) {
+      case 'cumple':
+        return '✅ Cumple';
+      case 'no_cumple':
+        return '❌ No cumple';
+      case 'pendiente':
+        return '⏳ Pendiente';
+      default:
+        return estado;
+    }
+  }
 
-   /**
-    * Verifica si todas las revisiones están en estado pendiente
-    */
-   todasRevisionesPendientes(): boolean {
-     if (!this.tramiteDetalle?.revisiones || this.tramiteDetalle.revisiones.length === 0) {
-       return true;
-     }
-     return this.tramiteDetalle.revisiones.every(r => r.estadoCumplimiento === 'pendiente');
-   }
- }
+  /**
+   * Returns unified status for a requirement, using inscription data for exams
+   */
+  getEstadoUnificado(rev: any): string {
+    const codigo = rev.codigo?.toUpperCase() || '';
+    const esExamen = codigo.startsWith('EXAMEN_');
+
+    if (esExamen && this.tramiteDetalle?.inscripciones) {
+      const inscripcion = this.tramiteDetalle.inscripciones.find((ins: any) => {
+        const codigoExamen = ins.grupoPresentacion?.requisitoExamen?.codigo?.toUpperCase() || '';
+        return codigoExamen === codigo;
+      });
+
+      if (inscripcion) {
+        return inscripcion.estado || 'PENDIENTE';
+      }
+    }
+
+    return rev.estadoFormateado || 'Pendiente';
+  }
+
+  /**
+   * Returns badge class for unified status
+   */
+  getBadgeClassUnificado(estado: string): string {
+    return this.getBadgeClass(estado);
+  }
+
+  /**
+   * Checks if a requirement is an exam
+   */
+  esExamen(codigo: string): boolean {
+    return codigo?.toUpperCase().startsWith('EXAMEN_') || false;
+  }
+
+  /**
+   * Gets inscription by exam code
+   */
+  getInscripcionPorCodigo(codigo: string): any {
+    if (!this.tramiteDetalle?.inscripciones) return null;
+    return this.tramiteDetalle.inscripciones.find((ins: any) => {
+      const codigoExamen = ins.grupoPresentacion?.requisitoExamen?.codigo || '';
+      return codigoExamen?.toUpperCase() === codigo?.toUpperCase();
+    }) || null;
+  }
+}

@@ -54,9 +54,8 @@ public class GrupoPresentacion {
     @Column(name = "codigo", nullable = false, unique = true, length = 50)
     private String codigo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "requisito_examen_id", nullable = false)
-    @JsonIgnore
     private RequisitoTUPAC requisitoExamen;
 
     @Transient

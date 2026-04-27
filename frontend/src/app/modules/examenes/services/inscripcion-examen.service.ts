@@ -12,6 +12,7 @@ export interface InscripcionExamen {
   observaciones?: string;
   fechaInscripcion: Date;
   estado: string;
+  pagado?: boolean;
   creadoEn: Date;
   actualizadoEn: Date;
   activo: boolean;
@@ -134,12 +135,33 @@ export class InscripcionExamenService {
     );
   }
 
-  // Actualizar resultado de una inscripción
-  actualizarResultado(id: number, data: { nota?: number; resultado?: string; observaciones?: string }): Observable<InscripcionExamen> {
-    return this.http.put<InscripcionExamen>(`${this.apiUrl}/${id}/resultado`, data).pipe(
-      catchError(this.handleError)
-    );
-  }
+   // Actualizar pago y observaciones de una inscripción (NO modifica estado/resultado)
+   actualizarResultadoInscripcion(id: number, data: { pagado: boolean; observaciones?: string }): Observable<InscripcionExamen> {
+     return this.http.put<InscripcionExamen>(`${this.apiUrl}/${id}`, data).pipe(
+       catchError(this.handleError)
+     );
+   }
+
+   // Cambiar estado de pago
+   cambiarPagoInscripcion(id: number, pagado: boolean): Observable<InscripcionExamen> {
+     return this.http.put<InscripcionExamen>(`${this.apiUrl}/${id}`, { pagado }).pipe(
+       catchError(this.handleError)
+     );
+   }
+
+   // Aprobar inscripción
+   aprobarInscripcion(id: number): Observable<InscripcionExamen> {
+     return this.http.put<InscripcionExamen>(`${this.apiUrl}/${id}`, { estado: 'APROBADO' }).pipe(
+       catchError(this.handleError)
+     );
+   }
+
+   // Reprobar inscripción
+   reprobarInscripcion(id: number): Observable<InscripcionExamen> {
+     return this.http.put<InscripcionExamen>(`${this.apiUrl}/${id}`, { estado: 'REPROBADO' }).pipe(
+       catchError(this.handleError)
+     );
+   }
 
   // Cancelar inscripción
   cancelarInscripcion(id: number): Observable<InscripcionExamen> {
@@ -171,7 +193,7 @@ export class InscripcionExamenService {
     );
   }
 
-  // Actualizar inscripción (resultado, observaciones, pagado)
+  // Actualizar inscripción (genérico: estado, pago, observaciones, etc.)
   actualizarInscripcion(id: number, request: Partial<InscripcionExamenRequest>): Observable<InscripcionExamen> {
     return this.http.put<InscripcionExamen>(`${this.apiUrl}/${id}`, request).pipe(
       catchError(this.handleError)

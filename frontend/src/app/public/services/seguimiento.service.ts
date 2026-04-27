@@ -18,7 +18,8 @@ export interface SeguimientoCompleto {
   tramite: any;
   historial: any[];
   documentos: any[];
-  revisiones: any[]; // Revisiones de requisitos
+  revisiones: any[]; // Revisiones de requisitos (incluye documentos y exámenes)
+  inscripciones: any[]; // Lista de inscripciones de exámenes asociadas al trámite
 }
 
 @Injectable({

@@ -13,32 +13,21 @@ import { RequisitoTUPACService } from '../services/requisito-tupac.service';
 import { RequisitoTUPAC } from '../models/requisito-tupac.model';
 import { TimelineItem } from '../models/seguimiento-tramite.model';
 import { TramiteFormModalComponent } from '../components/tramite-form-modal/tramite-form-modal.component';
-import { RequisitoTramiteRevisionService } from '../services/requisito-tramite-revision.service';
-import { RequisitoRevision } from '../services/requisito-tramite-revision.service';
+ import { RequisitoTramiteRevisionService, RequisitoRevision } from '../services/requisito-tramite-revision.service';
 
-// Interfaz simple para datos de ejemplo
-interface DocumentoSimple {
+// Interfaz para elemento combinado en tabla unificada
+interface ItemRevisadoCombinado {
   id: number;
+  codigo: string;
   nombre: string;
+  tipo: 'REQUISITO' | 'EXAMEN';
   estado: string;
-  observacion?: string;
-}
-
-// Interfaz para proyección de exámenes
-interface ExamenProyeccion {
-  id: number;
-  requisitoId: number;
-  requisitoCodigo: string;
-  requisitoNombre: string;
-  estado: string;
-  grupoId?: number;
-  grupoNombre?: string;
-  grupoFecha?: string;
-  grupoHora?: string;
-  fechaPresentacion?: string;
-  fechaRevision?: string;
-  usuarioAsignadoNombre?: string;
+  estadoDisplay: string;
+  fechaPresentacion?: Date;
+  fechaRevision?: Date;
+  revisor?: string;
   observaciones?: string;
+  esExamen?: boolean;
 }
 
 @Component({
@@ -54,11 +43,11 @@ export class TramiteDetalleComponent implements OnInit, OnChanges, OnDestroy {
 
   // Datos del trámite
   tramite: TramiteEnriquecido | null = null;
-  documentos: DocumentoTramite[] = [];
-  documentosFallback: DocumentoSimple[] = [];
-  seguimientoItems: TimelineItem[] = [];
-  examenes: ExamenProyeccion[] = [];
-  requisitosRevisados: RequisitoRevision[] = [];
+   documentos: DocumentoTramite[] = [];
+   // Fallback no usado actualmente - se mantiene por compatibilidad futura
+   documentosFallback: DocumentoTramite[] = [];
+   seguimientoItems: TimelineItem[] = [];
+   requisitosRevisados: RequisitoRevision[] = [];
 
   // Estado de carga
   cargando = false;
@@ -146,15 +135,14 @@ export class TramiteDetalleComponent implements OnInit, OnChanges, OnDestroy {
     this.cargando = true;
     this.error = null;
 
-    this.tramiteService.obtener(this.tramiteId).subscribe({
-      next: (data) => {
-        this.tramite = data;
-        this.cargarDocumentos();
-        this.cargarSeguimiento();
-        this.cargarExamenes();
-        this.cargarRequisitosRevisados();
-        this.cargando = false;
-      },
+     this.tramiteService.obtener(this.tramiteId).subscribe({
+       next: (data) => {
+         this.tramite = data;
+         this.cargarDocumentos();
+         this.cargarSeguimiento();
+         this.cargarRequisitosRevisados();
+         this.cargando = false;
+       },
       error: (err) => {
         this.error = 'Error al cargar el trámite: ' + (err.message || 'Error desconocido');
         this.cargando = false;
@@ -197,21 +185,7 @@ export class TramiteDetalleComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  cargarExamenes(): void {
-    if (!this.tramiteId) return;
-
-    this.documentoService.obtenerExamenesPorTramite(this.tramiteId).subscribe({
-      next: (examenes: ExamenProyeccion[]) => {
-        this.examenes = examenes;
-      },
-      error: (err: any) => {
-        console.error('Error cargando exámenes:', err);
-        this.examenes = [];
-      }
-    });
-  }
-
-  cargarRequisitosDisponibles(): void {
+   cargarRequisitosDisponibles(): void {
     if (!this.tramite?.tipoTramiteCodigo) {
       console.warn('No se puede cargar requisitos: tipoTramiteCodigo no disponible');
       return;
@@ -298,11 +272,55 @@ export class TramiteDetalleComponent implements OnInit, OnChanges, OnDestroy {
         this.requisitosRevisados = [];
       }
     });
-  }
+   }
 
-  cerrarDetalle(): void {
-    this.router.navigate(['/tramites']);
-  }
+   // ========== GETTERS PARA REVISIÓN UNIFICADA ==========
+
+    get todosLosItems(): ItemRevisadoCombinado[] {
+      // Usar directamente requisitosRevisados (que ya incluye exámenes)
+      return this.requisitosRevisados.map(req => {
+        let estadoDisplay = req.estadoFormateado || req.estado;
+        // Si es examen y el trámite está aprobado/finalizado, mostrar "Por programar"
+        if (req.esExamen && this.tramite && (this.tramite.estado === 'APROBADO' || this.tramite.estado === 'FINALIZADO')) {
+          estadoDisplay = 'Por programar';
+        }
+        
+        return {
+          id: req.id && req.id > 0 ? req.id : req.requisitoId,
+          codigo: req.codigo || '',
+          nombre: req.requisitoNombre || req.descripcion || '',
+          tipo: req.esExamen ? 'EXAMEN' : 'REQUISITO',
+          estado: req.estado,
+          estadoDisplay,
+          fechaPresentacion: this.parseDate(req.fechaPresentacion),
+          fechaRevision: this.parseDate(req.fechaRevision),
+          revisor: req.revisionUsuarioNombre || '-',
+          observaciones: req.observaciones || '-',
+          esExamen: req.esExamen
+        };
+      });
+    }
+
+    get examenesList(): RequisitoRevision[] {
+      return this.requisitosRevisados.filter(r => r.esExamen);
+    }
+
+   private parseDate(fecha: any): Date | undefined {
+     if (!fecha) return undefined;
+     if (fecha instanceof Date) return fecha;
+     if (typeof fecha === 'string') {
+       const d = new Date(fecha);
+       return isNaN(d.getTime()) ? undefined : d;
+     }
+     if (typeof fecha === 'number') {
+       return new Date(fecha);
+     }
+     return undefined;
+   }
+
+   cerrarDetalle(): void {
+     this.router.navigate(['/tramites']);
+   }
 
   // ========== ACCIONES DE TRÁMITE ==========
 
