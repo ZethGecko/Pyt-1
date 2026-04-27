@@ -30,6 +30,10 @@ export interface RequisitoTUPACEnriquecido extends RequisitoTUPAC {
   totalDocumentos?: number;
   documentosAprobados?: number;
   documentosPendientes?: number;
+  // Campos de formato
+  formatoId?: number | null;
+  formatoDescripcion?: string;
+  formatoArchivoRuta?: string;
 }
 
 export interface RequisitoTUPACSelectOption {

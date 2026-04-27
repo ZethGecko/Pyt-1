@@ -1,39 +1,8 @@
-import { Component, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import * as maplibregl from 'maplibre-gl';
-import { BusquedaRutasService } from '../../services/busqueda-rutas.service';
-
-export interface RutaBusqueda {
-  id: number;
-  nombre: string;
-  distancia: number;
-  duracion: number;
-  empresa: {
-    id: number;
-    nombre: string;
-    logo: string;
-  };
-  puntos: {
-    latitud: number;
-    longitud: number;
-  }[];
-}
-
-export interface BusquedaRutasRequest {
-  ubicacionActual?: {
-    latitud: number;
-    longitud: number;
-  };
-  rutaPartida?: {
-    latitud: number;
-    longitud: number;
-  };
-  destino?: {
-    latitud: number;
-    longitud: number;
-  };
-}
+import * as L from 'leaflet';
+import { BusquedaRutasService, RutaBusqueda, BusquedaRutasRequest } from '../../../shared/services/busqueda-rutas.service';
 
 @Component({
   selector: 'app-busqueda-rutas',
@@ -42,84 +11,163 @@ export interface BusquedaRutasRequest {
   templateUrl: './busqueda-rutas.component.html',
   styleUrls: ['./busqueda-rutas.component.scss']
 })
-export class BusquedaRutasComponent implements AfterViewInit {
+export class BusquedaRutasComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer!: ElementRef;
-  @ViewChild('searchInput') searchInput!: ElementRef;
 
-  map!: maplibregl.Map;
-  isLoading = false;
-  error: string | null = null;
-  rutas: RutaBusqueda[] = [];
-  empresas: any[] = [];
-  puntosGeograficos: any[] = [];
-  
-  // Variables de búsqueda
-  busquedaRequest: BusquedaRutasRequest = {};
-  sugerenciasUbicacion: any[] = [];
-  sugerenciasPartida: any[] = [];
-  sugerenciasDestino: any[] = [];
-  tipoBusqueda: 'rutaPartida' | 'destino' | null = null;
+   map: L.Map | null = null;
+   isLoading = false;
+   error: string | null = null;
+   rutas: RutaBusqueda[] = [];
+   empresas: any[] = [];
+   puntosGeograficos: any[] = [];
 
-  // Variables de mapa
-  markers: maplibregl.Marker[] = [];
-  popup!: maplibregl.Popup;
+   busquedaRequest: BusquedaRutasRequest = {};
+
+   private routeLayers: L.Polyline[] = [];
+   private originMarker: L.CircleMarker | null = null;
+   private destMarker: L.Marker | null = null;
+   isSettingOrigin = false; // toggle para modo selección de origen
 
   constructor(
     private busquedaRutasService: BusquedaRutasService,
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngAfterViewInit(): void {
-    this.inicializarMapa();
-    this.cargarDatosIniciales();
-  }
+   ngAfterViewInit(): void {
+     this.initMap();
+     this.loadInitialData();
+   }
 
-  private inicializarMapa(): void {
-    const mapboxAccessToken = 'pk.eyJ1IjoibXAzcnoiLCJhIjoiY2t1a2R6eTB5MDJ5bjJ2cDZ5eGZ6a2R6byJ9.7X9Z7X9Z7X9Z7X9Z7X9Z';
-    
-    this.map = new maplibregl.Map({
-      container: this.mapContainer.nativeElement,
-      style: 'https://demotiles.maplibre.org/style.json',
-      center: [-3.703790, 40.416775],
-      zoom: 13
-    });
+   ngOnDestroy(): void {
+     if (this.map) {
+       this.map.remove();
+     }
+   }
 
-    this.map.on('load', () => {
-      this.agregarControlesMapa();
-    });
-  }
+   private updateCursor(): void {
+     if (this.map) {
+       this.map.getContainer().style.cursor = this.isSettingOrigin ? 'crosshair' : '';
+     }
+   }
 
-  private agregarControlesMapa(): void {
-    this.map.addControl(new maplibregl.NavigationControl(), 'top-right');
-    this.map.addControl(new maplibregl.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true
-      },
-      trackUserLocation: true
-    }), 'top-right');
-  }
+   toggleOriginMode(): void {
+     this.isSettingOrigin = !this.isSettingOrigin;
+     this.updateCursor();
+     this.cdr.detectChanges();
+   }
 
-  private cargarDatosIniciales(): void {
+   private initMap(): void {
+     this.map = L.map(this.mapContainer.nativeElement, {
+       center: [40.416775, -3.703790],
+       zoom: 13,
+       zoomControl: true
+     });
+
+     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+       attribution: '© OpenStreetMap contributors'
+     }).addTo(this.map!);
+
+     this.map.on('click', (e: L.LeafletMouseEvent) => {
+       if (this.isSettingOrigin) {
+         this.setOrigen(e.latlng.lat, e.latlng.lng);
+         this.isSettingOrigin = false;
+         this.updateCursor();
+       } else {
+         this.setDestino(e.latlng.lat, e.latlng.lng);
+       }
+     });
+   }
+
+   private setOrigen(lat: number, lng: number): void {
+     this.busquedaRequest.rutaPartida = { latitud: lat, longitud: lng };
+     this.error = null;
+     this.rutas = [];
+     this.clearRoutes();
+
+     if (!this.originMarker) {
+       this.originMarker = L.circleMarker([lat, lng], {
+         radius: 8, color: '#10b981', fillColor: '#10b981', fillOpacity: 1
+       }).addTo(this.map!);
+     } else {
+       this.originMarker.setLatLng([lat, lng]);
+     }
+     this.cdr.detectChanges();
+   }
+
+   private setDestino(lat: number, lng: number): void {
+     this.busquedaRequest.destino = { latitud: lat, longitud: lng };
+     this.error = null;
+     this.rutas = [];
+     this.clearRoutes();
+
+     if (!this.destMarker) {
+       const icon = L.divIcon({
+         className: 'destino-marker',
+         html: '<div style="background:#ef4444;width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>',
+         iconSize: [16, 16],
+         iconAnchor: [8, 8]
+       });
+       this.destMarker = L.marker([lat, lng], { icon, draggable: true }).addTo(this.map!);
+       this.destMarker.on('dragend', (ev) => {
+         const ll = (ev.target as L.Marker).getLatLng();
+         this.setDestino(ll.lat, ll.lng);
+       });
+     } else {
+       this.destMarker.setLatLng([lat, lng]);
+     }
+     this.cdr.detectChanges();
+   }
+
+   usarUbicacionActual(): void {
+     if (navigator.geolocation) {
+       navigator.geolocation.getCurrentPosition(
+         (pos) => {
+           const lat = pos.coords.latitude;
+           const lng = pos.coords.longitude;
+           // Establecer como origen (rutaPartida)
+           this.busquedaRequest.rutaPartida = { latitud: lat, longitud: lng };
+           this.busquedaRequest.ubicacionActual = { latitud: lat, longitud: lng };
+           this.error = null;
+           this.rutas = [];
+           this.clearRoutes();
+
+           if (this.isSettingOrigin) {
+             this.isSettingOrigin = false;
+             this.updateCursor();
+           }
+
+           if (!this.originMarker) {
+             this.originMarker = L.circleMarker([lat, lng], {
+               radius: 8, color: '#10b981', fillColor: '#10b981', fillOpacity: 1
+             }).addTo(this.map!);
+           } else {
+             this.originMarker.setLatLng([lat, lng]);
+           }
+           this.map!.panTo([lat, lng]);
+           this.cdr.detectChanges();
+         },
+         () => {
+           this.error = 'No se pudo obtener la ubicación';
+           this.cdr.detectChanges();
+         }
+       );
+     } else {
+       this.error = 'Geolocalización no disponible';
+       this.cdr.detectChanges();
+     }
+   }
+
+  private loadInitialData(): void {
     this.busquedaRutasService.obtenerEmpresas().subscribe({
-      next: (data: any[]) => {
-        this.empresas = data;
-        this.cdr.detectChanges();
-      }
+      next: (data: any[]) => { this.empresas = data; this.cdr.detectChanges(); }
     });
-
     this.busquedaRutasService.obtenerPuntosGeograficos().subscribe({
-      next: (data: any[]) => {
-        this.puntosGeograficos = data;
-        this.cdr.detectChanges();
-      }
+      next: (data: any[]) => { this.puntosGeograficos = data; this.cdr.detectChanges(); }
     });
   }
 
   buscarRutas(): void {
-    if (!this.validarBusqueda()) {
-      return;
-    }
-
+    if (!this.validateSearch()) return;
     this.isLoading = true;
     this.error = null;
 
@@ -127,203 +175,105 @@ export class BusquedaRutasComponent implements AfterViewInit {
       next: (rutas: RutaBusqueda[]) => {
         this.rutas = rutas;
         this.isLoading = false;
-        this.actualizarMapaConRutas(rutas);
+        this.renderRoutes(rutas);
         this.cdr.detectChanges();
       },
-      error: (err: any) => {
-        this.error = 'Error al buscar rutas. Inténtelo de nuevo.';
+      error: () => {
+        this.error = 'Error al buscar rutas';
         this.isLoading = false;
         this.cdr.detectChanges();
       }
     });
   }
 
-  private validarBusqueda(): boolean {
-    if (!this.busquedaRequest.ubicacionActual && 
-        !this.busquedaRequest.rutaPartida && 
-        !this.busquedaRequest.destino) {
-      this.error = 'Debe proporcionar al menos una ubicación actual, ruta de partida o destino';
-      return false;
-    }
-    return true;
-  }
+   private validateSearch(): boolean {
+     if (!this.busquedaRequest.destino) {
+       this.error = 'Selecciona un destino en el mapa';
+       return false;
+     }
+     const origen = this.busquedaRequest.rutaPartida || this.busquedaRequest.ubicacionActual;
+     if (!origen) {
+       this.error = 'Establece un origen: usa "Mi ubicación" o "Establecer origen" y luego clic en el mapa';
+       return false;
+     }
+     return true;
+   }
 
-  private actualizarMapaConRutas(rutas: RutaBusqueda[]): void {
-    this.limpiarMapa();
-    
-    rutas.forEach((ruta) => {
-      this.dibujarRutaEnMapa(ruta);
-    });
-  }
+  private renderRoutes(rutas: RutaBusqueda[]): void {
+    this.clearRoutes();
+    if (rutas.length === 0) return;
 
-  private limpiarMapa(): void {
-    this.markers.forEach((marker) => marker.remove());
-    this.markers = [];
-  }
+    const bounds: L.LatLngTuple[] = [];
+    rutas.forEach(ruta => {
+      const latlngs = ruta.puntos.map(p => [p.latitud, p.longitud] as L.LatLngExpression);
+      const line = L.polyline(latlngs, { color: '#3b82f6', weight: 4, opacity: 0.8 }).addTo(this.map!);
+      this.routeLayers.push(line);
 
-  private dibujarRutaEnMapa(ruta: RutaBusqueda): void {
-    const puntos = ruta.puntos;
-    
-    if (puntos.length < 2) return;
+      L.circleMarker(latlngs[0], { radius: 8, color: '#10b981', fillColor: '#10b981', fillOpacity: 1 }).addTo(this.map!);
+      L.circleMarker(latlngs[latlngs.length - 1], { radius: 8, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 }).addTo(this.map!);
 
-    const lineLayout = {
-      'line-cap': 'round' as const,
-      'line-join': 'round' as const
-    };
-
-    const linePaint = {
-      'line-color': '#3b82f6' as const,
-      'line-width': 3 as const,
-      'line-opacity': 0.8 as const
-    };
-
-    const lineString = {
-      type: 'Feature' as const,
-      geometry: {
-        type: 'LineString' as const,
-        coordinates: puntos.map(punto => [punto.longitud, punto.latitud])
-      },
-      properties: {}
-    };
-
-    this.map.addSource(`route-${ruta.id}`, {
-      type: 'geojson' as const,
-      data: lineString
+      ruta.puntos.forEach(p => bounds.push([p.latitud, p.longitud] as L.LatLngTuple));
     });
 
-    this.map.addLayer({
-      id: `route-layer-${ruta.id}`,
-      type: 'line' as const,
-      source: `route-${ruta.id}`,
-      layout: lineLayout,
-      paint: linePaint
-    });
-
-    const markerInicio = new maplibregl.Marker({
-      color: '#10b981'
-    })
-    .setLngLat([puntos[0].longitud, puntos[0].latitud] as maplibregl.LngLatLike)
-    .addTo(this.map);
-
-    this.markers.push(markerInicio);
-
-    const markerFin = new maplibregl.Marker({
-      color: '#ef4444'
-    })
-    .setLngLat([puntos[puntos.length - 1].longitud, puntos[puntos.length - 1].latitud] as maplibregl.LngLatLike)
-    .addTo(this.map);
-
-    this.markers.push(markerFin);
-
-    const popupContent = `
-      <div style="background: white; padding: 10px; border-radius: 5px; width: 200px;">
-        <h4 style="margin: 0 0 10px 0; color: #1f2937;">${ruta.nombre}</h4>
-        <p style="margin: 5px 0; color: #6b7280;">
-          <strong>Distancia:</strong> ${ruta.distancia.toFixed(2)} km<br>
-          <strong>Duración:</strong> ${ruta.duracion.toFixed(2)} min<br>
-          <strong>Empresa:</strong> ${ruta.empresa.nombre}
-        </p>
-      </div>
-    `;
-
-    const popup = new maplibregl.Popup({
-      closeButton: false,
-      closeOnClick: false
-    })
-    .setHTML(popupContent)
-    .setMaxWidth('none');
-
-    markerInicio.setPopup(popup);
-  }
-
-  usarUbicacionActual(): void {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.busquedaRequest.ubicacionActual = {
-            latitud: position.coords.latitude,
-            longitud: position.coords.longitude
-          };
-          this.error = null;
-          this.cdr.detectChanges();
-        },
-        (error) => {
-          this.error = 'No se pudo obtener la ubicación actual';
-          this.cdr.detectChanges();
-        }
-      );
-    } else {
-      this.error = 'La geolocalización no está disponible en este navegador';
+    if (bounds.length > 0) {
+      this.map!.fitBounds(bounds, { padding: [50, 50] });
     }
   }
 
-  seleccionarPuntoGeografico(punto: any, tipo: 'ubicacionActual' | 'rutaPartida' | 'destino'): void {
-    if (tipo === 'ubicacionActual') {
-      this.busquedaRequest.ubicacionActual = {
-        latitud: punto.latitud,
-        longitud: punto.longitud
-      };
-    } else if (tipo === 'rutaPartida') {
-      this.busquedaRequest.rutaPartida = {
-        latitud: punto.latitud,
-        longitud: punto.longitud
-      };
-    } else {
-      this.busquedaRequest.destino = {
-        latitud: punto.latitud,
-        longitud: punto.longitud
-      };
-    }
-    this.error = null;
-    this.cdr.detectChanges();
+  private clearRoutes(): void {
+    this.routeLayers.forEach(layer => this.map!.removeLayer(layer));
+    this.routeLayers = [];
   }
 
-  limpiarBusqueda(): void {
-    this.busquedaRequest = {};
-    this.rutas = [];
-    this.error = null;
-    this.limpiarMapa();
-    this.cdr.detectChanges();
-  }
+   limpiarBusqueda(): void {
+     this.busquedaRequest = {};
+     this.rutas = [];
+     this.error = null;
+     if (this.map) {
+       this.clearRoutes();
+       if (this.originMarker) { this.map.removeLayer(this.originMarker); this.originMarker = null; }
+       if (this.destMarker) { this.map.removeLayer(this.destMarker); this.destMarker = null; }
+     }
+     if (this.isSettingOrigin) {
+       this.isSettingOrigin = false;
+       this.updateCursor();
+     }
+     this.cdr.detectChanges();
+   }
 
-  formatearDistancia(distancia: number): string {
-    return distancia.toFixed(2) + ' km';
-  }
-
-  formatearDuracion(duracion: number): string {
-    return duracion.toFixed(2) + ' min';
-  }
-
-  abrirModalPuntosGeograficos(tipo: 'rutaPartida' | 'destino'): void {
-    this.tipoBusqueda = tipo;
-    this.error = null;
-    this.cdr.detectChanges();
-  }
+  formatearDistancia(d: number): string { return d.toFixed(2) + ' km'; }
+  formatearDuracion(d: number): string { return d.toFixed(2) + ' min'; }
 
   mostrarRutaEnMapa(ruta: RutaBusqueda): void {
-    this.limpiarMapa();
-    this.dibujarRutaEnMapa(ruta);
+    this.clearRoutes();
+    const latlngs = ruta.puntos.map(p => [p.latitud, p.longitud] as L.LatLngExpression);
+    const line = L.polyline(latlngs, { color: '#3b82f6', weight: 4, opacity: 0.8 }).addTo(this.map!);
+    this.routeLayers.push(line);
+    this.map!.fitBounds(L.latLngBounds(latlngs as L.LatLngExpression[]), { padding: [50, 50] });
     this.cdr.detectChanges();
   }
 
-  get ubicacionActualText(): string {
-    if (this.busquedaRequest.ubicacionActual) {
-      return `${this.busquedaRequest.ubicacionActual.latitud.toFixed(4)}, ${this.busquedaRequest.ubicacionActual.longitud.toFixed(4)}`;
-    }
-    return '';
-  }
+   get ubicacionActualText(): string {
+     const o = this.busquedaRequest.rutaPartida || this.busquedaRequest.ubicacionActual;
+     if (o) {
+       return `${o.latitud.toFixed(4)}, ${o.longitud.toFixed(4)}`;
+     }
+     return 'No seleccionado';
+   }
 
-  get rutaPartidaText(): string {
-    if (this.busquedaRequest.rutaPartida) {
-      return `${this.busquedaRequest.rutaPartida.latitud.toFixed(4)}, ${this.busquedaRequest.rutaPartida.longitud.toFixed(4)}`;
-    }
-    return '';
-  }
+   get destinoText(): string {
+     if (this.busquedaRequest.destino) {
+       return `${this.busquedaRequest.destino.latitud.toFixed(4)}, ${this.busquedaRequest.destino.longitud.toFixed(4)}`;
+     }
+     return 'Selecciona en el mapa';
+   }
 
-  get destinoText(): string {
-    if (this.busquedaRequest.destino) {
-      return `${this.busquedaRequest.destino.latitud.toFixed(4)}, ${this.busquedaRequest.destino.longitud.toFixed(4)}`;
-    }
-    return '';
-  }
+   trackById(index: number, item: RutaBusqueda): number {
+     return item.id;
+   }
+
+   clearError(): void {
+     this.error = null;
+     this.cdr.detectChanges();
+   }
 }

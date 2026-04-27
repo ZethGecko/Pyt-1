@@ -30,7 +30,11 @@ public class VehiculoService {
     private SubtipoTransporteRepository subtipoTransporteRepository;
 
     public List<Vehiculo> listarTodos() {
-        return repo.findAll();
+        return repo.findAllWithDetails();
+    }
+
+    public Optional<Vehiculo> buscarPorPlaca(String placa) {
+        return repo.findByPlaca(placa);
     }
 
     public Optional<Vehiculo> buscarPorId(Long id) {
@@ -41,24 +45,21 @@ public class VehiculoService {
         return repo.findByIdWithAssociations(id);
     }
 
-    public Optional<Vehiculo> buscarPorPlaca(String placa) {
-        return repo.findByPlaca(placa);
-    }
-
-    public Optional<Vehiculo> buscarPorNumeroMotor(String numeroMotor) {
-        return repo.findByNumeroMotor(numeroMotor);
-    }
-
-    public Optional<Vehiculo> buscarPorNumeroChasis(String numeroChasis) {
-        return repo.findByNumeroChasis(numeroChasis);
-    }
-
     public List<Vehiculo> listarActivos() {
-        return repo.findAllActivos();
+        return repo.findAllWithDetails().stream()
+                .filter(v -> "ACTIVO".equals(v.getEstado()))
+                .collect(Collectors.toList());
     }
 
     public List<Vehiculo> buscarPorTermino(String termino) {
-        return repo.buscarPorTermino(termino);
+        return repo.findAllWithDetails().stream()
+                .filter(v -> {
+                    String lowerTermino = termino.toLowerCase();
+                    return (v.getPlaca() != null && v.getPlaca().toLowerCase().contains(lowerTermino)) ||
+                           (v.getMarca() != null && v.getMarca().toLowerCase().contains(lowerTermino)) ||
+                           (v.getModelo() != null && v.getModelo().toLowerCase().contains(lowerTermino));
+                })
+                .collect(Collectors.toList());
     }
 
     public List<Vehiculo> listarPorEmpresa(Long empresaId) {
@@ -78,7 +79,10 @@ public class VehiculoService {
             vehiculo.setFechaRegistro(LocalDateTime.now());
         }
         vehiculo.setFechaActualizacion(LocalDateTime.now());
-        return repo.save(vehiculo);
+        Vehiculo guardado = repo.save(vehiculo);
+        // Recargar con todas las asociaciones para evitar LazyInitializationException
+        return repo.findByIdWithAssociations(guardado.getIdVehiculo())
+                .orElse(guardado);
     }
 
     public void eliminar(Long id) {
@@ -107,22 +111,22 @@ public class VehiculoService {
     // ========== ESTADOS ==========
 
     public List<Vehiculo> listarHabilitados() {
-        return repo.findAll().stream()
+        return repo.findAllWithDetails().stream()
                 .filter(v -> "HABILITADO".equals(v.getEstado()))
                 .collect(Collectors.toList());
     }
 
     public Vehiculo habilitar(Long id) {
-        Vehiculo vehiculo = buscarPorId(id)
-                .orElseThrow(() -> new RuntimeException("Vehiculo no encontrado"));
+        Vehiculo vehiculo = buscarPorIdConAsociaciones(id)
+                .orElseThrow(() -> new RuntimeException("Vehículo no encontrado"));
         vehiculo.setEstado("HABILITADO");
         vehiculo.setFechaActualizacion(LocalDateTime.now());
         return guardar(vehiculo);
     }
 
     public Vehiculo deshabilitar(Long id) {
-        Vehiculo vehiculo = buscarPorId(id)
-                .orElseThrow(() -> new RuntimeException("Vehiculo no encontrado"));
+        Vehiculo vehiculo = buscarPorIdConAsociaciones(id)
+                .orElseThrow(() -> new RuntimeException("Vehículo no encontrado"));
         vehiculo.setEstado("DESHABILITADO");
         vehiculo.setFechaActualizacion(LocalDateTime.now());
         return guardar(vehiculo);
@@ -162,7 +166,7 @@ public class VehiculoService {
         // Información de categoría transporte (a través de tipo -> categoría)
         Long categoriaTransporteId = null;
         String categoriaTransporteNombre = null;
-        if (v.getSubtipoTransporte() != null && 
+        if (v.getSubtipoTransporte() != null &&
             v.getSubtipoTransporte().getTipoTransporte() != null &&
             v.getSubtipoTransporte().getTipoTransporte().getCategoriaTransporte() != null) {
             categoriaTransporteId = (long) v.getSubtipoTransporte().getTipoTransporte().getCategoriaTransporte().getIdCategoriaTransporte();
@@ -183,12 +187,6 @@ public class VehiculoService {
             fechaVencimientoTUC = v.getTuc().getFechaVencimiento();
         }
 
-        // Conteo de TUCs
-        long totalTucs = v.getTuc() != null ? 1 : 0;
-
-        // Conteo de inspecciones
-        int inspeccionesCount = v.getInspecciones() != null ? v.getInspecciones().size() : 0;
-
         VehiculoResponseDTO dto = new VehiculoResponseDTO(
                 v.getIdVehiculo(),
                 v.getPlaca(),
@@ -204,9 +202,6 @@ public class VehiculoService {
                 v.getObservaciones(),
                 v.getFechaRegistro(),
                 v.getFechaActualizacion(),
-                empresaId,
-                empresaNombre,
-                empresaRuc,
                 subtipoTransporteId,
                 subtipoTransporteNombre,
                 gerenteResponsableId,
@@ -214,15 +209,23 @@ public class VehiculoService {
         );
 
         // Campos adicionales
+        dto.setCategoria(v.getCategoria());
+        dto.setPesoNeto(v.getPesoNeto());
+        dto.setEstadoTecnico(v.getEstadoTecnico());
+        dto.setFechaHabilitacion(v.getFechaHabilitacion());
+        dto.setFechaVencimientoTUC(fechaVencimientoTUC);
         dto.setTipoTransporteId(tipoTransporteId);
         dto.setTipoTransporteNombre(tipoTransporteNombre);
         dto.setCategoriaTransporteId(categoriaTransporteId);
         dto.setCategoriaTransporteNombre(categoriaTransporteNombre);
-        dto.setActivo(v.getEstado() != null && v.getEstado().equals("ACTIVO"));
-        dto.setFechaVencimientoTUC(fechaVencimientoTUC);
-        dto.setTotalTucs((int) totalTucs);
-        dto.setInspeccionesCount(inspeccionesCount);
-        dto.setPesoNeto(v.getCapacidadCarga());
+        dto.setActivo("ACTIVO".equals(v.getEstado()) || "HABILITADO".equals(v.getEstado()));
+        dto.setTotalTucs(v.getTuc() != null ? 1 : 0);
+        dto.setInspeccionesCount(v.getInspecciones() != null ? v.getInspecciones().size() : 0);
+
+        // Establecer datos de empresa (campos planos para construir objeto anidado en JSON)
+        dto.setEmpresaId(empresaId);
+        dto.setEmpresaNombre(empresaNombre);
+        dto.setEmpresaRuc(empresaRuc);
 
         return dto;
     }
@@ -269,18 +272,21 @@ public class VehiculoService {
         if (dto.getModelo() != null) vehiculo.setModelo(dto.getModelo());
         if (dto.getFechaFabricacion() != null) vehiculo.setAnioFabricacion(dto.getFechaFabricacion());
         if (dto.getColor() != null) vehiculo.setColor(dto.getColor());
+        if (dto.getCategoria() != null) vehiculo.setCategoria(dto.getCategoria());
+        if (dto.getPesoNeto() != null) vehiculo.setPesoNeto(dto.getPesoNeto());
+        if (dto.getEstadoTecnico() != null) vehiculo.setEstadoTecnico(dto.getEstadoTecnico());
         if (dto.getCapacidadPasajeros() != null) vehiculo.setCapacidadPasajeros(dto.getCapacidadPasajeros());
         if (dto.getCapacidadCarga() != null) vehiculo.setCapacidadCarga(dto.getCapacidadCarga());
         if (dto.getEstado() != null) vehiculo.setEstado(dto.getEstado());
         if (dto.getObservaciones() != null) vehiculo.setObservaciones(dto.getObservaciones());
-        
+
         // Resolver Empresa
         if (dto.getEmpresaId() != null) {
             Empresa empresa = empresaRepository.findById(Math.toIntExact(dto.getEmpresaId()))
                     .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + dto.getEmpresaId()));
             vehiculo.setEmpresa(empresa);
         }
-        
+
         // Resolver SubtipoTransporte
         if (dto.getSubtipoTransporteId() != null) {
             SubtipoTransporte subtipo = subtipoTransporteRepository.findById(dto.getSubtipoTransporteId())
@@ -293,31 +299,34 @@ public class VehiculoService {
       * Mapeo específico para actualización (reutiliza la lógica anterior pero 
       * acepta VehiculoUpdateRequest que comparte getters).
       */
-     private void mapDTOToEntity(VehiculoUpdateRequest dto, Vehiculo vehiculo) {
-         if (dto.getPlaca() != null) vehiculo.setPlaca(dto.getPlaca());
-         if (dto.getNumeroMotor() != null) vehiculo.setNumeroMotor(dto.getNumeroMotor());
-         if (dto.getNumeroChasis() != null) vehiculo.setNumeroChasis(dto.getNumeroChasis());
-         if (dto.getMarca() != null) vehiculo.setMarca(dto.getMarca());
-         if (dto.getModelo() != null) vehiculo.setModelo(dto.getModelo());
-         if (dto.getFechaFabricacion() != null) vehiculo.setAnioFabricacion(dto.getFechaFabricacion());
-         if (dto.getColor() != null) vehiculo.setColor(dto.getColor());
-         if (dto.getCapacidadPasajeros() != null) vehiculo.setCapacidadPasajeros(dto.getCapacidadPasajeros());
-         if (dto.getCapacidadCarga() != null) vehiculo.setCapacidadCarga(dto.getCapacidadCarga());
-         if (dto.getEstado() != null) vehiculo.setEstado(dto.getEstado());
-         if (dto.getObservaciones() != null) vehiculo.setObservaciones(dto.getObservaciones());
-         
-         // Resolver Empresa (si se proporciona ID, se actualiza; si es null, se deja como está)
-         if (dto.getEmpresaId() != null) {
-             Empresa empresa = empresaRepository.findById(Math.toIntExact(dto.getEmpresaId()))
-                     .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + dto.getEmpresaId()));
-             vehiculo.setEmpresa(empresa);
-         }
-         
-         // Resolver SubtipoTransporte
-         if (dto.getSubtipoTransporteId() != null) {
-             SubtipoTransporte subtipo = subtipoTransporteRepository.findById(dto.getSubtipoTransporteId())
-                     .orElseThrow(() -> new RuntimeException("Subtipo de transporte no encontrado con ID: " + dto.getSubtipoTransporteId()));
-             vehiculo.setSubtipoTransporte(subtipo);
-         }
-     }
+      private void mapDTOToEntity(VehiculoUpdateRequest dto, Vehiculo vehiculo) {
+          if (dto.getPlaca() != null) vehiculo.setPlaca(dto.getPlaca());
+          if (dto.getNumeroMotor() != null) vehiculo.setNumeroMotor(dto.getNumeroMotor());
+          if (dto.getNumeroChasis() != null) vehiculo.setNumeroChasis(dto.getNumeroChasis());
+          if (dto.getMarca() != null) vehiculo.setMarca(dto.getMarca());
+          if (dto.getModelo() != null) vehiculo.setModelo(dto.getModelo());
+          if (dto.getFechaFabricacion() != null) vehiculo.setAnioFabricacion(dto.getFechaFabricacion());
+          if (dto.getColor() != null) vehiculo.setColor(dto.getColor());
+          if (dto.getCategoria() != null) vehiculo.setCategoria(dto.getCategoria());
+          if (dto.getPesoNeto() != null) vehiculo.setPesoNeto(dto.getPesoNeto());
+          if (dto.getEstadoTecnico() != null) vehiculo.setEstadoTecnico(dto.getEstadoTecnico());
+          if (dto.getCapacidadPasajeros() != null) vehiculo.setCapacidadPasajeros(dto.getCapacidadPasajeros());
+          if (dto.getCapacidadCarga() != null) vehiculo.setCapacidadCarga(dto.getCapacidadCarga());
+          if (dto.getEstado() != null) vehiculo.setEstado(dto.getEstado());
+          if (dto.getObservaciones() != null) vehiculo.setObservaciones(dto.getObservaciones());
+
+          // Resolver Empresa (si se proporciona ID, se actualiza; si es null, se deja como está)
+          if (dto.getEmpresaId() != null) {
+              Empresa empresa = empresaRepository.findById(Math.toIntExact(dto.getEmpresaId()))
+                      .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + dto.getEmpresaId()));
+              vehiculo.setEmpresa(empresa);
+          }
+
+          // Resolver SubtipoTransporte
+          if (dto.getSubtipoTransporteId() != null) {
+              SubtipoTransporte subtipo = subtipoTransporteRepository.findById(dto.getSubtipoTransporteId())
+                      .orElseThrow(() -> new RuntimeException("Subtipo de transporte no encontrado con ID: " + dto.getSubtipoTransporteId()));
+              vehiculo.setSubtipoTransporte(subtipo);
+          }
+      }
  }

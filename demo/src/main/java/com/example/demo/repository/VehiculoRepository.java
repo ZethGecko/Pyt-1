@@ -21,11 +21,41 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
 
     List<Vehiculo> findByEstado(String estado);
 
+    @EntityGraph(attributePaths = {
+        "empresa",
+        "subtipoTransporte",
+        "subtipoTransporte.tipoTransporte",
+        "subtipoTransporte.tipoTransporte.categoriaTransporte",
+        "gerenteResponsable",
+        "tuc",
+        "inspecciones"
+    })
     List<Vehiculo> findByEmpresaIdEmpresa(Long empresaId);
 
+    @EntityGraph(attributePaths = {
+        "empresa",
+        "subtipoTransporte",
+        "subtipoTransporte.tipoTransporte",
+        "subtipoTransporte.tipoTransporte.categoriaTransporte",
+        "gerenteResponsable",
+        "tuc",
+        "inspecciones"
+    })
     List<Vehiculo> findBySubtipoTransporteIdSubtipoTransporte(Long subtipoId);
 
+    @EntityGraph(attributePaths = {
+        "empresa",
+        "subtipoTransporte",
+        "subtipoTransporte.tipoTransporte",
+        "subtipoTransporte.tipoTransporte.categoriaTransporte",
+        "gerenteResponsable",
+        "tuc",
+        "inspecciones"
+    })
     List<Vehiculo> findByGerenteResponsableIdGerente(Long gerenteId);
+
+    @Query("SELECT v FROM Vehiculo v WHERE v.tuc.idTuc = :tucId")
+    List<Vehiculo> findByTucId(@Param("tucId") Long tucId);
 
     @Query("SELECT v FROM Vehiculo v WHERE v.estado = 'ACTIVO'")
     List<Vehiculo> findAllActivos();
@@ -36,24 +66,26 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
     @Query("SELECT COUNT(v) FROM Vehiculo v WHERE v.empresa.id = :empresaId")
     Long countByEmpresaId(@Param("empresaId") Long empresaId);
 
-    @Query("SELECT v FROM Vehiculo v " +
-           "LEFT JOIN FETCH v.empresa " +
-           "LEFT JOIN FETCH v.subtipoTransporte st " +
-           "LEFT JOIN FETCH st.tipoTransporte " +
-           "LEFT JOIN FETCH st.tipoTransporte.categoriaTransporte " +
-           "LEFT JOIN FETCH v.gerenteResponsable " +
-           "LEFT JOIN FETCH v.tuc " +
-           "WHERE v.idVehiculo = :id")
-    Optional<Vehiculo> findByIdWithAssociations(@Param("id") Long id);
+     @Query("SELECT v FROM Vehiculo v " +
+            "LEFT JOIN FETCH v.empresa " +
+            "LEFT JOIN FETCH v.subtipoTransporte st " +
+            "LEFT JOIN FETCH st.tipoTransporte " +
+            "LEFT JOIN FETCH st.tipoTransporte.categoriaTransporte " +
+            "LEFT JOIN FETCH v.gerenteResponsable " +
+            "LEFT JOIN FETCH v.tuc " +
+            "LEFT JOIN FETCH v.inspecciones " +
+            "WHERE v.idVehiculo = :id")
+     Optional<Vehiculo> findByIdWithAssociations(@Param("id") Long id);
 
-    @EntityGraph(attributePaths = {
-        "empresa",
-        "subtipoTransporte",
-        "subtipoTransporte.tipoTransporte",
-        "subtipoTransporte.tipoTransporte.categoriaTransporte",
-        "gerenteResponsable",
-        "tuc"
-    })
-    @Query("SELECT v FROM Vehiculo v")
-    List<Vehiculo> findAllWithDetails();
+     @EntityGraph(attributePaths = {
+         "empresa",
+         "subtipoTransporte",
+         "subtipoTransporte.tipoTransporte",
+         "subtipoTransporte.tipoTransporte.categoriaTransporte",
+         "gerenteResponsable",
+         "tuc",
+         "inspecciones"
+     })
+     @Query("SELECT v FROM Vehiculo v")
+     List<Vehiculo> findAllWithDetails();
 }

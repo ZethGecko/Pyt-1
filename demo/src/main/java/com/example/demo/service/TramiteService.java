@@ -1,6 +1,5 @@
 package com.example.demo.service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,8 +34,6 @@ import com.example.demo.repository.PersonaNaturalRepository;
 import com.example.demo.repository.TipoTramiteRepository;
 import com.example.demo.repository.TramiteRepository;
 import com.example.demo.repository.UsersRepository;
-import com.example.demo.service.InscripcionExamenService;
-import com.example.demo.service.RequisitoTUPACService;
 
 @Service
 @Transactional(readOnly = true)

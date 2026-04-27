@@ -32,20 +32,35 @@ public class Vehiculo {
     @Column(name = "anio_fabricacion")
     private Integer anioFabricacion;
 
-    @Column(name = "color", length = 30)
-    private String color;
+     @Column(name = "color", length = 30)
+     private String color;
 
-    @Column(name = "capacidad_pasajeros")
-    private Integer capacidadPasajeros;
+     @Column(name = "categoria", length = 10)
+     private String categoria;
 
-    @Column(name = "capacidad_carga")
-    private Double capacidadCarga; // en kg
+     @Column(name = "peso_neto")
+     private Double pesoNeto;
 
-    @Column(name = "estado", length = 20, nullable = false)
-    private String estado = "ACTIVO";
+     @Column(name = "estado_tecnico", length = 30)
+     private String estadoTecnico;
 
-    @Column(name = "observaciones", columnDefinition = "TEXT")
-    private String observaciones;
+     @Column(name = "capacidad_pasajeros")
+     private Integer capacidadPasajeros;
+
+     @Column(name = "capacidad_carga")
+     private Double capacidadCarga; // en kg
+
+     @Column(name = "fecha_habilitacion")
+     private LocalDateTime fechaHabilitacion;
+
+     @Column(name = "fecha_vencimiento_tuc")
+     private LocalDateTime fechaVencimientoTUC;
+
+     @Column(name = "estado", length = 20, nullable = false)
+     private String estado = "DESHABILITADO";
+
+     @Column(name = "observaciones", columnDefinition = "TEXT")
+     private String observaciones;
 
     @Column(name = "fecha_registro", nullable = false)
     private LocalDateTime fechaRegistro;
@@ -102,11 +117,26 @@ public class Vehiculo {
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
 
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
+
+    public Double getPesoNeto() { return pesoNeto; }
+    public void setPesoNeto(Double pesoNeto) { this.pesoNeto = pesoNeto; }
+
+    public String getEstadoTecnico() { return estadoTecnico; }
+    public void setEstadoTecnico(String estadoTecnico) { this.estadoTecnico = estadoTecnico; }
+
     public Integer getCapacidadPasajeros() { return capacidadPasajeros; }
     public void setCapacidadPasajeros(Integer capacidadPasajeros) { this.capacidadPasajeros = capacidadPasajeros; }
 
     public Double getCapacidadCarga() { return capacidadCarga; }
     public void setCapacidadCarga(Double capacidadCarga) { this.capacidadCarga = capacidadCarga; }
+
+    public LocalDateTime getFechaHabilitacion() { return fechaHabilitacion; }
+    public void setFechaHabilitacion(LocalDateTime fechaHabilitacion) { this.fechaHabilitacion = fechaHabilitacion; }
+
+    public LocalDateTime getFechaVencimientoTUC() { return fechaVencimientoTUC; }
+    public void setFechaVencimientoTUC(LocalDateTime fechaVencimientoTUC) { this.fechaVencimientoTUC = fechaVencimientoTUC; }
 
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }

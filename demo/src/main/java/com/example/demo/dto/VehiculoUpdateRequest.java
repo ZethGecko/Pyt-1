@@ -8,6 +8,9 @@ public class VehiculoUpdateRequest {
     private String modelo;
     private Integer fechaFabricacion;
     private String color;
+    private String categoria;
+    private Double pesoNeto;
+    private String estadoTecnico;
     private Integer capacidadPasajeros;
     private Double capacidadCarga;
     private String estado;
@@ -40,6 +43,15 @@ public class VehiculoUpdateRequest {
 
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
+
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
+
+    public Double getPesoNeto() { return pesoNeto; }
+    public void setPesoNeto(Double pesoNeto) { this.pesoNeto = pesoNeto; }
+
+    public String getEstadoTecnico() { return estadoTecnico; }
+    public void setEstadoTecnico(String estadoTecnico) { this.estadoTecnico = estadoTecnico; }
 
     public Integer getCapacidadPasajeros() { return capacidadPasajeros; }
     public void setCapacidadPasajeros(Integer capacidadPasajeros) { this.capacidadPasajeros = capacidadPasajeros; }

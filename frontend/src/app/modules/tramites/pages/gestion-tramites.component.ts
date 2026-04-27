@@ -760,15 +760,15 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
     return 'secondary';
   }
 
-  // Métodos de acción (mapeo a métodos existentes)
-  editarTramite(tramite: TramiteEnriquecido): void {
-    this.abrirModalEditar(tramite);
-  }
+   // Métodos de acción (mapeo a métodos existentes)
+   editarTramite(tramite: TramiteEnriquecido): void {
+     this.abrirModalEditar(tramite);
+   }
 
-  verDetalle(tramite: TramiteEnriquecido): void {
-    this.tramiteSeleccionado = tramite;
-    this.mostrarDetalle = true;
-  }
+   verDetalle(tramite: TramiteEnriquecido): void {
+     // Navegar a la página de detalle público
+     this.router.navigate(['/tramites/detalle', tramite.id]);
+   }
 
   eliminarTramite(id: number): void {
     if (!confirm('¿Está seguro que desea eliminar este trámite?')) return;

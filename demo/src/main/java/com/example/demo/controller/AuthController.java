@@ -166,7 +166,8 @@ public class AuthController {
      }
 
       @GetMapping("/validate")
-      public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
+      public ResponseEntity<?> validateToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+          System.out.println("[AuthController] GET /validate llamado. authHeader: " + (authHeader != null ? authHeader.substring(0, Math.min(20, authHeader.length())) + "..." : "NULL"));
           if (authHeader == null || !authHeader.startsWith("Bearer ")) {
               return ResponseEntity.status(401).body(Map.of("valid", false));
           }

@@ -18,7 +18,12 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     @Query("SELECT t FROM Tramite t LEFT JOIN FETCH t.tipoTramite WHERE t.codigoRut = :codigoRut")
     Tramite findByCodigoRutWithFetch(@Param("codigoRut") String codigoRut);
     
-    @Query("SELECT t FROM Tramite t LEFT JOIN FETCH t.tipoTramite WHERE t.idTramite = :id")
+    @Query("SELECT t FROM Tramite t " +
+           "LEFT JOIN FETCH t.tipoTramite " +
+           "LEFT JOIN FETCH t.personaNatural " +
+           "LEFT JOIN FETCH t.empresa " +
+           "LEFT JOIN FETCH t.gerente " +
+           "WHERE t.idTramite = :id")
     Tramite findByIdWithTipoTramite(@Param("id") Long id);
 
     @Query("SELECT t FROM Tramite t " +

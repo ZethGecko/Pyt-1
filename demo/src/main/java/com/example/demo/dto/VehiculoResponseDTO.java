@@ -11,6 +11,9 @@ public class VehiculoResponseDTO {
     private String modelo;
     private Integer fechaFabricacion;
     private String color;
+    private String categoria;
+    private Double pesoNeto;
+    private String estadoTecnico;
     private Integer capacidadPasajeros;
     private Double capacidadCarga;
     private String estado;
@@ -18,7 +21,7 @@ public class VehiculoResponseDTO {
     private LocalDateTime fechaRegistro;
     private LocalDateTime fechaActualizacion;
 
-    // Información de relaciones
+    // Información de relaciones (campos planos)
     private Long empresaId;
     private String empresaNombre;
     private String empresaRuc;
@@ -26,19 +29,15 @@ public class VehiculoResponseDTO {
     private String subtipoTransporteNombre;
     private Long gerenteResponsableId;
     private String gerenteResponsableNombre;
-
-    // Nuevos campos requeridos por el frontend
     private Long tipoTransporteId;
     private String tipoTransporteNombre;
     private Long categoriaTransporteId;
     private String categoriaTransporteNombre;
     private Boolean activo;
-    private String estadoTecnico;
     private LocalDateTime fechaHabilitacion;
     private LocalDateTime fechaVencimientoTUC;
     private Integer totalTucs;
     private Integer inspeccionesCount;
-    private Double pesoNeto;
 
     public VehiculoResponseDTO() {}
 
@@ -46,7 +45,6 @@ public class VehiculoResponseDTO {
                               String marca, String modelo, Integer fechaFabricacion, String color,
                               Integer capacidadPasajeros, Double capacidadCarga, String estado,
                               String observaciones, LocalDateTime fechaRegistro, LocalDateTime fechaActualizacion,
-                              Long empresaId, String empresaNombre, String empresaRuc,
                               Long subtipoTransporteId, String subtipoTransporteNombre,
                               Long gerenteResponsableId, String gerenteResponsableNombre) {
         this.idVehiculo = idVehiculo;
@@ -63,16 +61,43 @@ public class VehiculoResponseDTO {
         this.observaciones = observaciones;
         this.fechaRegistro = fechaRegistro;
         this.fechaActualizacion = fechaActualizacion;
-        this.empresaId = empresaId;
-        this.empresaNombre = empresaNombre;
-        this.empresaRuc = empresaRuc;
         this.subtipoTransporteId = subtipoTransporteId;
         this.subtipoTransporteNombre = subtipoTransporteNombre;
         this.gerenteResponsableId = gerenteResponsableId;
         this.gerenteResponsableNombre = gerenteResponsableNombre;
     }
 
-    // Getters y setters existentes
+    // Clase DTO anidado para empresa
+    public static class EmpresaDTO {
+        private Long id;
+        private String nombre;
+        private String ruc;
+
+        public EmpresaDTO() {}
+
+        public EmpresaDTO(Long id, String nombre, String ruc) {
+            this.id = id;
+            this.nombre = nombre;
+            this.ruc = ruc;
+        }
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
+        public String getRuc() { return ruc; }
+        public void setRuc(String ruc) { this.ruc = ruc; }
+    }
+
+    // Getter que construye el objeto empresa anidado consumido por el frontend
+    public EmpresaDTO getEmpresa() {
+        if (this.empresaId == null && this.empresaNombre == null && this.empresaRuc == null) {
+            return null;
+        }
+        return new EmpresaDTO(this.empresaId, this.empresaNombre, this.empresaRuc);
+    }
+
+    // Getters y setters
     public Long getIdVehiculo() { return idVehiculo; }
     public void setIdVehiculo(Long idVehiculo) { this.idVehiculo = idVehiculo; }
 
@@ -97,6 +122,15 @@ public class VehiculoResponseDTO {
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
 
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
+
+    public Double getPesoNeto() { return pesoNeto; }
+    public void setPesoNeto(Double pesoNeto) { this.pesoNeto = pesoNeto; }
+
+    public String getEstadoTecnico() { return estadoTecnico; }
+    public void setEstadoTecnico(String estadoTecnico) { this.estadoTecnico = estadoTecnico; }
+
     public Integer getCapacidadPasajeros() { return capacidadPasajeros; }
     public void setCapacidadPasajeros(Integer capacidadPasajeros) { this.capacidadPasajeros = capacidadPasajeros; }
 
@@ -115,13 +149,9 @@ public class VehiculoResponseDTO {
     public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
     public void setFechaActualizacion(LocalDateTime fechaActualizacion) { this.fechaActualizacion = fechaActualizacion; }
 
-    public Long getEmpresaId() { return empresaId; }
+    // Setters for empresa flat fields (used by controller to populate before getEmpresa())
     public void setEmpresaId(Long empresaId) { this.empresaId = empresaId; }
-
-    public String getEmpresaNombre() { return empresaNombre; }
     public void setEmpresaNombre(String empresaNombre) { this.empresaNombre = empresaNombre; }
-
-    public String getEmpresaRuc() { return empresaRuc; }
     public void setEmpresaRuc(String empresaRuc) { this.empresaRuc = empresaRuc; }
 
     public Long getSubtipoTransporteId() { return subtipoTransporteId; }
@@ -136,7 +166,6 @@ public class VehiculoResponseDTO {
     public String getGerenteResponsableNombre() { return gerenteResponsableNombre; }
     public void setGerenteResponsableNombre(String gerenteResponsableNombre) { this.gerenteResponsableNombre = gerenteResponsableNombre; }
 
-    // Nuevos getters y setters
     public Long getTipoTransporteId() { return tipoTransporteId; }
     public void setTipoTransporteId(Long tipoTransporteId) { this.tipoTransporteId = tipoTransporteId; }
 
@@ -152,9 +181,6 @@ public class VehiculoResponseDTO {
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
 
-    public String getEstadoTecnico() { return estadoTecnico; }
-    public void setEstadoTecnico(String estadoTecnico) { this.estadoTecnico = estadoTecnico; }
-
     public LocalDateTime getFechaHabilitacion() { return fechaHabilitacion; }
     public void setFechaHabilitacion(LocalDateTime fechaHabilitacion) { this.fechaHabilitacion = fechaHabilitacion; }
 
@@ -166,7 +192,4 @@ public class VehiculoResponseDTO {
 
     public Integer getInspeccionesCount() { return inspeccionesCount; }
     public void setInspeccionesCount(Integer inspeccionesCount) { this.inspeccionesCount = inspeccionesCount; }
-
-    public Double getPesoNeto() { return pesoNeto; }
-    public void setPesoNeto(Double pesoNeto) { this.pesoNeto = pesoNeto; }
 }

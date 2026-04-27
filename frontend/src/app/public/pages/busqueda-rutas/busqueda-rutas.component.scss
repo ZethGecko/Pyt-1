@@ -1,7 +1,6 @@
 // busqueda-rutas.component.scss
-@use 'sass:color';
 
-// Variables - consistentes con el primer ejemplo
+// Variables
 $primary-color: #2563eb;
 $primary-hover: #1d4ed8;
 $secondary-color: #64748b;
@@ -29,7 +28,7 @@ $border-radius-lg: 0.75rem;
   padding: 1.5rem;
 }
 
-// Header (adaptado del primer ejemplo)
+// Header
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -55,10 +54,7 @@ $border-radius-lg: 0.75rem;
       color: $text-secondary;
       transition: all $transition-fast;
 
-      svg {
-        width: 20px;
-        height: 20px;
-      }
+      svg { width: 20px; height: 20px; }
 
       &:hover {
         background-color: #f1f5f9;
@@ -77,10 +73,7 @@ $border-radius-lg: 0.75rem;
       align-items: center;
       justify-content: center;
 
-      svg {
-        width: 24px;
-        height: 24px;
-      }
+      svg { width: 24px; height: 24px; }
     }
 
     h1 {
@@ -104,7 +97,7 @@ $border-radius-lg: 0.75rem;
   }
 }
 
-// Mensajes (unificado)
+// Mensajes
 .messages {
   margin-bottom: 1.5rem;
 
@@ -123,22 +116,44 @@ $border-radius-lg: 0.75rem;
       border: 1px solid #fecaca;
     }
 
-    .alert-icon {
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-    }
+    .alert-icon { width: 20px; height: 20px; flex-shrink: 0; }
   }
 
   @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+// Instrucciones
+.instructions {
+  padding: 1rem;
+  background: $card-background;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-lg;
+  margin-bottom: 1.5rem;
+  color: $text-secondary;
+  font-size: 0.875rem;
+}
+
+// Modo selección de origen
+.mode-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: $border-radius;
+  color: #92400e;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #b45309;
   }
 }
 
@@ -152,8 +167,8 @@ $border-radius-lg: 0.75rem;
   }
 }
 
-// Panel de búsqueda (estilo consistente)
-.search-panel {
+// Panel de info
+.info-panel {
   background: $card-background;
   border-radius: $border-radius-lg;
   border: 1px solid $border-color;
@@ -182,65 +197,31 @@ $border-radius-lg: 0.75rem;
       margin: 0;
     }
   }
-}
 
-// Formulario (reutilizado del primer ejemplo)
-.form-group {
-  margin-bottom: 1.25rem;
+  .info-group {
+    margin-bottom: 1.25rem;
 
-  label {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: $text-primary;
-    margin-bottom: 0.5rem;
-
-    .label-icon {
-      width: 16px;
-      height: 16px;
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
       color: $text-secondary;
-    }
-  }
-
-  .form-input {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid $border-color;
-    border-radius: $border-radius;
-    font-size: 0.875rem;
-    color: $text-primary;
-    background-color: $background-color;
-    transition: all $transition-fast;
-
-    &:focus {
-      outline: none;
-      border-color: $primary-color;
-      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      margin-bottom: 0.375rem;
     }
 
-    &::placeholder {
-      color: $text-muted;
-    }
-
-    &[readonly] {
+    .info-value {
+      padding: 0.75rem 1rem;
       background-color: $background-color;
-      cursor: default;
-    }
-  }
-
-  .input-with-button {
-    display: flex;
-    gap: 0.5rem;
-
-    .form-input {
-      flex: 1;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      font-size: 0.875rem;
+      color: $text-primary;
+      min-height: 42px;
     }
   }
 }
 
-// Botones (consistente)
+// Botones
 .btn {
   display: inline-flex;
   align-items: center;
@@ -261,7 +242,7 @@ $border-radius-lg: 0.75rem;
     box-shadow: $shadow-sm;
 
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, $primary-hover, color.adjust($primary-hover, $lightness: -5%));
+      background: linear-gradient(135deg, $primary-hover, darken($primary-hover, 5%));
       box-shadow: $shadow-md;
     }
 
@@ -282,82 +263,51 @@ $border-radius-lg: 0.75rem;
     }
   }
 
-  &.btn-outline {
-    background-color: transparent;
-    border: 1px solid $border-color;
-    color: $text-secondary;
+   &.btn-outline {
+     background-color: transparent;
+     border: 1px solid $border-color;
+     color: $text-secondary;
 
-    &:hover:not(:disabled) {
-      background-color: #f1f5f9;
-      color: $text-primary;
-    }
+     &:hover:not(:disabled) {
+       background-color: #f1f5f9;
+       color: $text-primary;
+     }
 
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
+     &:disabled {
+       opacity: 0.5;
+       cursor: not-allowed;
+     }
+
+     &.active {
+       background-color: #dbeafe;
+       border-color: $primary-color;
+       color: $primary-color;
+     }
+   }
 
   &.btn-block {
     width: 100%;
   }
 }
 
-.btn-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: $border-radius;
-  border: 1px solid $border-color;
-  background-color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all $transition-fast;
-
-  svg {
-    width: 18px;
-    height: 18px;
-    color: $text-secondary;
-    transition: color $transition-fast;
-  }
-
-  &:hover {
-    background-color: $primary-color;
-    border-color: $primary-color;
-
-    svg {
-      color: white;
-    }
-  }
-
-  &.btn-edit {
-    background-color: #dbeafe;
-    border-color: $primary-color;
-
-    svg {
-      color: $primary-color;
-    }
-
-    &:hover {
-      background-color: $primary-color;
-
-      svg {
-        color: white;
-      }
-    }
-  }
+// Iconos
+.btn-icon-svg {
+  width: 18px;
+  height: 18px;
 }
 
-// Botón de búsqueda
-.btn-primary {
-  margin-top: 0.5rem;
-  padding: 0.875rem !important;
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
 
-  .btn-icon-svg {
-    width: 20px;
-    height: 20px;
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 // Mapa
@@ -416,7 +366,7 @@ $border-radius-lg: 0.75rem;
   }
 }
 
-// Tarjeta de ruta (mejorada)
+// Tarjeta de ruta
 .ruta-card {
   background: $card-background;
   border-radius: $border-radius-lg;
@@ -435,51 +385,76 @@ $border-radius-lg: 0.75rem;
       color: white;
       border-color: transparent;
 
-      svg {
-        color: white;
-      }
+      svg { color: white; }
     }
   }
 
-  .ruta-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
+   .ruta-card-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: flex-start;
+     margin-bottom: 1rem;
+     flex-wrap: wrap;
+     gap: 0.5rem;
 
-    h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: $text-primary;
-      margin: 0;
-      flex: 1;
-    }
+     h3 {
+       font-size: 1rem;
+       font-weight: 600;
+       color: $text-primary;
+       margin: 0;
+       flex: 1;
+     }
 
-    .empresa-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.75rem;
-      background-color: #dbeafe;
-      color: $primary-color;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
-      margin-left: 0.5rem;
+     .header-badges {
+       display: flex;
+       align-items: center;
+       gap: 0.5rem;
+       flex-wrap: wrap;
+     }
 
-      .badge-icon {
-        width: 12px;
-        height: 12px;
-      }
-    }
-  }
+     .badge {
+       display: inline-flex;
+       align-items: center;
+       padding: 0.25rem 0.6rem;
+       border-radius: 9999px;
+       font-size: 0.7rem;
+       font-weight: 600;
+       text-transform: uppercase;
+       letter-spacing: 0.05em;
+       white-space: nowrap;
 
-  .ruta-card-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
+       &.badge-optimo {
+         background-color: #d1fae5;
+         color: #065f46;
+       }
+
+       &.badge-fallback {
+         background-color: #fef3c7;
+         color: #92400e;
+       }
+     }
+
+     .empresa-badge {
+       display: inline-flex;
+       align-items: center;
+       gap: 0.25rem;
+       padding: 0.25rem 0.75rem;
+       background-color: #dbeafe;
+       color: $primary-color;
+       border-radius: 9999px;
+       font-size: 0.75rem;
+       font-weight: 500;
+       white-space: nowrap;
+
+       .badge-icon { width: 12px; height: 12px; }
+     }
+   }
+
+   .ruta-card-stats {
+     display: grid;
+     grid-template-columns: repeat(3, 1fr);
+     gap: 1rem;
+     margin-bottom: 1.25rem;
 
     .stat-item {
       display: flex;
@@ -517,13 +492,11 @@ $border-radius-lg: 0.75rem;
     background-color: white;
     transition: all $transition-fast;
 
-    svg {
-      transition: color $transition-fast;
-    }
+    svg { transition: color $transition-fast; }
   }
 }
 
-// Estados vacío y loading (consistentes)
+// Estados vacío y loading
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -579,24 +552,118 @@ $border-radius-lg: 0.75rem;
   }
 }
 
-// Iconos SVG reutilizables
-.btn-icon-svg {
-  width: 18px;
-  height: 18px;
+// Modal de selección de ubicación
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+
+  .modal-content {
+    background: $card-background;
+    border-radius: $border-radius-lg;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: $shadow-lg;
+    animation: slideUp 0.3s ease;
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid $border-color;
+
+      h3 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        color: $text-secondary;
+        transition: color $transition-fast;
+
+        &:hover { color: $text-primary; }
+
+        svg { width: 24px; height: 24px; }
+      }
+    }
+
+    .modal-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow: hidden;
+
+      .modal-help {
+        margin: 0;
+        color: $text-secondary;
+        font-size: 0.875rem;
+        text-align: center;
+      }
+
+      .map-modal {
+        width: 100%;
+        height: 400px;
+        border-radius: $border-radius;
+        overflow: hidden;
+        border: 1px solid $border-color;
+      }
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid $border-color;
+      display: flex;
+      justify-content: flex-end;
+
+      .btn { min-width: 100px; }
+    }
+  }
 }
 
-.spinner-small {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  display: inline-block;
+// Help text
+.help-text {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  color: $text-secondary;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 // Responsive

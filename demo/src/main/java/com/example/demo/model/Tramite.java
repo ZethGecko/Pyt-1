@@ -112,15 +112,53 @@ public class Tramite {
      private List<ObservacionSolicitud> observacionesSolicitudes;
 
      // Campo transitorio para facilitar al frontend
-    @Transient
-    private Long tipoTramiteId;
-    
-    @PostLoad
-    public void postLoad() {
-        if (this.tipoTramite != null) {
-            this.tipoTramiteId = this.tipoTramite.getIdTipoTramite();
-        }
-    }
+     @Transient
+     private Long tipoTramiteId;
+
+     // Campos enriquecidos transitorios para frontend
+     @Transient
+     private String tipoTramiteCodigo;
+     @Transient
+     private String tipoTramiteDescripcion;
+     @Transient
+     private String solicitanteNombre;
+     @Transient
+     private Long solicitanteId;
+
+     @PostLoad
+     public void postLoad() {
+         if (this.tipoTramite != null) {
+             this.tipoTramiteId = this.tipoTramite.getIdTipoTramite();
+             this.tipoTramiteCodigo = this.tipoTramite.getCodigo();
+             this.tipoTramiteDescripcion = this.tipoTramite.getDescripcion();
+         }
+         // Determinar solicitante (solo uno de los tres puede estar presente)
+         if (this.personaNatural != null) {
+             this.solicitanteNombre = this.personaNatural.getNombres() + " " + this.personaNatural.getApellidos();
+             this.solicitanteId = this.personaNatural.getIdPersonaNatural();
+         } else if (this.empresa != null) {
+             this.solicitanteNombre = this.empresa.getNombre();
+             this.solicitanteId = this.empresa.getIdEmpresa();
+         } else if (this.gerente != null) {
+             this.solicitanteNombre = this.gerente.getNombre();
+             this.solicitanteId = this.gerente.getIdGerente();
+         } else {
+             this.solicitanteNombre = null;
+             this.solicitanteId = null;
+         }
+     }
+
+    public Long getSolicitanteId() { return solicitanteId; }
+    public void setSolicitanteId(Long solicitanteId) { this.solicitanteId = solicitanteId; }
+
+    public String getSolicitanteNombre() { return solicitanteNombre; }
+    public void setSolicitanteNombre(String solicitanteNombre) { this.solicitanteNombre = solicitanteNombre; }
+
+    public String getTipoTramiteCodigo() { return tipoTramiteCodigo; }
+    public void setTipoTramiteCodigo(String tipoTramiteCodigo) { this.tipoTramiteCodigo = tipoTramiteCodigo; }
+
+    public String getTipoTramiteDescripcion() { return tipoTramiteDescripcion; }
+    public void setTipoTramiteDescripcion(String tipoTramiteDescripcion) { this.tipoTramiteDescripcion = tipoTramiteDescripcion; }
 
     // Getters y setters
     public Long getIdTramite() { return idTramite; }

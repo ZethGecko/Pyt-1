@@ -194,12 +194,24 @@ public class VehiculoController {
             empresaRuc = v.getEmpresa().getRuc();
         }
 
-        // Información de subtipo transporte
+        // Información de subtipo transporte y tipo transporte
         Long subtipoTransporteId = null;
         String subtipoTransporteNombre = null;
+        Long tipoTransporteId = null;
+        String tipoTransporteNombre = null;
+        Long categoriaTransporteId = null;
+        String categoriaTransporteNombre = null;
         if (v.getSubtipoTransporte() != null) {
             subtipoTransporteId = v.getSubtipoTransporte().getIdSubtipoTransporte();
             subtipoTransporteNombre = v.getSubtipoTransporte().getNombre();
+            if (v.getSubtipoTransporte().getTipoTransporte() != null) {
+                tipoTransporteId = v.getSubtipoTransporte().getTipoTransporte().getIdTipoTransporte();
+                tipoTransporteNombre = v.getSubtipoTransporte().getTipoTransporte().getNombre();
+                if (v.getSubtipoTransporte().getTipoTransporte().getCategoriaTransporte() != null) {
+                    categoriaTransporteId = v.getSubtipoTransporte().getTipoTransporte().getCategoriaTransporte().getIdCategoriaTransporte();
+                    categoriaTransporteNombre = v.getSubtipoTransporte().getTipoTransporte().getCategoriaTransporte().getNombre();
+                }
+            }
         }
 
         // Información de gerente responsable
@@ -210,7 +222,13 @@ public class VehiculoController {
             gerenteResponsableNombre = v.getGerenteResponsable().getNombre();
         }
 
-        return new VehiculoResponseDTO(
+        // TUC vinculado
+        LocalDateTime fechaVencimientoTUC = null;
+        if (v.getTuc() != null) {
+            fechaVencimientoTUC = v.getTuc().getFechaVencimiento();
+        }
+
+        VehiculoResponseDTO dto = new VehiculoResponseDTO(
                 v.getIdVehiculo(),
                 v.getPlaca(),
                 v.getNumeroMotor(),
@@ -225,13 +243,33 @@ public class VehiculoController {
                 v.getObservaciones(),
                 v.getFechaRegistro(),
                 v.getFechaActualizacion(),
-                empresaId,
-                empresaNombre,
-                empresaRuc,
                 subtipoTransporteId,
                 subtipoTransporteNombre,
                 gerenteResponsableId,
                 gerenteResponsableNombre
         );
+
+        // Campos adicionales
+        dto.setCategoria(v.getCategoria());
+        dto.setPesoNeto(v.getPesoNeto());
+        dto.setEstadoTecnico(v.getEstadoTecnico());
+        dto.setFechaHabilitacion(v.getFechaHabilitacion());
+        dto.setFechaVencimientoTUC(fechaVencimientoTUC);
+        dto.setTipoTransporteId(tipoTransporteId);
+        dto.setTipoTransporteNombre(tipoTransporteNombre);
+         dto.setCategoriaTransporteId(categoriaTransporteId);
+         dto.setCategoriaTransporteNombre(categoriaTransporteNombre);
+         dto.setActivo("ACTIVO".equals(v.getEstado()));
+         dto.setTotalTucs(v.getTuc() != null ? 1 : 0);
+        dto.setInspeccionesCount(v.getInspecciones() != null ? v.getInspecciones().size() : 0);
+
+        // Establecer campos planos de empresa para que getEmpresa() los retorne
+        dto.setEmpresaId(empresaId);
+        dto.setEmpresaNombre(empresaNombre);
+        dto.setEmpresaRuc(empresaRuc);
+
+        return dto;
     }
+
+    // Método para listar enriquecidos
 }

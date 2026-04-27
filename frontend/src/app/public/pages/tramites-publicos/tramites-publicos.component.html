@@ -1,0 +1,140 @@
+<div class="tramites-publicos">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <a routerLink="/" class="header-back-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </a>
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Trámites</h1>
+        <p class="page-subtitle">Consulta los tipos de trámites y requisitos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="messages" *ngIf="error">
+    <div class="alert alert-error" (click)="clearError()">
+      <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      {{ error }}
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="cargando">
+    <div class="spinner"></div>
+    <span class="loading-text">Cargando trámites...</span>
+  </div>
+
+  <!-- Listado -->
+  <div class="tramites-grid" *ngIf="!cargando && !error">
+    <div class="tramite-card" *ngFor="let tipo of tiposTramite">
+      <div class="tramite-card-header">
+        <div class="codigo-badge">{{ tipo.codigo }}</div>
+        <h3>{{ tipo.descripcion }}</h3>
+        <p class="tupac-info">
+          <strong>TUPA:</strong> {{ tipo.tupacCodigo }} - {{ tipo.tupacDescripcion }}
+        </p>
+      </div>
+
+      <div class="tramite-card-body">
+        <div class="estadistica">
+          <span class="label">Requisitos:</span>
+          <span class="valor">{{ tipo.requisitos.length }}</span>
+        </div>
+        <div class="estadistica">
+          <span class="label">Obligatorios:</span>
+          <span class="valor">{{ tipo.obligatoriosCount }}</span>
+        </div>
+      </div>
+
+      <div class="tramite-card-footer">
+        <button class="btn btn-secondary" (click)="verRequisitos(tipo)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          Ver Requisitos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vacío -->
+  <div class="empty-state" *ngIf="!cargando && !error && tiposTramite.length === 0">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    <h3>No hay trámites disponibles</h3>
+    <p>Actualmente no hay tipos de trámite registrados.</p>
+  </div>
+
+  <!-- Modal de requisitos -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>{{ tipoSeleccionado?.codigo }} - {{ tipoSeleccionado?.descripcion }}</h3>
+          <p class="tupac-subtitle">{{ tipoSeleccionado?.tupacCodigo }} - {{ tipoSeleccionado?.tupacDescripcion }}</p>
+        </div>
+        <button class="modal-close" (click)="cerrarModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="tipoSeleccionado">
+        <table class="requisitos-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Tipo</th>
+              <th>Oblig.</th>
+              <th>Examen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let req of tipoSeleccionado.requisitos">
+              <td><span class="codigo-req">{{ req.codigo }}</span></td>
+              <td>{{ req.descripcion }}</td>
+              <td>
+                <span class="tipo-badge" [ngClass]="req.tipoClase">
+                  {{ req.tipoDocumentoFormateado }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="req.badgeObligatorioClase">
+                  {{ req.obligatorio ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="req.badgeExamenClase">
+                  {{ req.esExamen ? 'Sí' : 'No' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="empty-requisitos" *ngIf="tipoSeleccionado.requisitos.length === 0">
+          <p>Este trámite no tiene requisitos configurados.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

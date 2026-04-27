@@ -22,6 +22,10 @@ export interface RequisitoRevision {
   descripcion?: string;
   tipoDocumento?: string;
   obligatorio: boolean;
+  // Format fields (optional)
+  formatoId?: number | null;
+  formatoDescripcion?: string;
+  formatoArchivoRuta?: string;
 }
 
 @Injectable({

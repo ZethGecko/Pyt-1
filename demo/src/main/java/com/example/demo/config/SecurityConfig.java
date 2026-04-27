@@ -51,26 +51,35 @@ public class SecurityConfig {
         };
     }
 
-      @Bean
-      public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-          http
-              .cors()  // Enable CORS support
-              .and()
-              .csrf().disable()
-               .authorizeHttpRequests(auth -> auth
-                   .requestMatchers("/api/auth/**").permitAll()
-                   .requestMatchers("/api/tramites/publico/**").permitAll()
-                   .requestMatchers("/api/tramites/buscar/enriquecidos").permitAll()
-                   .requestMatchers("/api/tramites/enriquecidos").permitAll()
-                   .requestMatchers("/api/grupos-presentacion/**").permitAll()
-                   .requestMatchers("/api/inscripcion-examen/**").permitAll()
-                   .requestMatchers("/api/parametros-inspeccion/**").permitAll()
-                   .requestMatchers("/api/fichas-inspeccion/**").permitAll()
-                   .requestMatchers("/actuator/**").permitAll()
-                   .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                   .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                   .anyRequest().authenticated()
-               )
+@Bean
+       public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+           http
+               .cors()  // Enable CORS support
+               .and()
+               .csrf().disable()
+                 .authorizeHttpRequests(auth -> auth
+                     .requestMatchers("/api/auth/**").permitAll()
+                     .requestMatchers("/api/tipos-tramite/publico").permitAll()
+                     .requestMatchers("/api/tramites/publico/**").permitAll()
+                     .requestMatchers("/api/tramites/buscar/enriquecidos").permitAll()
+                     .requestMatchers("/api/tramites/enriquecidos").permitAll()
+                      .requestMatchers("/api/rutas/buscar").permitAll()
+                      .requestMatchers("/api/rutas/debug/**").permitAll()
+                      .requestMatchers("/api/empresas").permitAll()
+                     .requestMatchers("/api/empresas/**").permitAll()
+                     .requestMatchers("/api/puntos").permitAll()
+                     .requestMatchers("/api/puntos/**").permitAll()
+                     .requestMatchers("/api/grupos-presentacion/**").permitAll()
+                     .requestMatchers("/api/inscripcion-examen/**").permitAll()
+                     .requestMatchers("/api/parametros-inspeccion/**").permitAll()
+                     .requestMatchers("/api/fichas-inspeccion/**").permitAll()
+                     .requestMatchers("/actuator/**").permitAll()
+                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                     // Recursos estáticos del frontend
+                     .requestMatchers("/", "/index.html", "/favicon.ico", "/manifest.json", "/assets/**").permitAll()
+                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                     .anyRequest().authenticated()
+                 )
               .sessionManagement(session -> session
                   .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
               );

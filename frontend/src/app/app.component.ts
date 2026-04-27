@@ -24,7 +24,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showSidebar = true;
   isSidebarOpen = true;
 
-  ngOnInit(): void {
+   ngOnInit(): void {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
@@ -35,9 +35,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Check authentication status on app start
     if (!this.authState.isLoggedIn()) {
-      // No valid token, redirect to login if not already there
+      // No valid token, redirect to login ONLY if accessing a private route
       const currentUrl = this.router.url;
-      if (!currentUrl.startsWith('/auth/')) {
+      const pathWithoutQuery = currentUrl.split('?')[0];
+      const publicRoutes = ['/', '/seguimiento', '/publicaciones', '/busqueda-rutas'];
+      const isPublicRoute = publicRoutes.includes(pathWithoutQuery);
+      
+      if (!isPublicRoute && !currentUrl.startsWith('/auth/')) {
         console.log('[AppComponent] No valid authentication, redirecting to login');
         this.router.navigate(['/auth/login'], {
           queryParams: { returnUrl: currentUrl }

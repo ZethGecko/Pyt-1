@@ -1,11 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.PuntoRutaResponseDTO;
-import com.example.demo.dto.RutaResponseDTO;
-import com.example.demo.model.Ruta;
-import com.example.demo.model.Users;
-import com.example.demo.repository.UsersRepository;
-import com.example.demo.service.RutaService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -14,13 +14,26 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.example.demo.dto.BusquedaRutaRequestDTO;
+import com.example.demo.dto.PuntoRutaResponseDTO;
+import com.example.demo.dto.RutaBusquedaResultadoDTO;
+import com.example.demo.dto.RutaResponseDTO;
+import com.example.demo.model.PuntoRuta;
+import com.example.demo.model.Ruta;
+import com.example.demo.model.Users;
+import com.example.demo.repository.UsersRepository;
+import com.example.demo.service.RutaService;
 
 @RestController
 @RequestMapping("/api/rutas")
@@ -211,6 +224,58 @@ public class RutaController {
         map.put("asignadas", rutaService.countAsignadas());
         map.put("sinAsignar", rutaService.countSinAsignar());
         return map;
+    }
+
+    // Endpoint temporal para debug
+    @GetMapping("/debug/rutas-con-puntos")
+    @org.springframework.security.access.prepost.PreAuthorize("permitAll()")
+    public Map<String, Object> debugRutasConPuntos() {
+        List<Ruta> rutas = rutaService.listarActivos();
+        Map<String, Object> debug = new HashMap<>();
+        List<Map<String, Object>> rutasInfo = new ArrayList<>();
+        for (Ruta r : rutas) {
+            Map<String, Object> ri = new HashMap<>();
+            ri.put("id", r.getIdRuta());
+            ri.put("codigo", r.getCodigo());
+            ri.put("nombre", r.getNombre());
+            ri.put("estado", r.getEstado());
+            List<PuntoRuta> puntos = r.getPuntosRuta();
+            ri.put("numPuntos", puntos != null ? puntos.size() : 0);
+            if (puntos != null) {
+                List<Map<String, Object>> pts = new ArrayList<>();
+                for (PuntoRuta p : puntos) {
+                    Map<String, Object> pi = new HashMap<>();
+                    pi.put("id", p.getIdPuntoRuta());
+                    pi.put("nombre", p.getNombre());
+                    pi.put("orden", p.getOrden());
+                    pi.put("lat", p.getLatitud());
+                    pi.put("lng", p.getLongitud());
+                    pts.add(pi);
+                }
+                ri.put("puntos", pts);
+            }
+            rutasInfo.add(ri);
+        }
+        debug.put("rutas", rutasInfo);
+        debug.put("totalRutas", rutas.size());
+        return debug;
+    }
+
+    // ========== BÚSQUEDA DE RUTAS (PÚBLICA) ==========
+
+    /**
+     * Busca las mejores rutas que conectan un origen y destino.
+     * Devuelve rutas ordenadas por distancia calculada (más corta primero).
+     * Endpoint público - no requiere autenticación.
+     */
+    @PostMapping("/buscar")
+    public List<RutaBusquedaResultadoDTO> buscarMejorRuta(@RequestBody BusquedaRutaRequestDTO request) {
+        System.out.println("[RutaController] POST /api/rutas/buscar recibido");
+        System.out.println("[RutaController] Origen: " + request.getOrigenLatitud() + ", " + request.getOrigenLongitud());
+        System.out.println("[RutaController] Destino: " + request.getDestinoLatitud() + ", " + request.getDestinoLongitud());
+        List<RutaBusquedaResultadoDTO> resultados = rutaService.buscarMejorRuta(request);
+        System.out.println("[RutaController] Resultados devueltos: " + resultados.size());
+        return resultados;
     }
 
     private RutaResponseDTO toResponseDTO(Ruta r) {

@@ -56,6 +56,12 @@ public class Inspeccion {
     @JsonIgnore
     private Expediente expediente;
 
+    // Relación con Tramite (opcional, para vincular inspección con trámite de origen)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tramite_id")
+    @JsonIgnore
+    private Tramite tramite;
+
     // Relación con Usuario (inspector)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_inspector", nullable = false)
@@ -112,6 +118,9 @@ public class Inspeccion {
 
     public Expediente getExpediente() { return expediente; }
     public void setExpediente(Expediente expediente) { this.expediente = expediente; }
+
+    public Tramite getTramite() { return tramite; }
+    public void setTramite(Tramite tramite) { this.tramite = tramite; }
 
     public Users getUsuarioInspector() { return usuarioInspector; }
     public void setUsuarioInspector(Users usuarioInspector) { this.usuarioInspector = usuarioInspector; }

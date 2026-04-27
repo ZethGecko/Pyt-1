@@ -103,15 +103,27 @@ public class JwtRequestFilter extends OncePerRequestFilter {
       @Override
       protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
           String path = request.getServletPath();
-          System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + request.getMethod());
+          String method = request.getMethod();
+          System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + method);
           // Permitir acceso a endpoints públicos, preflight OPTIONS y recursos estáticos
-          if (path.startsWith("/api/auth/") || path.startsWith("/actuator") ||
+          if ("OPTIONS".equalsIgnoreCase(method) ||
+              path.startsWith("/actuator") ||
               path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
-              path.startsWith("/api/tramites/publico/") || path.startsWith("/api/tramites/buscar/enriquecidos") ||
-              path.startsWith("/api/tramites/enriquecidos") || path.startsWith("/api/grupos-presentacion/") ||
+              // Públicos
+              path.startsWith("/api/auth/") ||
+              path.startsWith("/api/tipos-tramite/publico") ||
+              path.startsWith("/api/tramites/publico/") ||
+              path.startsWith("/api/tramites/buscar/enriquecidos") ||
+              path.startsWith("/api/tramites/enriquecidos") ||
+              path.startsWith("/api/rutas/buscar") ||
+              path.startsWith("/api/empresas") ||
+              path.startsWith("/api/puntos") ||
+              path.startsWith("/api/grupos-presentacion/") ||
               path.startsWith("/api/parametros-inspeccion/") ||
               path.startsWith("/api/fichas-inspeccion/") ||
-              "OPTIONS".equalsIgnoreCase(request.getMethod())) {
+              // Recursos estáticos
+              path.equals("/") || path.startsWith("/index.html") || path.startsWith("/assets/") ||
+              path.startsWith("/manifest.json") || path.startsWith("/favicon.ico")) {
               System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered");
               return true;
           }

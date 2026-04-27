@@ -35,10 +35,9 @@ export const routes: Routes = [
     loadComponent: () => import('./private/dashboard/dashboard.component').then(m => m.DashboardComponent)
   },
 
-  // Privadas - Módulo Trámites
+  // Módulo Trámites (algunas rutas públicas, otras privadas - se definen en el módulo)
   {
     path: 'tramites',
-    canActivate: [authGuard],
     loadChildren: () => import('./modules/tramites/tramites.module').then(m => m.TramitesModule)
   },
 

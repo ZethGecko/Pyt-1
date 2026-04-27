@@ -80,27 +80,47 @@ public class RequisitoTUPACController {
             if (data.containsKey("diasValidez")) {
                 Object dv = data.get("diasValidez");
                 if (dv != null) {
-                    requisito.setDiasValidez(((Number) dv).intValue());
+                    Integer diasValidez = null;
+                    if (dv instanceof Number) {
+                        diasValidez = ((Number) dv).intValue();
+                    } else if (dv instanceof String) {
+                        diasValidez = Integer.valueOf((String) dv);
+                    }
+                    requisito.setDiasValidez(diasValidez);
                 }
             }
 
             // Handle TUPAC relationship: expects { "tupac": { "id": number } }
             Map<String, Object> tupacMap = (Map<String, Object>) data.get("tupac");
             if (tupacMap != null) {
-                Number idNum = (Number) tupacMap.get("id");
-                if (idNum != null) {
-                    Long tupacId = idNum.longValue();
-                    TUPAC tupac = tupacService.buscarPorId(tupacId);
-                    requisito.setTupac(tupac);
+                Object idObj = tupacMap.get("id");
+                if (idObj != null) {
+                    Long tupacId = null;
+                    if (idObj instanceof Number) {
+                        tupacId = ((Number) idObj).longValue();
+                    } else if (idObj instanceof String) {
+                        tupacId = Long.valueOf((String) idObj);
+                    }
+                    if (tupacId != null) {
+                        TUPAC tupac = tupacService.buscarPorId(tupacId);
+                        requisito.setTupac(tupac);
+                    }
                 }
             }
 
             // Handle Formato: expects formatoId (number or null)
             Object formatoIdObj = data.get("formatoId");
             if (formatoIdObj != null) {
-                Long formatoId = ((Number) formatoIdObj).longValue();
-                Formatos formato = formatosService.buscarPorId(formatoId).orElse(null);
-                requisito.setFormato(formato);
+                Long formatoId = null;
+                if (formatoIdObj instanceof Number) {
+                    formatoId = ((Number) formatoIdObj).longValue();
+                } else if (formatoIdObj instanceof String) {
+                    formatoId = Long.valueOf((String) formatoIdObj);
+                }
+                if (formatoId != null) {
+                    Formatos formato = formatosService.buscarPorId(formatoId).orElse(null);
+                    requisito.setFormato(formato);
+                }
             } else {
                 requisito.setFormato(null);
             }
@@ -150,7 +170,13 @@ public class RequisitoTUPACController {
         if (data.containsKey("diasValidez")) {
             Object dv = data.get("diasValidez");
             if (dv != null) {
-                requisito.setDiasValidez(((Number) dv).intValue());
+                Integer diasValidez = null;
+                if (dv instanceof Number) {
+                    diasValidez = ((Number) dv).intValue();
+                } else if (dv instanceof String) {
+                    diasValidez = Integer.valueOf((String) dv);
+                }
+                requisito.setDiasValidez(diasValidez);
             } else {
                 requisito.setDiasValidez(null);
             }
@@ -160,11 +186,18 @@ public class RequisitoTUPACController {
         if (data.containsKey("tupac")) {
             Map<String, Object> tupacMap = (Map<String, Object>) data.get("tupac");
             if (tupacMap != null) {
-                Number idNum = (Number) tupacMap.get("id");
-                if (idNum != null) {
-                    Long tupacId = idNum.longValue();
-                    TUPAC tupac = tupacService.buscarPorId(tupacId);
-                    requisito.setTupac(tupac);
+                Object idObj = tupacMap.get("id");
+                if (idObj != null) {
+                    Long tupacId = null;
+                    if (idObj instanceof Number) {
+                        tupacId = ((Number) idObj).longValue();
+                    } else if (idObj instanceof String) {
+                        tupacId = Long.valueOf((String) idObj);
+                    }
+                    if (tupacId != null) {
+                        TUPAC tupac = tupacService.buscarPorId(tupacId);
+                        requisito.setTupac(tupac);
+                    }
                 }
             }
         }
@@ -173,9 +206,16 @@ public class RequisitoTUPACController {
         if (data.containsKey("formatoId")) {
             Object formatoIdObj = data.get("formatoId");
             if (formatoIdObj != null) {
-                Long formatoId = ((Number) formatoIdObj).longValue();
-                Formatos formato = formatosService.buscarPorId(formatoId).orElse(null);
-                requisito.setFormato(formato);
+                Long formatoId = null;
+                if (formatoIdObj instanceof Number) {
+                    formatoId = ((Number) formatoIdObj).longValue();
+                } else if (formatoIdObj instanceof String) {
+                    formatoId = Long.valueOf((String) formatoIdObj);
+                }
+                if (formatoId != null) {
+                    Formatos formato = formatosService.buscarPorId(formatoId).orElse(null);
+                    requisito.setFormato(formato);
+                }
             } else {
                 requisito.setFormato(null);
             }

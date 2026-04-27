@@ -33,6 +33,9 @@ public interface RutaRepository extends JpaRepository<Ruta, Long> {
     @Query("SELECT r FROM Ruta r LEFT JOIN FETCH r.puntosRuta")
     List<Ruta> findAllWithPuntosRuta();
 
+    @Query("SELECT DISTINCT r FROM Ruta r LEFT JOIN FETCH r.puntosRuta WHERE r.estado = 'ACTIVO'")
+    List<Ruta> findAllActivosConPuntosRuta();
+
     @Query("SELECT r FROM Ruta r WHERE LOWER(r.nombre) LIKE LOWER(CONCAT('%', :termino, '%')) OR LOWER(r.codigo) LIKE LOWER(CONCAT('%', :termino, '%'))")
     List<Ruta> buscarPorTermino(@Param("termino") String termino);
 

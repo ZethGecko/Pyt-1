@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,8 +21,10 @@ import com.example.demo.model.Empresa;
 import com.example.demo.model.Formatos;
 import com.example.demo.model.Gerente;
 import com.example.demo.model.PersonaNatural;
+import com.example.demo.model.PuntoRuta;
 import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.model.Roles;
+import com.example.demo.model.Ruta;
 import com.example.demo.model.SubtipoTransporte;
 import com.example.demo.model.TUPAC;
 import com.example.demo.model.TipoTramite;
@@ -34,8 +37,10 @@ import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.FormatosRepository;
 import com.example.demo.repository.GerenteRepository;
 import com.example.demo.repository.PersonaNaturalRepository;
+import com.example.demo.repository.PuntoRutaRepository;
 import com.example.demo.repository.RequisitoTUPACRepository;
 import com.example.demo.repository.RolesRepository;
+import com.example.demo.repository.RutaRepository;
 import com.example.demo.repository.SubtipoTransporteRepository;
 import com.example.demo.repository.TUPACRepository;
 import com.example.demo.repository.TipoTramiteRepository;
@@ -69,6 +74,9 @@ public class DataInitializer {
 
         @PersistenceContext
         private EntityManager entityManager;
+
+        @Autowired private RutaRepository rutaRepository;
+        @Autowired private PuntoRutaRepository puntoRutaRepository;
 
     @PostConstruct
     @Transactional
@@ -487,7 +495,7 @@ public class DataInitializer {
                 r6.setCodigo("DOC_LICENCIA_ANTERIOR");
                 r6.setDescripcion("Licencia de conducir anterior");
                 r6.setTipoDocumento("archivo");
-                r6.setObligatorio(false);
+                r6.setObligatorio(true);
                 r6.setEsExamen(false);
                 r6.setActivo(true);
                 r6.setTupac(tupac1);
@@ -535,7 +543,7 @@ public class DataInitializer {
                 r10.setCodigo("TEST");
                 r10.setDescripcion("test");
                 r10.setTipoDocumento("Otro");
-                r10.setObligatorio(false);
+                r10.setObligatorio(true);
                 r10.setEsExamen(false);
                 r10.setActivo(true);
                 r10.setTupac(tupac2);
@@ -587,7 +595,7 @@ public class DataInitializer {
                 tipo3.setDescripcion("Obtención de Licencia C");
                 tipo3.setDiasDescargo(4);
                 tipo3.setTupac(tupac1);
-                tipo3.setRequisitosIds(ids3.toString());
+                tipo3.setRequisitosIds(ids3.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo3);
                 
                 // Tipo 4: OBT (Obtención de Licencia) - requisitos [1,2,5,7,8,9]
@@ -603,7 +611,7 @@ public class DataInitializer {
                 tipo4.setDescripcion("Obtención de Licencia");
                 tipo4.setDiasDescargo(1);
                 tipo4.setTupac(tupac1);
-                tipo4.setRequisitosIds(ids4.toString());
+                tipo4.setRequisitosIds(ids4.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo4);
                 
                 // Tipo 5: REN (Revalidación de Licencia) - requisitos [1,5,7,9]
@@ -617,7 +625,7 @@ public class DataInitializer {
                 tipo5.setDescripcion("Revalidación de Licencia");
                 tipo5.setDiasDescargo(2);
                 tipo5.setTupac(tupac1);
-                tipo5.setRequisitosIds(ids5.toString());
+                tipo5.setRequisitosIds(ids5.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo5);
                 
                 // Tipo 6: DUP (Duplicado de Licencia) - requisitos [5,9]
@@ -629,7 +637,7 @@ public class DataInitializer {
                 tipo6.setDescripcion("Duplicado de Licencia");
                 tipo6.setDiasDescargo(3);
                 tipo6.setTupac(tupac1);
-                tipo6.setRequisitosIds(ids6.toString());
+                tipo6.setRequisitosIds(ids6.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo6);
                 
                 System.out.println("Tipos de Trámite creados (6 registros)");
@@ -671,7 +679,103 @@ public class DataInitializer {
             }
         }
 
+         // 8. Crear/actualizar rutas de prueba (RUTA-001, RUTA-002)
+         {
+             // Eliminar rutas de prueba existentes si existen
+             rutaRepository.findByCodigo("RUTA-001").ifPresent(r -> {
+                 List<PuntoRuta> puntos = puntoRutaRepository.findByRutaIdRuta(r.getIdRuta());
+                 puntoRutaRepository.deleteAll(puntos);
+                 rutaRepository.delete(r);
+                 System.out.println("Ruta de prueba RUTA-001 existente eliminada");
+             });
+             rutaRepository.findByCodigo("RUTA-002").ifPresent(r -> {
+                 List<PuntoRuta> puntos = puntoRutaRepository.findByRutaIdRuta(r.getIdRuta());
+                 puntoRutaRepository.deleteAll(puntos);
+                 rutaRepository.delete(r);
+                 System.out.println("Ruta de prueba RUTA-002 existente eliminada");
+             });
+
+             Empresa empresa = empresaRepository.findAll().stream().findFirst().orElse(null);
+             Users adminUser = usersRepository.findByUsername("admin");
+             if (empresa != null && adminUser != null) {
+                 // Ruta 1: El Alto -> Sur (La Paz, Bolivia) - 12 puntos
+                 Ruta ruta1 = new Ruta();
+                 ruta1.setNombre("Ruta 1: El Alto - Centro - Sur");
+                 ruta1.setDescripcion("Ruta completa desde El Alto hasta zona sur de La Paz, pasando por el centro");
+                 ruta1.setCodigo("RUTA-001");
+                 ruta1.setEstado("ACTIVO");
+                 ruta1.setTipo("REGULAR");
+                 ruta1.setEmpresa(empresa);
+                 ruta1.setUsuarioRegistra(adminUser);
+                 ruta1.setFechaRegistro(LocalDateTime.now());
+                 ruta1.setFechaActualizacion(LocalDateTime.now());
+                 ruta1 = rutaRepository.save(ruta1);
+
+                 List<PuntoRuta> puntos1 = new ArrayList<>();
+                 puntos1.add(createPunto(ruta1, 1, "El Alto", -16.5200, -68.2000));
+                 puntos1.add(createPunto(ruta1, 2, "Ciudad Satélite", -16.5100, -68.1900));
+                 puntos1.add(createPunto(ruta1, 3, "Villa Teresa", -16.5000, -68.1800));
+                 puntos1.add(createPunto(ruta1, 4, "Villa Fátima", -16.4900, -68.1600));
+                 puntos1.add(createPunto(ruta1, 5, "San Jorge", -16.4800, -68.1400));
+                 puntos1.add(createPunto(ruta1, 6, "Miraflores", -16.4850, -68.1200));
+                 puntos1.add(createPunto(ruta1, 7, "Sopocachi", -16.4800, -68.1000));
+                 puntos1.add(createPunto(ruta1, 8, "Centro (Plaza Murillo)", -16.4950, -68.1300));
+                 puntos1.add(createPunto(ruta1, 9, "San Pedro", -16.4900, -68.1200));
+                 puntos1.add(createPunto(ruta1, 10, "Obrajes", -16.4750, -68.0900));
+                 puntos1.add(createPunto(ruta1, 11, "Centro Sur", -16.4700, -68.0800));
+                 puntos1.add(createPunto(ruta1, 12, "Zona Sur (Calle 21)", -16.4600, -68.0700));
+                 puntoRutaRepository.saveAll(puntos1);
+
+                 // Ruta 2: Norte - Este
+                 Ruta ruta2 = new Ruta();
+                 ruta2.setNombre("Ruta 2: Norte - Este");
+                 ruta2.setDescripcion("Ruta desde el norte de La Paz hacia el este");
+                 ruta2.setCodigo("RUTA-002");
+                 ruta2.setEstado("ACTIVO");
+                 ruta2.setTipo("ESPECIAL");
+                 ruta2.setEmpresa(empresa);
+                 ruta2.setUsuarioRegistra(adminUser);
+                 ruta2.setFechaRegistro(LocalDateTime.now());
+                 ruta2.setFechaActualizacion(LocalDateTime.now());
+                 ruta2 = rutaRepository.save(ruta2);
+
+                 List<PuntoRuta> puntos2 = new ArrayList<>();
+                 puntos2.add(createPunto(ruta2, 1, "UMSA", -16.5300, -68.1700));
+                 puntos2.add(createPunto(ruta2, 2, "Cota Cota", -16.5200, -68.1600));
+                 puntos2.add(createPunto(ruta2, 3, "Malla", -16.5100, -68.1500));
+                 puntos2.add(createPunto(ruta2, 4, "Pasankeri", -16.5000, -68.1400));
+                 puntos2.add(createPunto(ruta2, 5, "Buenos Aires", -16.4900, -68.1300));
+                 puntos2.add(createPunto(ruta2, 6, "Cartagena", -16.4800, -68.1200));
+                 puntos2.add(createPunto(ruta2, 7, "Irpavi", -16.4700, -68.1100));
+                 puntos2.add(createPunto(ruta2, 8, "Achumani", -16.4600, -68.1000));
+                 puntos2.add(createPunto(ruta2, 9, "La Florida", -16.4500, -68.0900));
+                 puntos2.add(createPunto(ruta2, 10, "Calacoto", -16.4400, -68.0800));
+                 puntoRutaRepository.saveAll(puntos2);
+
+                 System.out.println("Rutas de prueba creadas: RUTA-001 (12 pts), RUTA-002 (10 pts)");
+             } else {
+                 System.out.println("No se crearon rutas de prueba: empresa o admin no encontrados");
+             }
+         }
+
         System.out.println("Data initialization completada (datos mínimos)");
+    }
+
+    private PuntoRuta createPunto(Ruta ruta, int orden, String nombre, double latitud, double longitud) {
+        PuntoRuta p = new PuntoRuta();
+        p.setRuta(ruta);
+        p.setOrden(orden);
+        p.setNombre(nombre);
+        p.setLatitud(latitud);
+        p.setLongitud(longitud);
+        p.setTipo("PARADA");
+        p.setEstado("ACTIVO");
+        p.setFechaRegistro(LocalDateTime.now());
+        p.setFechaActualizacion(LocalDateTime.now());
+        if (ruta.getUsuarioRegistra() != null) {
+            p.setUsuarioRegistra(ruta.getUsuarioRegistra());
+        }
+        return p;
     }
 
     private Roles createOrUpdateRole(String name, String description) {

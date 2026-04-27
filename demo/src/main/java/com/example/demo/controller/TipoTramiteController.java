@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.RequisitoTUPCDTO;
 import com.example.demo.dto.TipoTramiteEnriquecidoDTO;
+import com.example.demo.dto.TipoTramitePublicoDTO;
 import com.example.demo.dto.TipoTramiteResponseDTO;
 import com.example.demo.dto.TupacSimpleDTO;
 import com.example.demo.model.RequisitoTUPAC;
@@ -12,8 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,6 +29,74 @@ public class TipoTramiteController {
         this.requisitoService = requisitoService;
     }
 
+    // ========== ENDPOINT PÚBLICO ==========
+    @GetMapping("/publico")
+    @Transactional(readOnly = true)
+    public List<TipoTramitePublicoDTO> listarPublico() {
+        List<TipoTramite> tipos = service.listarTodos();
+
+        // Obtener todos los TUPAC IDs únicos
+        Set<Long> tupacIds = tipos.stream()
+            .filter(t -> t.getTupac() != null)
+            .map(t -> t.getTupac().getIdTupac())
+            .collect(Collectors.toSet());
+
+        // Cargar todos los requisitos por TUPAC en un solo mapa
+        Map<Long, List<RequisitoTUPAC>> requisitosMap = new HashMap<>();
+        for (Long tupacId : tupacIds) {
+            List<RequisitoTUPAC> reqs = requisitoService.listarPorTupac(tupacId);
+            requisitosMap.put(tupacId, reqs);
+        }
+
+        // Construir DTOs
+        return tipos.stream().map(t -> {
+            TipoTramitePublicoDTO dto = new TipoTramitePublicoDTO();
+            dto.setId(t.getIdTipoTramite());
+            dto.setCodigo(t.getCodigo());
+            dto.setDescripcion(t.getDescripcion());
+
+            if (t.getTupac() != null) {
+                dto.setTupacCodigo(t.getTupac().getCodigo());
+                dto.setTupacDescripcion(t.getTupac().getDescripcion());
+
+                // Parsear IDs de requisitos
+                Set<Long> idsRequisitos = new HashSet<>();
+                if (t.getRequisitosIds() != null && !t.getRequisitosIds().trim().isEmpty()) {
+                    String[] parts = t.getRequisitosIds().split(",");
+                    for (String part : parts) {
+                        try {
+                            idsRequisitos.add(Long.parseLong(part.trim()));
+                        } catch (NumberFormatException ignored) {}
+                    }
+                }
+
+                // Filtrar requisitos del TUPAC que estén en la lista
+                List<RequisitoTUPAC> todos = requisitosMap.getOrDefault(t.getTupac().getIdTupac(), List.of());
+                List<RequisitoTUPAC> seleccionados = todos.stream()
+                    .filter(r -> idsRequisitos.contains(r.getId()))
+                    .collect(Collectors.toList());
+
+                // Convertir a DTO
+                List<RequisitoTUPCDTO> reqDtos = seleccionados.stream().map(r -> {
+                    RequisitoTUPCDTO rd = new RequisitoTUPCDTO();
+                    rd.setId(r.getId());
+                    rd.setCodigo(r.getCodigo());
+                    rd.setDescripcion(r.getDescripcion());
+                    rd.setTipoDocumento(r.getTipoDocumento());
+                    rd.setObligatorio(r.getObligatorio());
+                    rd.setEsExamen(r.getEsExamen());
+                    if (r.getFormato() != null) {
+                        rd.setFormatoArchivo(r.getFormato().getArchivoRuta());
+                    }
+                    return rd;
+                }).collect(Collectors.toList());
+                dto.setRequisitos(reqDtos);
+            }
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    // ========== ENDPOINTS PRIVADOS (gestión) ==========
     @GetMapping
     public List<TipoTramite> listarTodos() {
         return service.listarTodos();
@@ -125,7 +194,6 @@ public class TipoTramiteController {
             return ResponseEntity.notFound().build();
         }
 
-        // Convertir lista de IDs a string
         String requisitosStr = requisitoIds.stream()
                 .map(String::valueOf)
                 .collect(java.util.stream.Collectors.joining(","));
@@ -164,7 +232,6 @@ public class TipoTramiteController {
             return ResponseEntity.notFound().build();
         }
 
-        // Obtener lista actual de requisitos
         List<Long> currentIds = new java.util.ArrayList<>();
         if (tipo.getRequisitosIds() != null) {
             String[] parts = tipo.getRequisitosIds().split(",");
@@ -173,16 +240,13 @@ public class TipoTramiteController {
                     try {
                         currentIds.add(Long.parseLong(part.trim()));
                     } catch (NumberFormatException e) {
-                        // Ignorar IDs inválidos
                     }
                 }
             }
         }
 
-        // Remover el requisito específico
         currentIds.remove(requisitoId);
 
-        // Actualizar el string
         String requisitosStr = currentIds.stream()
                 .map(String::valueOf)
                 .collect(java.util.stream.Collectors.joining(","));
@@ -211,7 +275,6 @@ public class TipoTramiteController {
         dto.setCodigo(t.getCodigo());
         dto.setDescripcion(t.getDescripcion());
         dto.setDiasDescargo(t.getDiasDescargo());
-        // Convertir requisitosIds string a array de numbers
         if (t.getRequisitosIds() != null) {
             try {
                 String[] parts = t.getRequisitosIds().split(",");
@@ -249,7 +312,6 @@ public class TipoTramiteController {
         dto.setCodigo(t.getCodigo());
         dto.setDescripcion(t.getDescripcion());
         dto.setDiasDescargo(t.getDiasDescargo());
-        // Tupac
         if (t.getTupac() != null) {
             TupacSimpleDTO tupacDto = new TupacSimpleDTO();
             tupacDto.setId(t.getTupac().getIdTupac());

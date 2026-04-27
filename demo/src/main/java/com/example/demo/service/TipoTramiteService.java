@@ -18,7 +18,7 @@ public class TipoTramiteService {
     private TipoTramiteRepository repo;
 
     public List<TipoTramite> listarTodos() {
-        return repo.findAll();
+        return repo.findAllWithTupac();
     }
 
     public Optional<TipoTramite> buscarPorId(Long id) {
@@ -31,7 +31,7 @@ public class TipoTramiteService {
     }
 
     public Optional<TipoTramite> buscarPorCodigo(String codigo) {
-        return repo.findAll().stream()
+        return listarTodos().stream()
                 .filter(t -> t.getCodigo() != null && t.getCodigo().equals(codigo))
                 .findFirst();
     }
@@ -59,20 +59,20 @@ public class TipoTramiteService {
     }
 
     public List<TipoTramite> buscar(String termino) {
-        return repo.findAll().stream()
+        return listarTodos().stream()
                 .filter(t -> (t.getCodigo() != null && t.getCodigo().toLowerCase().contains(termino.toLowerCase())) ||
                            (t.getDescripcion() != null && t.getDescripcion().toLowerCase().contains(termino.toLowerCase())))
                 .collect(java.util.stream.Collectors.toList());
     }
 
     public List<TipoTramite> listarParaPersonaNatural() {
-        return repo.findAll().stream()
+        return listarTodos().stream()
                 .filter(t -> "PERSONA_NATURAL".equals(t.getTupac() != null ? t.getTupac().getCategoria() : ""))
                 .collect(java.util.stream.Collectors.toList());
     }
 
     public List<TipoTramite> listarParaEmpresa() {
-        return repo.findAll().stream()
+        return listarTodos().stream()
                 .filter(t -> "EMPRESA".equals(t.getTupac() != null ? t.getTupac().getCategoria() : ""))
                 .collect(java.util.stream.Collectors.toList());
     }

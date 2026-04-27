@@ -32,6 +32,9 @@ public class TUC {
     @Column(name = "duracion_meses", nullable = false)
     private Integer duracionMeses;
 
+    @Column(name = "tipo", length = 30)
+    private String tipo; // "12_MESES" o "HASTA_FIN_ANIO"
+
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
@@ -51,9 +54,10 @@ public class TUC {
     @JoinColumn(name = "expediente")
     private Expediente expediente;
 
-    // Relación con FichaInspeccion
+    // Relación con FichaInspeccion (origen del TUC)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ficha_inspeccion")
+    @JoinColumn(name = "ficha_inspeccion_id")
+    @JsonIgnore
     private FichaInspeccion fichaInspeccion;
 
     // Relación con Solicitud
@@ -92,6 +96,9 @@ public class TUC {
 
     public Integer getDuracionMeses() { return duracionMeses; }
     public void setDuracionMeses(Integer duracionMeses) { this.duracionMeses = duracionMeses; }
+
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }

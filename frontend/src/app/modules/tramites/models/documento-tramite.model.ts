@@ -34,6 +34,12 @@ export interface DocumentoTramite {
   iconoEstado?: string;
   esExamen?: boolean;
   obligatorio?: boolean;
+  // Relación con requisito (para mostrar código y descripción)
+  requisito?: {
+    id: number;
+    codigo: string;
+    descripcion: string;
+  };
 }
 
 export interface DocumentoTramiteCreateRequest {

@@ -1,13 +1,18 @@
- import { Component, Input, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
- import { CommonModule } from '@angular/common';
- import { FormsModule } from '@angular/forms';
-import { combineLatest, Observable, of, Subject, forkJoin, from } from 'rxjs';
+import { Component, Input, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { combineLatest, Observable, of, Subject, from } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, concatMap, toArray } from 'rxjs/operators';
- import { RequisitoTramiteRevisionService, RequisitoRevision } from '../../services/requisito-tramite-revision.service';
- import { TramiteService } from '../../services/tramite.service';
- import { HistorialTramiteService, HistorialTramite } from '../../services/historial-tramite.service';
- import { NotificationService } from '../../../../shared/services/notification.service';
- import { DocumentoTramiteService } from '../../services/documento-tramite.service';
+import { RequisitoTramiteRevisionService, RequisitoRevision } from '../../services/requisito-tramite-revision.service';
+import { TramiteService } from '../../services/tramite.service';
+import { HistorialTramiteService, HistorialTramite } from '../../services/historial-tramite.service';
+import { NotificationService } from '../../../../shared/services/notification.service';
+import { DocumentoTramiteService } from '../../services/documento-tramite.service';
+import { TipoTramiteService } from '../../../configuracion/services/tipo-tramite.service';
+import { RequisitoTUPACService } from '../../services/requisito-tupac.service';
+import { FormatoService } from '../../../configuracion/services/formato.service';
+import { RequisitoTUPACEnriquecido } from '../../models/requisito-tupac.model';
+import { TipoTramiteEnriquecido } from '../../../configuracion/models/tipo-tramite.model';
 
 interface HistorialItem {
   accion: string;
@@ -39,18 +44,22 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
    originalRequisitos: RequisitoRevision[] = []; // Store initial state
    cargando = false;
    error: string | null = null;
+   success: string | null = null;
    filtroEstado: string = '';
    tramiteParaRevisar: any = null;
 
    historial: HistorialItem[] = [];
 
-   constructor(
-     private revisionService: RequisitoTramiteRevisionService,
-     private tramiteService: TramiteService,
-     private historialService: HistorialTramiteService,
-     private notificationService: NotificationService,
-     private documentoTramiteService: DocumentoTramiteService
-   ) {}
+    constructor(
+      private revisionService: RequisitoTramiteRevisionService,
+      private tramiteService: TramiteService,
+      private historialService: HistorialTramiteService,
+      private notificationService: NotificationService,
+      private documentoTramiteService: DocumentoTramiteService,
+      private tipoTramiteService: TipoTramiteService,
+      private requisitoTUPACService: RequisitoTUPACService,
+      private formatoService: FormatoService
+    ) {}
 
   ngOnInit(): void {
     if (this.tramiteId) {
@@ -121,59 +130,83 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       });
     }
 
-   private cargarDatosCombinados(): Observable<RequisitoRevision[]> {
+  private cargarDatosCombinados(): Observable<RequisitoRevision[]> {
     if (!this.tipoTramiteId) {
       return of([]);
     }
 
-    return combineLatest([
-      this.tramiteService.obtenerRequisitos(this.tipoTramiteId),
-      this.revisionService.getProyeccionesPorTramite(this.tramiteId)
-    ]).pipe(
-      takeUntil(this.destroy$),
-      map(([requisitosTUPAC = [], documentos = []]) => {
-         const documentosMap = new Map<number, RequisitoRevision>();
-        documentos.forEach(doc => {
-          documentosMap.set(doc.requisitoId, doc);
-        });
+    return this.tipoTramiteService.listarTodos().pipe(
+      switchMap((tipos: TipoTramiteEnriquecido[]) => {
+        const tipo = tipos.find(t => t.id === this.tipoTramiteId);
+        if (!tipo || !tipo.tupacId) {
+          return of([]);
+        }
+        const tupacId = tipo.tupacId;
+        const requisitosIdsSet = new Set<number>(tipo.requisitosIds || []);
 
-        const combinados: RequisitoRevision[] = requisitosTUPAC.map((req: any) => {
-          const doc = documentosMap.get(req.id);
-          if (doc) {
-            return {
-              ...doc,
-              codigo: req.codigo,
-              descripcion: req.descripcion,
-              tipoDocumento: req.tipoDocumento,
-              obligatorio: req.obligatorio,
-              esExamen: req.esExamen,
-              requisitoNombre: doc.requisitoNombre || req.descripcion
-            };
-          }
-           return {
-             id: 0,
-             tramiteId: this.tramiteId,
-             requisitoId: req.id,
-             estado: 'PENDIENTE',
-             obligatorio: req.obligatorio,
-             requisitoNombre: req.descripcion,
-             codigo: req.codigo,
-             descripcion: req.descripcion,
-             tipoDocumento: req.tipoDocumento,
-             esExamen: req.esExamen,
-             estadoFormateado: 'Pendiente',
-             colorEstado: 'warning',
-             iconoEstado: '📄',
-             observaciones: ''
-           };
-        });
-        return combinados.sort((a, b) => {
-          const orden = ['PENDIENTE', 'OBSERVADO', 'APROBADO', 'REPROBADO'];
-          return orden.indexOf(a.estado) - orden.indexOf(b.estado);
-        });
+        return combineLatest([
+          this.requisitoTUPACService.listarEnriquecidosPorTupac(tupacId),
+          this.revisionService.getProyeccionesPorTramite(this.tramiteId)
+        ]).pipe(
+          map(([requisitosEnriquecidos, documentos]) => {
+            // Filtrar requisitos que estén en la lista de IDs del tipo de trámite
+            const requisitosFiltrados = requisitosEnriquecidos.filter(r => r.id && requisitosIdsSet.has(r.id));
+
+            const documentosMap = new Map<number, any>();
+            documentos.forEach(doc => {
+              documentosMap.set(doc.requisitoId, doc);
+            });
+
+            const combinados: RequisitoRevision[] = requisitosFiltrados.map((req: RequisitoTUPACEnriquecido) => {
+              const doc = documentosMap.get(req.id);
+              if (doc) {
+                return {
+                  ...doc,
+                  codigo: req.codigo,
+                  descripcion: req.descripcion,
+                  tipoDocumento: req.tipoDocumento,
+                  obligatorio: req.obligatorio,
+                  esExamen: req.esExamen,
+                  requisitoNombre: doc.requisitoNombre || req.descripcion,
+                  formatoId: req.formatoId,
+                  formatoDescripcion: req.formatoDescripcion,
+                  formatoArchivoRuta: req.formatoArchivoRuta
+                };
+              }
+              return {
+                id: 0,
+                tramiteId: this.tramiteId,
+                requisitoId: req.id,
+                estado: 'PENDIENTE',
+                obligatorio: req.obligatorio,
+                requisitoNombre: req.descripcion,
+                codigo: req.codigo,
+                descripcion: req.descripcion,
+                tipoDocumento: req.tipoDocumento,
+                esExamen: req.esExamen,
+                estadoFormateado: 'Pendiente',
+                colorEstado: 'warning',
+                iconoEstado: '📄',
+                observaciones: '',
+                formatoId: req.formatoId,
+                formatoDescripcion: req.formatoDescripcion,
+                formatoArchivoRuta: req.formatoArchivoRuta
+              };
+            });
+
+            return combinados.sort((a, b) => {
+              const orden = ['PENDIENTE', 'OBSERVADO', 'APROBADO', 'REPROBADO'];
+              return orden.indexOf(a.estado) - orden.indexOf(b.estado);
+            });
+          }),
+          catchError(err => {
+            console.error('Error cargando datos combinados:', err);
+            return of([]);
+          })
+        );
       }),
       catchError(err => {
-        console.error('Error cargando datos combinados:', err);
+        console.error('Error obteniendo tipos de trámite:', err);
         return of([]);
       })
     );
@@ -367,35 +400,98 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       });
     }
 
-    guardarYFinalizar(): void {
-      if (this.requisitos.length === 0) return;
+     guardarYFinalizar(): void {
+       if (this.requisitos.length === 0) return;
 
-      const operaciones = this.aplicarCambiosDocumentos();
+       const operaciones = this.aplicarCambiosDocumentos();
 
-      if (operaciones.length === 0) {
-        alert('No hay cambios para guardar');
-        return;
-      }
+       if (operaciones.length === 0) {
+         alert('No hay cambios para guardar');
+         return;
+       }
 
-      // Ejecutar secuencialmente para evitar problemas de concurrencia en el estado del trámite
-      from(operaciones).pipe(
-        concatMap(op => op),
-        toArray(),
-        takeUntil(this.destroy$)
-      ).subscribe({
-        next: (results) => {
-          alert('Trámite revisado completamente exitosamente');
-          this.tramiteFinalizado.emit();
-          this.cerrar();
-        },
-        error: (err) => {
-          console.error('Error al finalizar trámite:', err);
-          alert('Error al finalizar el trámite: ' + (err.message || 'Error desconocido'));
-        }
-      });
-    }
+       // Ejecutar secuencialmente para evitar problemas de concurrencia en el estado del trámite
+       from(operaciones).pipe(
+         concatMap(op => op),
+         toArray(),
+         takeUntil(this.destroy$)
+       ).subscribe({
+         next: (results) => {
+           alert('Trámite revisado completamente exitosamente');
+           this.tramiteFinalizado.emit();
+           this.cerrar();
+         },
+         error: (err) => {
+           console.error('Error al finalizar trámite:', err);
+           alert('Error al finalizar el trámite: ' + (err.message || 'Error desconocido'));
+         }
+       });
+     }
 
-    cerrar(): void {
-      this.cerrarModal.emit();
-    }
+     verFormato(requisito: RequisitoRevision): void {
+       if (!requisito.formatoId) {
+         this.error = 'Este requisito no tiene formato asociado';
+         setTimeout(() => this.error = null, 3000);
+         return;
+       }
+
+       this.formatoService.download(requisito.formatoId).subscribe({
+         next: (blob) => {
+           const url = window.URL.createObjectURL(blob);
+           const newWindow = window.open(url, '_blank');
+           if (!newWindow) {
+             // Fallback to download if popup blocked
+             const a = document.createElement('a');
+             a.href = url;
+             const filename = requisito.formatoArchivoRuta ? requisito.formatoArchivoRuta.split('/').pop() : 'formato.pdf';
+             a.download = filename;
+             document.body.appendChild(a);
+             a.click();
+             window.URL.revokeObjectURL(url);
+             document.body.removeChild(a);
+             this.success = 'Descarga iniciada';
+             setTimeout(() => this.success = null, 2000);
+           } else {
+             this.success = 'Formato abierto en nueva ventana';
+             setTimeout(() => this.success = null, 2000);
+           }
+         },
+         error: (err) => {
+           console.error('Error al ver formato:', err);
+           this.error = 'Error al abrir el formato';
+         }
+       });
+     }
+
+     descargarFormato(requisito: RequisitoRevision): void {
+       if (!requisito.formatoId) {
+         this.error = 'Este requisito no tiene formato asociado';
+         setTimeout(() => this.error = null, 3000);
+         return;
+       }
+
+       this.formatoService.download(requisito.formatoId).subscribe({
+         next: (blob) => {
+           const url = window.URL.createObjectURL(blob);
+           const a = document.createElement('a');
+           a.href = url;
+           const filename = requisito.formatoArchivoRuta ? requisito.formatoArchivoRuta.split('/').pop() : 'formato.pdf';
+           a.download = filename;
+           document.body.appendChild(a);
+           a.click();
+           window.URL.revokeObjectURL(url);
+           document.body.removeChild(a);
+           this.success = 'Descarga iniciada';
+           setTimeout(() => this.success = null, 2000);
+         },
+         error: (err) => {
+           console.error('Error al descargar formato:', err);
+           this.error = 'Error al descargar el formato';
+         }
+       });
+     }
+
+     cerrar(): void {
+       this.cerrarModal.emit();
+     }
 }
