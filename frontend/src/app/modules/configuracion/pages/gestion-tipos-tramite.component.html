@@ -223,28 +223,28 @@
              </div>
            </div>
 
-           <div class="form-group">
-             <label for="tupacId">TUPAC *</label>
-             <select
-               id="tupacId"
-               [(ngModel)]="form.tupacId"
-               name="tupacId"
-               class="form-input"
-               (change)="onTupacChange()"
-               required>
-               <option [ngValue]="null">Selecciona un TUPAC</option>
-               @for (tupac of tupacs; track tupac.id) {
-                 <option [ngValue]="tupac.id">{{ tupac.codigo }} - {{ tupac.descripcion }}</option>
-               }
-             </select>
-             <small class="form-hint">Selecciona el TUPAC al que pertenece este tipo de trámite</small>
-             <div class="form-error" *ngIf="formulario.submitted && !form.tupacId">
-               Debes seleccionar un TUPAC
-             </div>
-           </div>
+            <div class="form-group">
+              <label for="tupacId">TUPAC *</label>
+              <select
+                id="tupacId"
+                [(ngModel)]="form.tupac"
+                name="tupac"
+                class="form-input"
+                (change)="onTupacChange()"
+                required>
+                <option [ngValue]="null">Selecciona un TUPAC</option>
+                @for (tupac of tupacs; track tupac.id) {
+                  <option [ngValue]="tupac">{{ tupac.codigo }} - {{ tupac.descripcion }}</option>
+                }
+              </select>
+              <small class="form-hint">Selecciona el TUPAC al que pertenece este tipo de trámite</small>
+              <div class="form-error" *ngIf="formulario.submitted && !form.tupac">
+                Debes seleccionar un TUPAC
+              </div>
+            </div>
 
-           <!-- Sección de Requisitos del TUPAC -->
-           <div *ngIf="form.tupacId" class="requisitos-section" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+            <!-- Sección de Requisitos del TUPAC -->
+            <div *ngIf="form.tupac" class="requisitos-section" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
              <div class="requisitos-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #374151;">
                  Requisitos del TUPAC
@@ -307,9 +307,9 @@
              </div>
            </div>
            
-           <div *ngIf="form.tupacId && requisitosDisponibles.length > 0 && requisitosSeleccionados.length < requisitosDisponibles.length" class="requisitos-pendientes" style="margin-top: 8px; font-size: 12px; color: #f59e0b;">
-             Hay {{ requisitosDisponibles.length - requisitosSeleccionados.length }} requisito(s) del TUPAC que no han sido agregados.
-           </div>
+            <div *ngIf="form.tupac && requisitosDisponibles.length > 0 && requisitosSeleccionados.length < requisitosDisponibles.length" class="requisitos-pendientes" style="margin-top: 8px; font-size: 12px; color: #f59e0b;">
+              Hay {{ requisitosDisponibles.length - requisitosSeleccionados.length }} requisito(s) del TUPAC que no han sido agregados.
+            </div>
 
            <div class="modal-footer">
              <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>

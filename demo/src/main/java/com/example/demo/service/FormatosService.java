@@ -71,7 +71,8 @@ public class FormatosService {
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
         Formatos formato = new Formatos();
         formato.setArchivoRuta(destination.toString());
-        formato.setDescripcion(descripcion != null ? descripcion : originalFilename);
+        // Si descripcion es nula o vacía, usar el nombre original del archivo
+        formato.setDescripcion((descripcion != null && !descripcion.trim().isEmpty()) ? descripcion : originalFilename);
         formato.setFechaCreacion(LocalDateTime.now());
         return repo.save(formato);
     }

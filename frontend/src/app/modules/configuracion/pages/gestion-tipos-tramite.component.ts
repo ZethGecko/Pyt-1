@@ -95,11 +95,11 @@ export class GestionTiposTramiteComponent implements OnInit {
   mostrarModal = false;
   modoEditar = false;
   tipoEditando: TipoTramiteEnriquecido | null = null;
-  form: { codigo: string; descripcion: string; diasDescargo?: number | null; tupacId: number | null } = {
+  form: { codigo: string; descripcion: string; diasDescargo?: number | null; tupac: TUPAC | null } = {
     codigo: '',
     descripcion: '',
     diasDescargo: undefined,
-    tupacId: null
+    tupac: null
   };
 
   // Permisos (por ahora hardcodeados, luego se conectan al sistema de permisos)
@@ -174,7 +174,7 @@ export class GestionTiposTramiteComponent implements OnInit {
       codigo: '',
       descripcion: '',
       diasDescargo: undefined,
-      tupacId: null
+      tupac: null
     };
     this.requisitosSeleccionados = [];
     this.mostrarModal = true;
@@ -184,11 +184,15 @@ export class GestionTiposTramiteComponent implements OnInit {
   editar(tipo: TipoTramiteEnriquecido) {
     this.modoEditar = true;
     this.tipoEditando = tipo;
+    
+    // Buscar el objeto TUPAC completo si existe
+    const tupacObj = tipo.tupacId ? (this.tupacs.find(t => t.id === tipo.tupacId) || null) : null;
+    
     this.form = {
       codigo: tipo.codigo,
       descripcion: tipo.descripcion,
       diasDescargo: tipo.diasDescargo,
-      tupacId: tipo.tupacId || null
+      tupac: tupacObj
     };
     
     // Cargar requisitos seleccionados si tiene TUPAC
@@ -209,7 +213,7 @@ export class GestionTiposTramiteComponent implements OnInit {
       codigo: '',
       descripcion: '',
       diasDescargo: undefined,
-      tupacId: null
+      tupac: null
     };
     this.requisitosSeleccionados = [];
     this.requisitosDisponibles = [];
@@ -221,19 +225,20 @@ export class GestionTiposTramiteComponent implements OnInit {
     }
 
     try {
+      // Construir payload con tupac como objeto { id } o null
+      const payload: any = {
+        codigo: this.form.codigo,
+        descripcion: this.form.descripcion,
+        diasDescargo: this.form.diasDescargo || undefined,
+        tupac: this.form.tupac ? { id: this.form.tupac.id } : null
+      };
+
       if (this.modoEditar && this.tipoEditando) {
         // Actualizar tipo de trámite
-        const updateRequest: TipoTramiteUpdateRequest = {
-          codigo: this.form.codigo,
-          descripcion: this.form.descripcion,
-          diasDescargo: this.form.diasDescargo || undefined,
-          tupacId: this.form.tupacId
-        };
-        
-        await this.tipoTramiteService.actualizar(this.tipoEditando.id, updateRequest).toPromise();
+        await this.tipoTramiteService.actualizar(this.tipoEditando.id, payload).toPromise();
         
         // Actualizar requisitos asociados
-        if (this.form.tupacId) {
+        if (this.form.tupac) {
           const requisitoIds = this.requisitosSeleccionados.map(r => r.id).filter((id): id is number => id !== undefined);
           await this.tipoTramiteService.asociarRequisitos(this.tipoEditando.id, requisitoIds).toPromise();
         }
@@ -241,17 +246,10 @@ export class GestionTiposTramiteComponent implements OnInit {
         this.notificationService.showSuccess('Tipo de trámite actualizado correctamente');
       } else {
         // Crear nuevo tipo de trámite
-        const createRequest: TipoTramiteCreateRequest = {
-          codigo: this.form.codigo,
-          descripcion: this.form.descripcion,
-          diasDescargo: this.form.diasDescargo || undefined,
-          tupacId: this.form.tupacId
-        };
-        
-        const nuevoTipo = await this.tipoTramiteService.crear(createRequest).toPromise();
+        const nuevoTipo = await this.tipoTramiteService.crear(payload).toPromise();
         
         // Asociar requisitos si hay TUPAC y requisitos seleccionados
-        if (nuevoTipo && this.form.tupacId && this.requisitosSeleccionados.length > 0) {
+        if (nuevoTipo && this.form.tupac && this.requisitosSeleccionados.length > 0) {
           const requisitoIds = this.requisitosSeleccionados.map(r => r.id).filter((id): id is number => id !== undefined);
           await this.tipoTramiteService.asociarRequisitos(nuevoTipo.id, requisitoIds).toPromise();
         }
@@ -298,8 +296,8 @@ export class GestionTiposTramiteComponent implements OnInit {
     this.requisitosSeleccionados = [];
     this.requisitosDisponibles = [];
     
-    if (this.form.tupacId) {
-      this.cargarRequisitosDisponibles(this.form.tupacId);
+    if (this.form.tupac && this.form.tupac.id) {
+      this.cargarRequisitosDisponibles(this.form.tupac.id);
     }
   }
 
@@ -320,29 +318,29 @@ export class GestionTiposTramiteComponent implements OnInit {
     });
   }
 
-  cargarRequisitosSeleccionados(tipoTramiteId: number) {
-    this.cargandoRequisitos = true;
-    this.tipoTramiteService.obtenerRequisitos(tipoTramiteId).subscribe({
-      next: (requisitos: RequisitoTUPAC[]) => {
-        this.requisitosSeleccionados = requisitos;
-        // También cargar los disponibles para saber cuáles faltan
-        if (this.form.tupacId) {
-          this.cargarRequisitosDisponibles(this.form.tupacId);
-        }
-        this.cargandoRequisitos = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error cargando requisitos seleccionados:', err);
-        this.requisitosSeleccionados = [];
-        this.cargandoRequisitos = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
-  }
+   cargarRequisitosSeleccionados(tipoTramiteId: number) {
+     this.cargandoRequisitos = true;
+     this.tipoTramiteService.obtenerRequisitos(tipoTramiteId).subscribe({
+       next: (requisitos: RequisitoTUPAC[]) => {
+         this.requisitosSeleccionados = requisitos;
+         // También cargar los disponibles para saber cuáles faltan
+         if (this.form.tupac && this.form.tupac.id) {
+           this.cargarRequisitosDisponibles(this.form.tupac.id);
+         }
+         this.cargandoRequisitos = false;
+         this.changeDetectorRef.detectChanges();
+       },
+       error: (err: any) => {
+         console.error('Error cargando requisitos seleccionados:', err);
+         this.requisitosSeleccionados = [];
+         this.cargandoRequisitos = false;
+         this.changeDetectorRef.detectChanges();
+       }
+     });
+   }
 
   aplicarTodosLosRequisitos() {
-    if (!this.form.tupacId) return;
+    if (!this.form.tupac) return;
     
     // Asegurarse de que requisitosDisponibles es un array
     if (Array.isArray(this.requisitosDisponibles)) {

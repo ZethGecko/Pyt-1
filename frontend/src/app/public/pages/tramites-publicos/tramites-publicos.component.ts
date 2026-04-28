@@ -63,8 +63,9 @@ export class TramitesPublicosComponent implements OnInit {
     this.http.get<TipoTramitePublicoDTO[]>(`${environment.apiUrl}/tipos-tramite/publico`).subscribe({
       next: (data) => {
         this.tiposTramite = data.map(tipo => {
-          const obligatoriosCount = tipo.requisitos.filter(r => r.obligatorio).length;
-          const requisitos = tipo.requisitos.map(req => ({
+          const requisitosList = tipo.requisitos || [];
+          const obligatoriosCount = requisitosList.filter(r => r.obligatorio).length;
+          const requisitos = requisitosList.map(req => ({
             ...req,
             tipoClase: 'tipo-' + (req.tipoDocumento ? req.tipoDocumento.toLowerCase() : ''),
             badgeObligatorioClase: req.obligatorio ? 'badge-success' : 'badge-secondary',

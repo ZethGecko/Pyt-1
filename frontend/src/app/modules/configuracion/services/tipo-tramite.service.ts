@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { TipoTramite, TipoTramiteCreateRequest, TipoTramiteUpdateRequest, TipoTramiteEnriquecido } from '../models/tipo-tramite.model';
 import { RequisitoTUPAC } from '../models/requisito-tupac.model';
@@ -10,14 +11,36 @@ export class TipoTramiteService {
   private apiUrl = `${environment.apiUrl}/tipos-tramite`;
   
   constructor(private http: HttpClient) {}
+
+  private transformToTipoTramite(data: any): TipoTramite {
+    // Convertir idTipoTramite -> id para compatibilidad
+    if (data.idTipoTramite !== undefined) {
+      data.id = data.idTipoTramite;
+      delete data.idTipoTramite;
+    }
+    return data as TipoTramite;
+  }
+
+  private transformToTipoTramiteEnriquecido(data: any): TipoTramiteEnriquecido {
+    // Convertir idTipoTramite -> id
+    if (data.idTipoTramite !== undefined) {
+      data.id = data.idTipoTramite;
+      delete data.idTipoTramite;
+    }
+    return data as TipoTramiteEnriquecido;
+  }
   
   // ========== CRUD ==========
   obtener(id: number): Observable<TipoTramite> {
-    return this.http.get<TipoTramite>(`${this.apiUrl}/${id}`);
+    return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(
+      map(resp => this.transformToTipoTramite(resp))
+    );
   }
   
   listarTodos(): Observable<TipoTramiteEnriquecido[]> {
-    return this.http.get<TipoTramiteEnriquecido[]>(`${this.apiUrl}/enriquecidos`);
+    return this.http.get<any[]>(`${this.apiUrl}/enriquecidos`).pipe(
+      map(arr => arr.map(item => this.transformToTipoTramiteEnriquecido(item)))
+    );
   }
   
   listarActivos(): Observable<TipoTramite[]> {
@@ -25,11 +48,15 @@ export class TipoTramiteService {
   }
   
   crear(tipo: TipoTramiteCreateRequest): Observable<TipoTramite> {
-    return this.http.post<TipoTramite>(this.apiUrl, tipo);
+    return this.http.post<any>(this.apiUrl, tipo).pipe(
+      map(resp => this.transformToTipoTramite(resp))
+    );
   }
   
   actualizar(id: number, tipo: TipoTramiteUpdateRequest): Observable<TipoTramite> {
-    return this.http.put<TipoTramite>(`${this.apiUrl}/${id}`, tipo);
+    return this.http.put<any>(`${this.apiUrl}/${id}`, tipo).pipe(
+      map(resp => this.transformToTipoTramite(resp))
+    );
   }
   
   eliminar(id: number): Observable<void> {

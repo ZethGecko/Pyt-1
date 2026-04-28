@@ -20,63 +20,63 @@ export class NavbarComponent {
   canManageUsers = this.AuthStateService.canManageUsers;
   canManageAllData = this.AuthStateService.canManageAllData;
 
-  // Menú dinámico basado en permisos
-  get menuItems() {
-    return [
-      {
-        label: 'Dashboard',
-        route: '/dashboard',
-        icon: 'home',
-        visible: this.isLoggedIn()
-      },
-      {
-        label: 'Trámites',
-        route: '/tramites',
-        icon: 'file-text',
-        visible: this.permissionService.hasTablePermission('tramite', 'view')
-      },
-      {
-        label: 'Empresas',
-        route: '/empresas',
-        icon: 'building',
-        visible: this.permissionService.hasTablePermission('empresa', 'view')
-      },
-      {
-        label: 'Vehículos',
-        route: '/vehiculos',
-        icon: 'truck',
-        visible: this.permissionService.hasTablePermission('vehiculo', 'view')
-      },
-      {
-        label: 'Inspecciones',
-        route: '/inspecciones',
-        icon: 'clipboard-check',
-        visible: this.permissionService.hasTablePermission('inspeccion', 'view')
-      },
-      {
-        label: 'Administración',
-        icon: 'settings',
-        visible: this.canManageAllData(),
-        children: [
-          {
-            label: 'Usuarios',
-            route: '/admin/usuarios',
-            visible: this.canManageUsers()
-          },
-          {
-            label: 'Roles',
-            route: '/admin/roles',
-            visible: this.permissionService.hasTablePermission('rol', 'manage')
-          },
-          {
-            label: 'Configuración',
-            route: '/admin/configuracion',
-            visible: this.permissionService.hasTablePermission('configuracion', 'manage')
-          }
-        ]
-      }
-    ].filter(item => item.visible);
-  }
+   // Menú dinámico basado en permisos
+   get menuItems() {
+     return [
+       {
+         label: 'Dashboard',
+         route: '/dashboard',
+         icon: 'home',
+         visible: this.isLoggedIn()
+       },
+       {
+         label: 'Trámites',
+         route: '/tramites/gestion',
+         icon: 'file-text',
+         visible: this.permissionService.hasTablePermission('tramite', 'view')
+       },
+       {
+         label: 'Empresas',
+         route: '/empresas',
+         icon: 'building',
+         visible: this.permissionService.hasTablePermission('empresa', 'view')
+       },
+       {
+         label: 'Vehículos',
+         route: '/vehiculos',
+         icon: 'truck',
+         visible: this.permissionService.hasTablePermission('vehiculo', 'view')
+       },
+       {
+         label: 'Inspecciones',
+         route: '/inspecciones',
+         icon: 'clipboard-check',
+         visible: this.permissionService.hasTablePermission('inspeccion', 'view')
+       },
+       {
+         label: 'Administración',
+         icon: 'settings',
+         visible: this.canManageAllData(),
+         children: [
+           {
+             label: 'Usuarios',
+             route: '/admin/usuarios',
+             visible: this.canManageUsers()
+           },
+           {
+             label: 'Roles',
+             route: '/admin/roles',
+             visible: this.permissionService.hasTablePermission('rol', 'manage')
+           },
+           {
+             label: 'Configuración',
+             route: '/admin/configuracion',
+             visible: this.permissionService.hasTablePermission('configuracion', 'manage')
+           }
+         ]
+       }
+     ].filter(item => item.visible);
+   }
 
   logout(): void {
     this.authService.logout();

@@ -262,39 +262,39 @@ public class RequisitoTUPACController {
         return requisitoTUPACService.obtenerTiposDocumentoUnicos();
     }
 
-    private RequisitoTUPACEnriquecidoDTO toEnriquecidoDTO(RequisitoTUPAC r) {
-        if (r == null) return null;
-        RequisitoTUPACEnriquecidoDTO dto = new RequisitoTUPACEnriquecidoDTO();
-        dto.setId(r.getId());
-        dto.setCodigo(r.getCodigo());
-        dto.setDescripcion(r.getDescripcion());
-        dto.setObligatorio(r.getObligatorio());
-        dto.setTipoDocumento(r.getTipoDocumento());
-        dto.setEsExamen(r.getEsExamen());
-        dto.setObservaciones(r.getObservaciones());
-        dto.setActivo(r.getActivo());
-        dto.setDiasValidez(r.getDiasValidez());
+  private RequisitoTUPACEnriquecidoDTO toEnriquecidoDTO(RequisitoTUPAC r) {
+    if (r == null) return null;
+    RequisitoTUPACEnriquecidoDTO dto = new RequisitoTUPACEnriquecidoDTO();
+    dto.setId(r.getId());
+    dto.setCodigo(r.getCodigo());
+    dto.setDescripcion(r.getDescripcion());
+    dto.setObligatorio(r.getObligatorio());
+    dto.setTipoDocumento(r.getTipoDocumento());
+    dto.setEsExamen(r.getEsExamen());
+    dto.setObservaciones(r.getObservaciones());
+    dto.setActivo(r.getActivo());
+    dto.setDiasValidez(r.getDiasValidez());
 
-        if (r.getTupac() != null) {
-            dto.setTupacId(r.getTupac().getIdTupac());
-            dto.setTupacCodigo(r.getTupac().getCodigo());
-            dto.setTupacDescripcion(r.getTupac().getDescripcion());
-            dto.setTupacEstado(r.getTupac().getEstado());
-            dto.setTupacCategoria(r.getTupac().getCategoria());
-        }
-
-        if (r.getFormato() != null) {
-            dto.setFormatoId(r.getFormato().getIdFormato());
-            dto.setFormatoDescripcion(r.getFormato().getDescripcion());
-            dto.setFormatoArchivoRuta(r.getFormato().getArchivoRuta());
-        }
-
-        // Stats placeholders
-        dto.setTotalDocumentos(0);
-        dto.setDocumentosAprobados(0);
-        dto.setDocumentosPendientes(0);
-        dto.setGruposProgramados(0);
-
-        return dto;
+    if (r.getTupac() != null) {
+      dto.setTupacId(r.getTupac().getIdTupac());
+      dto.setTupacCodigo(r.getTupac().getCodigo());
+      dto.setTupacDescripcion(r.getTupac().getDescripcion());
+      dto.setTupacEstado(r.getTupac().getEstado());
+      dto.setTupacCategoria(r.getTupac().getCategoria());
     }
+
+    if (r.getFormato() != null) {
+      dto.setFormatoId(r.getFormato().getIdFormato());
+      dto.setFormatoDescripcion(r.getFormato().getDescripcion());
+      dto.setFormatoArchivoRuta(r.getFormato().getArchivoRuta());
+    }
+
+    // Stats placeholders
+    dto.setTotalDocumentos(0);
+    dto.setDocumentosAprobados(0);
+    dto.setDocumentosPendientes(0);
+    dto.setGruposProgramados(0);
+
+    return dto;
+  }
 }

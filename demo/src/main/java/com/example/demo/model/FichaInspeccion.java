@@ -63,21 +63,14 @@ public class FichaInspeccion {
     @JoinColumn(name = "vehiculo", insertable = false, updatable = false)
     private Vehiculo vehiculoEntity;
 
+    // Relación con VehiculoApto (trazabilidad de revisión documental)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_vehiculo_apto")
+    private VehiculoApto vehiculoApto;
+
     // Relación con ParametrosInspeccion
     @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL)
     private List<ParametrosInspeccion> parametros;
-
-    // Relación con ObservacionesInspeccion
-    @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL)
-    private List<ObservacionesInspeccion> observacionesInspeccion;
-
-    // Relación con ElementoCanvas
-    @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL)
-    private List<ElementoCanvas> elementosCanvas;
-
-    // Relación con EvaluacionParametro
-    @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL)
-    private List<EvaluacionParametro> evaluaciones;
 
     // Getters y setters
     public Long getIdFichaInspeccion() { return idFichaInspeccion; }
@@ -122,20 +115,22 @@ public class FichaInspeccion {
     public Users getUsuarioInspectorEntity() { return usuarioInspectorEntity; }
     public void setUsuarioInspectorEntity(Users usuarioInspectorEntity) { this.usuarioInspectorEntity = usuarioInspectorEntity; }
 
-    public Vehiculo getVehiculoEntity() { return vehiculoEntity; }
-    public void setVehiculoEntity(Vehiculo vehiculoEntity) { this.vehiculoEntity = vehiculoEntity; }
+    public Vehiculo getVehiculoEntity() {
+        return vehiculoEntity;
+    }
+
+    public void setVehiculoEntity(Vehiculo vehiculoEntity) {
+        this.vehiculoEntity = vehiculoEntity;
+    }
+
+    public VehiculoApto getVehiculoApto() {
+        return vehiculoApto;
+    }
+
+    public void setVehiculoApto(VehiculoApto vehiculoApto) {
+        this.vehiculoApto = vehiculoApto;
+    }
 
     public List<ParametrosInspeccion> getParametros() { return parametros; }
     public void setParametros(List<ParametrosInspeccion> parametros) { this.parametros = parametros; }
-
-    public List<ObservacionesInspeccion> getObservacionesInspeccion() { return observacionesInspeccion; }
-    public void setObservacionesInspeccion(List<ObservacionesInspeccion> observacionesInspeccion) { 
-        this.observacionesInspeccion = observacionesInspeccion; 
-    }
-
-    public List<ElementoCanvas> getElementosCanvas() { return elementosCanvas; }
-    public void setElementosCanvas(List<ElementoCanvas> elementosCanvas) { this.elementosCanvas = elementosCanvas; }
-
-    public List<EvaluacionParametro> getEvaluaciones() { return evaluaciones; }
-    public void setEvaluaciones(List<EvaluacionParametro> evaluaciones) { this.evaluaciones = evaluaciones; }
 }

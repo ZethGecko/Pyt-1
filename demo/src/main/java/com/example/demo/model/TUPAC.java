@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,9 +44,15 @@ public class TUPAC {
     // @JoinColumn(name = "id_tiposolicitud", nullable = false)
     // private TipoSolicitud tipoSolicitud;
 
-    // Getters y setters
-    public Long getIdTupac() { return idTupac; }
-    public void setIdTupac(Long idTupac) { this.idTupac = idTupac; }
+     // Getters y setters
+     @JsonProperty("id")
+     public Long getId() { return idTupac; }
+     
+     @JsonProperty("id")
+     public void setId(Long id) { this.idTupac = id; }
+     
+     public Long getIdTupac() { return idTupac; }
+     public void setIdTupac(Long idTupac) { this.idTupac = idTupac; }
 
     public LocalDateTime getFechaVigencia() { return fechaVigencia; }
     public void setFechaVigencia(LocalDateTime fechaVigencia) { this.fechaVigencia = fechaVigencia; }

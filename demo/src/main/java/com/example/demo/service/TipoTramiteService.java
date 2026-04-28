@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.model.TipoTramite;
+import com.example.demo.model.TUPAC;
 import com.example.demo.repository.TipoTramiteRepository;
+import com.example.demo.repository.TUPACRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -16,6 +18,9 @@ public class TipoTramiteService {
 
     @Autowired
     private TipoTramiteRepository repo;
+    
+    @Autowired
+    private TUPACRepository tupacRepository;
 
     public List<TipoTramite> listarTodos() {
         return repo.findAllWithTupac();
@@ -38,6 +43,17 @@ public class TipoTramiteService {
 
     @Transactional
     public TipoTramite crear(TipoTramite tipo) {
+        // Si tiene tupac con ID, cargar la entidad persistida
+        if (tipo.getTupac() != null) {
+            Long tupacId = tipo.getTupac().getIdTupac();
+            if (tupacId != null) {
+                TUPAC tupacPersistido = tupacRepository.findById(tupacId)
+                    .orElseThrow(() -> new RuntimeException("TUPAC no encontrado con id: " + tupacId));
+                tipo.setTupac(tupacPersistido);
+            } else {
+                tipo.setTupac(null);
+            }
+        }
         return repo.save(tipo);
     }
 
@@ -48,7 +64,20 @@ public class TipoTramiteService {
             if (datos.getDescripcion() != null) tipo.setDescripcion(datos.getDescripcion());
             if (datos.getDiasDescargo() != null) tipo.setDiasDescargo(datos.getDiasDescargo());
             if (datos.getRequisitosIds() != null) tipo.setRequisitosIds(datos.getRequisitosIds());
-            if (datos.getTupac() != null) tipo.setTupac(datos.getTupac());
+
+            // Manejar TUPAC: si viene en datos, cargar la entidad persistida
+            if (datos.getTupac() != null) {
+                Long tupacId = datos.getTupac().getIdTupac();
+                if (tupacId != null) {
+                    TUPAC tupacPersistido = tupacRepository.findById(tupacId)
+                        .orElseThrow(() -> new RuntimeException("TUPAC no encontrado con id: " + tupacId));
+                    tipo.setTupac(tupacPersistido);
+                } else {
+                    tipo.setTupac(null);
+                }
+            } else {
+                tipo.setTupac(null);
+            }
             return repo.save(tipo);
         }).orElse(null);
     }

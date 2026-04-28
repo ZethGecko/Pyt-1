@@ -15,8 +15,8 @@ public interface RequisitoTUPACRepository extends JpaRepository<RequisitoTUPAC, 
     @Query("SELECT r FROM RequisitoTUPAC r LEFT JOIN FETCH r.tupac LEFT JOIN FETCH r.formato")
     List<RequisitoTUPAC> findAllWithTupacAndFormato();
 
-    @Query("SELECT r FROM RequisitoTUPAC r WHERE r.tupac.idTupac = :tupacId AND r.activo = true")
-    List<RequisitoTUPAC> findByTupac_IdTupacWithFetch(@Param("tupacId") Long tupacId);
+    @Query("SELECT r FROM RequisitoTUPAC r LEFT JOIN FETCH r.tupac LEFT JOIN FETCH r.formato WHERE r.tupac.idTupac = :tupacId AND r.activo = true")
+    List<RequisitoTUPAC> findByTupacIdWithFetch(@Param("tupacId") Long tupacId);
 
     @Query("SELECT DISTINCT r.tipoDocumento FROM RequisitoTUPAC r WHERE r.activo = true")
     List<String> findDistinctTipoDocumentoByActivoTrue();

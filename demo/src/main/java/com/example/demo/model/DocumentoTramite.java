@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -91,9 +92,10 @@ public class DocumentoTramite {
     @JoinColumn(name = "usuario_revisa_id")
     private Users usuarioRevisa;
 
-    // Getters y setters
-    public Long getIdDocumento() { return idDocumento; }
-    public void setIdDocumento(Long idDocumento) { this.idDocumento = idDocumento; }
+	// Getters y setters
+	@JsonProperty("id")
+	public Long getIdDocumento() { return idDocumento; }
+	public void setIdDocumento(Long idDocumento) { this.idDocumento = idDocumento; }
 
     public Long getTramiteId() { return tramiteId; }
     public void setTramiteId(Long tramiteId) { this.tramiteId = tramiteId; }

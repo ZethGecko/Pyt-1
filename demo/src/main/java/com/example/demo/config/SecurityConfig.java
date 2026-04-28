@@ -71,9 +71,9 @@ public class SecurityConfig {
                      .requestMatchers("/api/puntos/**").permitAll()
                      .requestMatchers("/api/grupos-presentacion/**").permitAll()
                      .requestMatchers("/api/inscripcion-examen/**").permitAll()
-                     .requestMatchers("/api/parametros-inspeccion/**").permitAll()
-                     .requestMatchers("/api/fichas-inspeccion/**").permitAll()
-                     .requestMatchers("/actuator/**").permitAll()
+                      .requestMatchers("/api/parametros-inspeccion/**").permitAll()
+                      .requestMatchers("/api/fichas-inspeccion/**").permitAll()
+                      .requestMatchers("/actuator/**").permitAll()
                      .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                      // Recursos estáticos del frontend
                      .requestMatchers("/", "/index.html", "/favicon.ico", "/manifest.json", "/assets/**").permitAll()

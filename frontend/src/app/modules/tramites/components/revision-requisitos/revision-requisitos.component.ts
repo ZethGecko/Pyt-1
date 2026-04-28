@@ -132,6 +132,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
 
   private cargarDatosCombinados(): Observable<RequisitoRevision[]> {
     if (!this.tipoTramiteId) {
+      console.warn('[Revision] No hay tipoTramiteId');
       return of([]);
     }
 
@@ -139,18 +140,35 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       switchMap((tipos: TipoTramiteEnriquecido[]) => {
         const tipo = tipos.find(t => t.id === this.tipoTramiteId);
         if (!tipo || !tipo.tupacId) {
+          console.warn('[Revision] Tipo no encontrado o sin tupacId', { tipoTramiteId: this.tipoTramiteId, tipos });
           return of([]);
         }
         const tupacId = tipo.tupacId;
-        const requisitosIdsSet = new Set<number>(tipo.requisitosIds || []);
+        console.log('[Revision] Tipo cargado:', { id: tipo.id, codigo: tipo.codigo, requisitosIds: tipo.requisitosIds, tupacId });
+
+        const requisitosIdsSet = new Set<number>((tipo.requisitosIds as number[]) || []);
+        console.log('[Revision] requisitosIdsSet size:', requisitosIdsSet.size);
 
         return combineLatest([
           this.requisitoTUPACService.listarEnriquecidosPorTupac(tupacId),
           this.revisionService.getProyeccionesPorTramite(this.tramiteId)
         ]).pipe(
           map(([requisitosEnriquecidos, documentos]) => {
-            // Filtrar requisitos que estén en la lista de IDs del tipo de trámite
-            const requisitosFiltrados = requisitosEnriquecidos.filter(r => r.id && requisitosIdsSet.has(r.id));
+            console.log('[Revision] requisitosEnriquecidos count:', requisitosEnriquecidos.length);
+
+            let requisitosFiltrados: RequisitoTUPACEnriquecido[];
+            if (requisitosIdsSet.size === 0) {
+              console.log('[Revision] Usando todos los requisitos del TUPAC (fallback por array vacío)');
+              requisitosFiltrados = requisitosEnriquecidos;
+            } else {
+              requisitosFiltrados = requisitosEnriquecidos.filter(r => r.id && requisitosIdsSet.has(r.id));
+              console.log('[Revision] Después de filtrar por IDs:', requisitosFiltrados.length, 'de', requisitosEnriquecidos.length);
+              // Fallback secundario: si el filtro no encuentra ningún requisito, mostrar todos
+              if (requisitosFiltrados.length === 0) {
+                console.log('[Revision] No se encontraron requisitos que coincidan con los IDs; mostrando todos (fallback secundario)');
+                requisitosFiltrados = requisitosEnriquecidos;
+              }
+            }
 
             const documentosMap = new Map<number, any>();
             documentos.forEach(doc => {
@@ -387,15 +405,15 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
         concatMap(op => op),
         toArray(),
         takeUntil(this.destroy$)
-      ).subscribe({
+       ).subscribe({
         next: () => {
-          alert('Trámite observado exitosamente');
+          this.notificationService.showSuccess('Trámite observado exitosamente');
           this.tramiteObservado.emit();
           this.cerrar();
         },
         error: (err) => {
           console.error('Error al observar trámite:', err);
-          alert('Error al observar el trámite: ' + (err.message || 'Error desconocido'));
+          this.notificationService.showError('Error al observar el trámite: ' + (err.message || 'Error desconocido'));
         }
       });
     }
@@ -415,17 +433,17 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
          concatMap(op => op),
          toArray(),
          takeUntil(this.destroy$)
-       ).subscribe({
-         next: (results) => {
-           alert('Trámite revisado completamente exitosamente');
-           this.tramiteFinalizado.emit();
-           this.cerrar();
-         },
-         error: (err) => {
-           console.error('Error al finalizar trámite:', err);
-           alert('Error al finalizar el trámite: ' + (err.message || 'Error desconocido'));
-         }
-       });
+        ).subscribe({
+          next: (results) => {
+            this.notificationService.showSuccess('Trámite revisado completamente exitosamente');
+            this.tramiteFinalizado.emit();
+            this.cerrar();
+          },
+          error: (err) => {
+            console.error('Error al finalizar trámite:', err);
+            this.notificationService.showError('Error al finalizar el trámite: ' + (err.message || 'Error desconocido'));
+          }
+        });
      }
 
      verFormato(requisito: RequisitoRevision): void {
@@ -441,10 +459,10 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
            const newWindow = window.open(url, '_blank');
            if (!newWindow) {
              // Fallback to download if popup blocked
-             const a = document.createElement('a');
-             a.href = url;
-             const filename = requisito.formatoArchivoRuta ? requisito.formatoArchivoRuta.split('/').pop() : 'formato.pdf';
-             a.download = filename;
+              const a = document.createElement('a');
+              a.href = url;
+              const filename = requisito.formatoArchivoRuta ? (requisito.formatoArchivoRuta.split('/').pop() || 'formato.pdf') : 'formato.pdf';
+              a.download = filename;
              document.body.appendChild(a);
              a.click();
              window.URL.revokeObjectURL(url);
@@ -473,10 +491,10 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
        this.formatoService.download(requisito.formatoId).subscribe({
          next: (blob) => {
            const url = window.URL.createObjectURL(blob);
-           const a = document.createElement('a');
-           a.href = url;
-           const filename = requisito.formatoArchivoRuta ? requisito.formatoArchivoRuta.split('/').pop() : 'formato.pdf';
-           a.download = filename;
+            const a = document.createElement('a');
+            a.href = url;
+            const filename = requisito.formatoArchivoRuta ? (requisito.formatoArchivoRuta.split('/').pop() || 'formato.pdf') : 'formato.pdf';
+            a.download = filename;
            document.body.appendChild(a);
            a.click();
            window.URL.revokeObjectURL(url);

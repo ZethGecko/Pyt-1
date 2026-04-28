@@ -40,7 +40,7 @@ public class RequisitoTUPACService {
     }
 
     public List<RequisitoTUPAC> listarPorTupac(Long tupacId) {
-        return requisitoTUPACRepository.findByTupac_IdTupacWithFetch(tupacId);
+        return requisitoTUPACRepository.findByTupacIdWithFetch(tupacId);
     }
 
     public List<String> obtenerTiposDocumentoUnicos() {

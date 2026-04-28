@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { TramiteService, TipoTramiteOption, SolicitanteOption, TramiteCreateRequest } from '../services/tramite.service';
+import { TramiteService, TipoTramiteOption, SolicitanteOption } from '../services/tramite.service';
+import { TramiteCreateRequest } from '../models/tramite.model';
+import { TipoTramiteService } from '../../configuracion/services/tipo-tramite.service';
+import { RequisitoTUPAC } from '../../configuracion/models/requisito-tupac.model';
 import { TipoTramiteSolicitanteService } from '../../configuracion/services/tipo-tramite-solicitante.service';
 import { ReglaTipoTramitePermisoService } from '../../configuracion/services/regla-tipo-tramite-permiso.service';
 import { PersonaNaturalService } from '../../personas-naturales/services/persona-natural.service';
@@ -40,14 +43,15 @@ interface SolicitanteData {
   styleUrls: ['./nuevo-tramite.component.scss']
 })
 export class NuevoTramiteComponent implements OnInit {
-  // Datos del formulario
-  datosTramite: TramiteCreateRequest = {
-    tipoTramiteId: 0,
-    solicitanteId: 0,
-    codigoRUT: '',
-    prioridad: 'normal',
-    observaciones: ''
-  };
+   // Datos del formulario
+   datosTramite: TramiteCreateRequest = {
+     tipoTramiteId: 0,
+     solicitanteId: 0,
+     tipoSolicitante: 'PersonaNatural',
+     codigoRUT: '',
+     prioridad: 'normal',
+     observaciones: ''
+   };
 
   // Opciones para selects
   tiposTramite: TipoTramiteOption[] = [];
@@ -112,44 +116,45 @@ export class NuevoTramiteComponent implements OnInit {
     return this.requisitos ? this.requisitos.filter(r => r.obligatorio && r.archivo).length : 0;
   }
 
-  constructor(
-    private tramiteService: TramiteService,
-    private tipoTramiteSolicitanteService: TipoTramiteSolicitanteService,
-    private reglaService: ReglaTipoTramitePermisoService,
-    private personaNaturalService: PersonaNaturalService,
-    private empresaService: EmpresaService,
-    private vehiculoService: VehiculoService,
-    private notificationService: NotificationService,
-    private router: Router,
-    private changeDetectorRef: ChangeDetectorRef
-  ) {}
+   constructor(
+     private tramiteService: TramiteService,
+     private tipoTramiteService: TipoTramiteService,
+     private tipoTramiteSolicitanteService: TipoTramiteSolicitanteService,
+     private reglaService: ReglaTipoTramitePermisoService,
+     private personaNaturalService: PersonaNaturalService,
+     private empresaService: EmpresaService,
+     private vehiculoService: VehiculoService,
+     private notificationService: NotificationService,
+     private router: Router,
+     private changeDetectorRef: ChangeDetectorRef
+   ) {}
 
   ngOnInit(): void {
     this.cargarDatosIniciales();
   }
 
   // ✅ CARGAR DATOS INICIALES CON forkJoin
-  cargarDatosIniciales(): void {
-    this.cargando = true;
+   cargarDatosIniciales(): void {
+     this.cargando = true;
 
-    forkJoin({
-      tipos: this.tramiteService.listarTiposTramite(),
-      solicitantes: this.tramiteService.listarSolicitantes(),
-      permisos: this.tipoTramiteSolicitanteService.getAll(0, 1000),
-      reglas: this.reglaService.listarTodos()
-    }).subscribe({
-      next: (resultado) => {
-        this.tiposTramite = resultado.tipos;
-        this.solicitantes = resultado.solicitantes;
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.notificationService.error('Error al cargar datos iniciales', 'Error');
-        console.error('Error cargando datos iniciales:', err);
-      }
-    });
-  }
+     forkJoin({
+       tipos: this.tramiteService.listarTiposTramite(),
+       solicitantes: this.tramiteService.listarSolicitantes(),
+       permisos: this.tipoTramiteSolicitanteService.getAll(0, 1000),
+       reglas: this.reglaService.listarTodos()
+     }).subscribe({
+       next: (resultado) => {
+         this.tiposTramite = resultado.tipos;
+         this.solicitantes = resultado.solicitantes;
+         this.cargando = false;
+       },
+       error: (err: any) => {
+         this.cargando = false;
+         this.notificationService.error('Error al cargar datos iniciales', 'Error');
+         console.error('Error cargando datos iniciales:', err);
+       }
+     });
+   }
 
   // 🎯 SELECCIÓN DE TIPO DE TRÁMITE
   onTipoTramiteSeleccionado(tipo: TipoTramiteOption | null): void {
@@ -171,21 +176,26 @@ export class NuevoTramiteComponent implements OnInit {
     }
   }
 
-  // 🎯 SELECCIÓN DE TIPO DE SOLICITANTE
-  onTipoSolicitanteSeleccionado(tipo: 'PersonaNatural' | 'Empresa' | 'Vehiculo' | null): void {
-    this.tipoSolicitanteSeleccionado = tipo;
-    
-    // Limpiar solicitante anterior
-    this.solicitanteSeleccionado = null;
-    this.datosTramite.solicitanteId = 0;
-    this.solicitanteDataCompleto = null;
-    this.terminoBusquedaSolicitante = '';
-    this.resultadosBusquedaSolicitante = [];
-    
-    // Limpiar validaciones
-    this.permisoSolicitante = false;
-    this.validacionesRegla = { mensajes: [] };
-  }
+   // 🎯 SELECCIÓN DE TIPO DE SOLICITANTE
+   onTipoSolicitanteSeleccionado(tipo: 'PersonaNatural' | 'Empresa' | 'Vehiculo' | null): void {
+     this.tipoSolicitanteSeleccionado = tipo;
+     
+     // Actualizar tipoSolicitante en datosTramite (mapeando Vehiculo → Gerente)
+     if (tipo) {
+       this.datosTramite.tipoSolicitante = tipo === 'Vehiculo' ? 'Gerente' : tipo;
+     }
+     
+     // Limpiar solicitante anterior
+     this.solicitanteSeleccionado = null;
+     this.datosTramite.solicitanteId = 0;
+     this.solicitanteDataCompleto = null;
+     this.terminoBusquedaSolicitante = '';
+     this.resultadosBusquedaSolicitante = [];
+     
+     // Limpiar validaciones
+     this.permisoSolicitante = false;
+     this.validacionesRegla = { mensajes: [] };
+   }
 
   // 🎯 SELECCIÓN DE SOLICITANTE
   onSolicitanteSeleccionado(solicitante: SolicitanteOption | null): void {
@@ -272,30 +282,30 @@ export class NuevoTramiteComponent implements OnInit {
     }
   }
 
-  // 🎯 CARGAR REQUISITOS POR TIPO DE TRÁMITE
-  cargarRequisitosPorTipoTramite(): void {
-    if (!this.tipoTramiteSeleccionado) return;
+   // 🎯 CARGAR REQUISITOS POR TIPO DE TRÁMITE
+   cargarRequisitosPorTipoTramite(): void {
+     if (!this.tipoTramiteSeleccionado) return;
 
-    this.tramiteService.listarRequisitosPorTipoTramite(this.tipoTramiteSeleccionado.codigo).subscribe({
-      next: (requisitos) => {
-        this.requisitos = requisitos.map((r: any) => ({
-          id: r.id,
-          codigo: r.codigo,
-          descripcion: r.descripcion,
-          tipoDocumento: r.tipoDocumento,
-          obligatorio: r.obligatorio,
-          esExamen: r.esExamen,
-          diasValidez: r.diasValidez,
-          archivo: undefined,
-          estado: 'PENDIENTE' as const
-        }));
-      },
-      error: (err) => {
-        console.error('Error cargando requisitos:', err);
-        this.requisitos = [];
-      }
-    });
-  }
+     this.tipoTramiteService.obtenerRequisitos(this.tipoTramiteSeleccionado.id).subscribe({
+       next: (requisitos: RequisitoTUPAC[]) => {
+         this.requisitos = requisitos.map(r => ({
+           id: r.id ?? 0,
+           codigo: r.codigo,
+           descripcion: r.descripcion,
+           tipoDocumento: r.tipoDocumento,
+           obligatorio: r.obligatorio,
+           esExamen: r.esExamen,
+           diasValidez: r.diasValidez,
+           archivo: undefined,
+           estado: 'PENDIENTE' as const
+         }));
+       },
+       error: (err: any) => {
+         console.error('Error cargando requisitos:', err);
+         this.requisitos = [];
+       }
+     });
+   }
 
   // 🎯 VALIDAR PERMISOS Y REGLAS
   validarPermisosYReglas(): void {
@@ -530,18 +540,18 @@ export class NuevoTramiteComponent implements OnInit {
     this.personaNaturalForm = { dni: '', nombres: '', apellidos: '', genero: '', telefono: '', email: '' };
   }
 
-  // 🎯 LIMPIAR FORMULARIO
-  limpiarFormulario(): void {
-    this.datosTramite = { tipoTramiteId: 0, solicitanteId: 0, codigoRUT: '', prioridad: 'normal', observaciones: '' };
-    this.tipoTramiteSeleccionado = null;
-    this.solicitanteSeleccionado = null;
-    this.solicitanteDataCompleto = null;
-    this.reglaPermiso = null;
-    this.permisoSolicitante = false;
-    this.validacionesRegla = { mensajes: [] };
-    this.requisitos = [];
-    this.documentosSubiendo.clear();
-  }
+   // 🎯 LIMPIAR FORMULARIO
+   limpiarFormulario(): void {
+     this.datosTramite = { tipoTramiteId: 0, solicitanteId: 0, tipoSolicitante: 'PersonaNatural', codigoRUT: '', prioridad: 'normal', observaciones: '' };
+     this.tipoTramiteSeleccionado = null;
+     this.solicitanteSeleccionado = null;
+     this.solicitanteDataCompleto = null;
+     this.reglaPermiso = null;
+     this.permisoSolicitante = false;
+     this.validacionesRegla = { mensajes: [] };
+     this.requisitos = [];
+     this.documentosSubiendo.clear();
+   }
 
   // Helper methods for template
   getIconoTipoSolicitante(tipo: string): string {

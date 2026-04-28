@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '../../core/auth/guards/auth.guard';
 import { publicGuard } from '../../core/auth/guards/public.guard';
+import { authGuard } from '../../core/auth/guards/auth.guard';
 
 export const TRAMITES_ROUTES: Routes = [
-  // Ruta principal - PÚBLICA (lista de tipos de trámite y requisitos)
+  // ========== RUTA PÚBLICA (sin auth) ==========
+  // /tramites → vista pública (solo consulta)
   {
     path: '',
     canActivate: [publicGuard],
@@ -11,58 +12,59 @@ export const TRAMITES_ROUTES: Routes = [
       .then(m => m.TramitesPublicosComponent),
     data: { title: 'Trámites' }
   },
-  // Detalle de trámite - PÚBLICO
+
+  // ========== RUTAS PRIVADAS (con auth) ==========
+  {
+    path: 'gestion',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/gestion-tramites.component')
+      .then(m => m.GestionTramitesComponent),
+    data: { title: 'Gestión de Trámites' }
+  },
+  // Detalle público (ambas vistas lo usan)
   {
     path: 'detalle/:id',
-    canActivate: [publicGuard],
     loadComponent: () => import('./pages/tramite-detalle.component')
-      .then(m => m.TramiteDetalleComponent),
-    data: { title: 'Detalle de Trámite' }
+      .then(m => m.TramiteDetalleComponent)
   },
-  // Ver trámite (alias) - PÚBLICO
+  // Ver (alias)
   {
     path: 'ver/:id',
-    canActivate: [publicGuard],
     loadComponent: () => import('./pages/tramite-detalle.component')
-      .then(m => m.TramiteDetalleComponent),
-    data: { title: 'Detalle de Trámite' }
+      .then(m => m.TramiteDetalleComponent)
   },
-  // Consulta pública - PÚBLICA
+  // Consulta pública
   {
     path: 'consulta',
-    canActivate: [publicGuard],
     loadComponent: () => import('./pages/consulta-publica/consulta-publica.component')
-      .then(m => m.ConsultaPublicaComponent),
-    data: { title: 'Consulta de Trámite' }
+      .then(m => m.ConsultaPublicaComponent)
   },
-
-  // ========== RUTAS PRIVADAS (requieren autenticación) ==========
+  // Mis documentos (privado)
   {
     path: 'mis-documentos',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/mis-documentos.component')
-      .then(m => m.MisDocumentosComponent),
-    data: { title: 'Mis Documentos' }
+      .then(m => m.MisDocumentosComponent)
   },
+  // Pendientes de revisión (privado)
   {
     path: 'pendientes-revision',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/pendientes-revision.component')
-      .then(m => m.PendientesRevisionComponent),
-    data: { title: 'Pendientes de Revisión' }
+      .then(m => m.PendientesRevisionComponent)
   },
+  // Estadísticas (privado)
   {
     path: 'estadisticas-documentos',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/estadisticas-documentos.component')
-      .then(m => m.EstadisticasDocumentosComponent),
-    data: { title: 'Estadísticas de Documentos' }
+      .then(m => m.EstadisticasDocumentosComponent)
   },
+  // Dashboard (privado)
   {
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/dashboard/dashboard.component')
-      .then(m => m.DashboardComponent),
-    data: { title: 'Mi Dashboard' }
+      .then(m => m.DashboardComponent)
   }
 ];

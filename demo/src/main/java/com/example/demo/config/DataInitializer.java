@@ -568,22 +568,28 @@ public class DataInitializer {
                     reqIdMap.put(req.getCodigo(), req.getId());
                 }
                 
-                // Tipo 1: REV-C (Revalidación de Licencia C) - sin requisitos
+                // Tipo 1: REV-C (Revalidación de Licencia C) - requisitos: DNI y Pago de Tasa
                 TipoTramite tipo1 = new TipoTramite();
                 tipo1.setCodigo("REV-C");
                 tipo1.setDescripcion("Revalidación de Licencia C");
                 tipo1.setDiasDescargo(5);
                 tipo1.setTupac(tupac1);
-                tipo1.setRequisitosIds("[]");
+                List<Long> ids1 = new ArrayList<>();
+                if (reqIdMap.containsKey("DOC_DNI")) ids1.add(reqIdMap.get("DOC_DNI"));
+                if (reqIdMap.containsKey("PAGO_TASA")) ids1.add(reqIdMap.get("PAGO_TASA"));
+                tipo1.setRequisitosIds(ids1.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo1);
-                
-                // Tipo 2: DUP-C (Duplicado de Licencia C) - sin requisitos
+
+                // Tipo 2: DUP-C (Duplicado de Licencia C) - requisitos: DNI y Pago de Tasa
                 TipoTramite tipo2 = new TipoTramite();
                 tipo2.setCodigo("DUP-C");
                 tipo2.setDescripcion("Duplicado de Licencia C");
                 tipo2.setDiasDescargo(6);
                 tipo2.setTupac(tupac1);
-                tipo2.setRequisitosIds("[]");
+                List<Long> ids2 = new ArrayList<>();
+                if (reqIdMap.containsKey("DOC_DNI")) ids2.add(reqIdMap.get("DOC_DNI"));
+                if (reqIdMap.containsKey("PAGO_TASA")) ids2.add(reqIdMap.get("PAGO_TASA"));
+                tipo2.setRequisitosIds(ids2.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo2);
                 
                 // Tipo 3: OBT-C (Obtención de Licencia C) - requisitos [3,4]
@@ -628,19 +634,37 @@ public class DataInitializer {
                 tipo5.setRequisitosIds(ids5.stream().map(String::valueOf).collect(Collectors.joining(",")));
                 tipoTramiteRepository.save(tipo5);
                 
-                // Tipo 6: DUP (Duplicado de Licencia) - requisitos [5,9]
-                List<Long> ids6 = new ArrayList<>();
-                if (reqIdMap.containsKey("DOC_DNI")) ids6.add(reqIdMap.get("DOC_DNI"));
-                if (reqIdMap.containsKey("PAGO_TASA")) ids6.add(reqIdMap.get("PAGO_TASA"));
-                TipoTramite tipo6 = new TipoTramite();
-                tipo6.setCodigo("DUP");
-                tipo6.setDescripcion("Duplicado de Licencia");
-                tipo6.setDiasDescargo(3);
-                tipo6.setTupac(tupac1);
-                tipo6.setRequisitosIds(ids6.stream().map(String::valueOf).collect(Collectors.joining(",")));
-                tipoTramiteRepository.save(tipo6);
-                
-                System.out.println("Tipos de Trámite creados (6 registros)");
+                 // Tipo 6: DUP (Duplicado de Licencia) - requisitos [5,9]
+                 List<Long> ids6 = new ArrayList<>();
+                 if (reqIdMap.containsKey("DOC_DNI")) ids6.add(reqIdMap.get("DOC_DNI"));
+                 if (reqIdMap.containsKey("PAGO_TASA")) ids6.add(reqIdMap.get("PAGO_TASA"));
+                 TipoTramite tipo6 = new TipoTramite();
+                 tipo6.setCodigo("DUP");
+                 tipo6.setDescripcion("Duplicado de Licencia");
+                 tipo6.setDiasDescargo(3);
+                 tipo6.setTupac(tupac1);
+                 tipo6.setRequisitosIds(ids6.stream().map(String::valueOf).collect(Collectors.joining(",")));
+                 tipoTramiteRepository.save(tipo6);
+                 
+                 // Tipo 7: INSP (Inspección Vehicular) - asociado a tupac2, requisito TEST
+                 if (tupacs.size() >= 2) {
+                     TUPAC tupac2 = tupacs.get(1); // INSP
+                     TipoTramite tipo7 = new TipoTramite();
+                     tipo7.setCodigo("INSP");
+                     tipo7.setDescripcion("Inspección Vehicular");
+                     tipo7.setDiasDescargo(2);
+                     tipo7.setTupac(tupac2);
+                     // Asociar requisito TEST de tupac2 si existe
+                     List<Long> ids7 = new ArrayList<>();
+                     if (reqIdMap.containsKey("TEST")) {
+                         ids7.add(reqIdMap.get("TEST"));
+                     }
+                     tipo7.setRequisitosIds(ids7.stream().map(String::valueOf).collect(Collectors.joining(",")));
+                     tipoTramiteRepository.save(tipo7);
+                     System.out.println("Tipo de Trámite 7 (Inspección) creado con tupac2");
+                 }
+                 
+                 System.out.println("Tipos de Trámite creados (6-7 registros)");
             }
         }
 
@@ -679,103 +703,7 @@ public class DataInitializer {
             }
         }
 
-         // 8. Crear/actualizar rutas de prueba (RUTA-001, RUTA-002)
-         {
-             // Eliminar rutas de prueba existentes si existen
-             rutaRepository.findByCodigo("RUTA-001").ifPresent(r -> {
-                 List<PuntoRuta> puntos = puntoRutaRepository.findByRutaIdRuta(r.getIdRuta());
-                 puntoRutaRepository.deleteAll(puntos);
-                 rutaRepository.delete(r);
-                 System.out.println("Ruta de prueba RUTA-001 existente eliminada");
-             });
-             rutaRepository.findByCodigo("RUTA-002").ifPresent(r -> {
-                 List<PuntoRuta> puntos = puntoRutaRepository.findByRutaIdRuta(r.getIdRuta());
-                 puntoRutaRepository.deleteAll(puntos);
-                 rutaRepository.delete(r);
-                 System.out.println("Ruta de prueba RUTA-002 existente eliminada");
-             });
-
-             Empresa empresa = empresaRepository.findAll().stream().findFirst().orElse(null);
-             Users adminUser = usersRepository.findByUsername("admin");
-             if (empresa != null && adminUser != null) {
-                 // Ruta 1: El Alto -> Sur (La Paz, Bolivia) - 12 puntos
-                 Ruta ruta1 = new Ruta();
-                 ruta1.setNombre("Ruta 1: El Alto - Centro - Sur");
-                 ruta1.setDescripcion("Ruta completa desde El Alto hasta zona sur de La Paz, pasando por el centro");
-                 ruta1.setCodigo("RUTA-001");
-                 ruta1.setEstado("ACTIVO");
-                 ruta1.setTipo("REGULAR");
-                 ruta1.setEmpresa(empresa);
-                 ruta1.setUsuarioRegistra(adminUser);
-                 ruta1.setFechaRegistro(LocalDateTime.now());
-                 ruta1.setFechaActualizacion(LocalDateTime.now());
-                 ruta1 = rutaRepository.save(ruta1);
-
-                 List<PuntoRuta> puntos1 = new ArrayList<>();
-                 puntos1.add(createPunto(ruta1, 1, "El Alto", -16.5200, -68.2000));
-                 puntos1.add(createPunto(ruta1, 2, "Ciudad Satélite", -16.5100, -68.1900));
-                 puntos1.add(createPunto(ruta1, 3, "Villa Teresa", -16.5000, -68.1800));
-                 puntos1.add(createPunto(ruta1, 4, "Villa Fátima", -16.4900, -68.1600));
-                 puntos1.add(createPunto(ruta1, 5, "San Jorge", -16.4800, -68.1400));
-                 puntos1.add(createPunto(ruta1, 6, "Miraflores", -16.4850, -68.1200));
-                 puntos1.add(createPunto(ruta1, 7, "Sopocachi", -16.4800, -68.1000));
-                 puntos1.add(createPunto(ruta1, 8, "Centro (Plaza Murillo)", -16.4950, -68.1300));
-                 puntos1.add(createPunto(ruta1, 9, "San Pedro", -16.4900, -68.1200));
-                 puntos1.add(createPunto(ruta1, 10, "Obrajes", -16.4750, -68.0900));
-                 puntos1.add(createPunto(ruta1, 11, "Centro Sur", -16.4700, -68.0800));
-                 puntos1.add(createPunto(ruta1, 12, "Zona Sur (Calle 21)", -16.4600, -68.0700));
-                 puntoRutaRepository.saveAll(puntos1);
-
-                 // Ruta 2: Norte - Este
-                 Ruta ruta2 = new Ruta();
-                 ruta2.setNombre("Ruta 2: Norte - Este");
-                 ruta2.setDescripcion("Ruta desde el norte de La Paz hacia el este");
-                 ruta2.setCodigo("RUTA-002");
-                 ruta2.setEstado("ACTIVO");
-                 ruta2.setTipo("ESPECIAL");
-                 ruta2.setEmpresa(empresa);
-                 ruta2.setUsuarioRegistra(adminUser);
-                 ruta2.setFechaRegistro(LocalDateTime.now());
-                 ruta2.setFechaActualizacion(LocalDateTime.now());
-                 ruta2 = rutaRepository.save(ruta2);
-
-                 List<PuntoRuta> puntos2 = new ArrayList<>();
-                 puntos2.add(createPunto(ruta2, 1, "UMSA", -16.5300, -68.1700));
-                 puntos2.add(createPunto(ruta2, 2, "Cota Cota", -16.5200, -68.1600));
-                 puntos2.add(createPunto(ruta2, 3, "Malla", -16.5100, -68.1500));
-                 puntos2.add(createPunto(ruta2, 4, "Pasankeri", -16.5000, -68.1400));
-                 puntos2.add(createPunto(ruta2, 5, "Buenos Aires", -16.4900, -68.1300));
-                 puntos2.add(createPunto(ruta2, 6, "Cartagena", -16.4800, -68.1200));
-                 puntos2.add(createPunto(ruta2, 7, "Irpavi", -16.4700, -68.1100));
-                 puntos2.add(createPunto(ruta2, 8, "Achumani", -16.4600, -68.1000));
-                 puntos2.add(createPunto(ruta2, 9, "La Florida", -16.4500, -68.0900));
-                 puntos2.add(createPunto(ruta2, 10, "Calacoto", -16.4400, -68.0800));
-                 puntoRutaRepository.saveAll(puntos2);
-
-                 System.out.println("Rutas de prueba creadas: RUTA-001 (12 pts), RUTA-002 (10 pts)");
-             } else {
-                 System.out.println("No se crearon rutas de prueba: empresa o admin no encontrados");
-             }
-         }
-
         System.out.println("Data initialization completada (datos mínimos)");
-    }
-
-    private PuntoRuta createPunto(Ruta ruta, int orden, String nombre, double latitud, double longitud) {
-        PuntoRuta p = new PuntoRuta();
-        p.setRuta(ruta);
-        p.setOrden(orden);
-        p.setNombre(nombre);
-        p.setLatitud(latitud);
-        p.setLongitud(longitud);
-        p.setTipo("PARADA");
-        p.setEstado("ACTIVO");
-        p.setFechaRegistro(LocalDateTime.now());
-        p.setFechaActualizacion(LocalDateTime.now());
-        if (ruta.getUsuarioRegistra() != null) {
-            p.setUsuarioRegistra(ruta.getUsuarioRegistra());
-        }
-        return p;
     }
 
     private Roles createOrUpdateRole(String name, String description) {

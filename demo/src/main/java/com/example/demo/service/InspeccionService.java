@@ -5,6 +5,7 @@ import com.example.demo.dto.FichaInspeccionResponseDTO;
 import com.example.demo.dto.InspeccionCreateRequestDTO;
 import com.example.demo.dto.ParametroInspeccionDTO;
 import com.example.demo.dto.ParametroInspeccionResponseDTO;
+import com.example.demo.model.EstadoDocumental;
 import com.example.demo.model.FichaInspeccion;
 import com.example.demo.model.Inspeccion;
 import com.example.demo.model.ParametrosInspeccion;
@@ -12,12 +13,14 @@ import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.model.Tramite;
 import com.example.demo.model.Users;
 import com.example.demo.model.Vehiculo;
+import com.example.demo.model.VehiculoApto;
 import com.example.demo.repository.FichaInspeccionRepository;
 import com.example.demo.repository.InspeccionRepository;
 import com.example.demo.repository.ParametrosInspeccionRepository;
 import com.example.demo.repository.RequisitoTUPACRepository;
 import com.example.demo.repository.TramiteRepository;
 import com.example.demo.repository.UsersRepository;
+import com.example.demo.repository.VehiculoAptoRepository;
 import com.example.demo.repository.VehiculoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +40,7 @@ public class InspeccionService {
     private final ParametrosInspeccionRepository parametrosInspeccionRepository;
     private final RequisitoTUPACRepository requisitoTUPACRepository;
     private final UsersRepository usersRepository;
+    private final VehiculoAptoRepository vehiculoAptoRepository;
 
     public InspeccionService(InspeccionRepository inspeccionRepository,
                             TramiteRepository tramiteRepository,
@@ -44,7 +48,8 @@ public class InspeccionService {
                             FichaInspeccionRepository fichaInspeccionRepository,
                             ParametrosInspeccionRepository parametrosInspeccionRepository,
                             RequisitoTUPACRepository requisitoTUPACRepository,
-                            UsersRepository usersRepository) {
+                            UsersRepository usersRepository,
+                            VehiculoAptoRepository vehiculoAptoRepository) {
         this.inspeccionRepository = inspeccionRepository;
         this.tramiteRepository = tramiteRepository;
         this.vehiculoRepository = vehiculoRepository;
@@ -52,6 +57,7 @@ public class InspeccionService {
         this.parametrosInspeccionRepository = parametrosInspeccionRepository;
         this.requisitoTUPACRepository = requisitoTUPACRepository;
         this.usersRepository = usersRepository;
+        this.vehiculoAptoRepository = vehiculoAptoRepository;
     }
 
     public List<Inspeccion> listarTodas() {
@@ -79,8 +85,24 @@ public class InspeccionService {
         Tramite tramite = tramiteRepository.findById(request.getTramiteId())
                 .orElseThrow(() -> new IllegalArgumentException("Trámite no encontrado"));
 
+        // Validar que trámite esté completamente aprobado (todos los vehículos APTO)
         if (!"APROBADO".equals(tramite.getEstado())) {
-            throw new IllegalStateException("El trámite debe estar aprobado para iniciar una inspección");
+            throw new IllegalStateException("El trámite debe estar completamente aprobado para iniciar una inspección");
+        }
+
+        // NUEVO: Validar que cada vehículo seleccionado esté APTO y vincular VehiculoApto
+        for (Long vehiculoId : request.getVehiculosSeleccionados()) {
+            VehiculoApto apto = vehiculoAptoRepository
+                    .findTopByTramiteIdAndVehiculoIdOrderByNumeroInstanciaDesc(request.getTramiteId(), vehiculoId)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Vehículo " + vehiculoId + " no tiene revisión documental para este trámite"));
+
+            if (apto.getEstadoDocumental() != EstadoDocumental.APTO) {
+                throw new IllegalStateException(
+                        "Vehículo placa " + apto.getVehiculo().getPlaca() +
+                        " NO está APTO para inspección. Estado actual: " + apto.getEstadoDocumental() +
+                        (apto.getMotivoRechazo() != null ? ". Motivo: " + apto.getMotivoRechazo() : ""));
+            }
         }
 
         Users inspector = usersRepository.findById(request.getUsuarioInspectorId())
@@ -107,6 +129,12 @@ public class InspeccionService {
                 throw new IllegalArgumentException("Vehículo " + vehiculo.getPlaca() + " no pertenece a la empresa del trámite");
             }
 
+            // Obtener VehiculoApto para vincular
+            VehiculoApto apto = vehiculoAptoRepository
+                    .findTopByTramiteIdAndVehiculoIdOrderByNumeroInstanciaDesc(request.getTramiteId(), vehiculoId)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Vehículo " + vehiculoId + " no tiene revisión documental"));
+
             FichaInspeccion ficha = new FichaInspeccion();
             ficha.setInspeccion(inspeccion.getIdInspeccion());
             ficha.setSolicitud(null);
@@ -116,8 +144,10 @@ public class InspeccionService {
             ficha.setResultado("PENDIENTE");
             ficha.setFechaCreacion(LocalDateTime.now());
             ficha.setFechaActualizacion(LocalDateTime.now());
+            ficha.setVehiculoApto(apto); // Vincular con VehiculoApto
             ficha = fichaInspeccionRepository.save(ficha);
 
+            // Generar parámetros de inspección basados en tipo de trámite
             if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
                 List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
                 for (Long reqId : requisitosIds) {
@@ -144,6 +174,14 @@ public class InspeccionService {
         Vehiculo vehiculo = vehiculoRepository.findById(request.getVehiculoId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
 
+        // Intentar vincular VehiculoApto (si existe)
+        VehiculoApto apto = null;
+        if (inspeccion.getTramite() != null) {
+            apto = vehiculoAptoRepository
+                    .findTopByTramiteIdAndVehiculoIdOrderByNumeroInstanciaDesc(inspeccion.getTramite().getIdTramite(), request.getVehiculoId())
+                    .orElse(null);
+        }
+
         FichaInspeccion ficha = new FichaInspeccion();
         ficha.setInspeccion(inspeccionId);
         ficha.setSolicitud(null);
@@ -154,6 +192,7 @@ public class InspeccionService {
         ficha.setObservaciones(request.getObservaciones());
         ficha.setFechaCreacion(LocalDateTime.now());
         ficha.setFechaActualizacion(LocalDateTime.now());
+        ficha.setVehiculoApto(apto); // Vincular si existe
         ficha = fichaInspeccionRepository.save(ficha);
 
         Tramite tramite = inspeccion.getTramite();
@@ -231,6 +270,23 @@ public class InspeccionService {
         dto.setObservaciones(ficha.getObservaciones());
         dto.setFechaInspeccion(ficha.getFechaInspeccion());
 
+        // Incluir id del VehiculoApto si existe
+        if (ficha.getVehiculoApto() != null) {
+            VehiculoApto va = ficha.getVehiculoApto();
+            dto.setVehiculoAptoId(va.getIdVehiculoApto());
+            dto.setEstadoDocumental(va.getEstadoDocumental());
+            Tramite tram = va.getTramite();
+            if (tram != null) {
+                if (tram.getExpediente() != null) {
+                    dto.setExpediente(tram.getExpediente().getCodigo());
+                }
+                if (tram.getEmpresa() != null) {
+                    dto.setEmpresaNombre(tram.getEmpresa().getNombre());
+                }
+            }
+        }
+
+        // Datos del vehículo
         Vehiculo vehiculo = vehiculoRepository.findById(ficha.getVehiculo()).orElse(null);
         if (vehiculo != null) {
             dto.setVehiculoPlaca(vehiculo.getPlaca());
@@ -238,6 +294,7 @@ public class InspeccionService {
             dto.setVehiculoModelo(vehiculo.getModelo());
         }
 
+        // Parámetros de inspección
         List<ParametrosInspeccion> parametros = parametrosInspeccionRepository.findByFichaInspeccion_IdFichaInspeccion(ficha.getIdFichaInspeccion());
         List<ParametroInspeccionResponseDTO> parametrosDTO = parametros.stream()
                 .map(this::convertirAParametroResponseDTO)

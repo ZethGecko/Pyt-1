@@ -1,11 +1,14 @@
 package com.example.demo.dto;
 
+import com.example.demo.model.EstadoDocumental;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class FichaInspeccionResponseDTO {
     private Long idFichaInspeccion;
     private Long vehiculoId;
+    private Long vehiculoAptoId; // ID del registro de revisión documental
     private String vehiculoPlaca;
     private String vehiculoMarca;
     private String vehiculoModelo;
@@ -14,6 +17,10 @@ public class FichaInspeccionResponseDTO {
     private String observaciones;
     private LocalDateTime fechaInspeccion;
     private List<ParametroInspeccionResponseDTO> parametros;
+    // Nuevos campos
+    private String expediente;
+    private String empresaNombre;
+    private EstadoDocumental estadoDocumental;
 
     public FichaInspeccionResponseDTO() {}
 
@@ -22,6 +29,9 @@ public class FichaInspeccionResponseDTO {
 
     public Long getVehiculoId() { return vehiculoId; }
     public void setVehiculoId(Long vehiculoId) { this.vehiculoId = vehiculoId; }
+
+    public Long getVehiculoAptoId() { return vehiculoAptoId; }
+    public void setVehiculoAptoId(Long vehiculoAptoId) { this.vehiculoAptoId = vehiculoAptoId; }
 
     public String getVehiculoPlaca() { return vehiculoPlaca; }
     public void setVehiculoPlaca(String vehiculoPlaca) { this.vehiculoPlaca = vehiculoPlaca; }
@@ -46,4 +56,13 @@ public class FichaInspeccionResponseDTO {
 
     public List<ParametroInspeccionResponseDTO> getParametros() { return parametros; }
     public void setParametros(List<ParametroInspeccionResponseDTO> parametros) { this.parametros = parametros; }
+
+    public String getExpediente() { return expediente; }
+    public void setExpediente(String expediente) { this.expediente = expediente; }
+
+    public String getEmpresaNombre() { return empresaNombre; }
+    public void setEmpresaNombre(String empresaNombre) { this.empresaNombre = empresaNombre; }
+
+    public EstadoDocumental getEstadoDocumental() { return estadoDocumental; }
+    public void setEstadoDocumental(EstadoDocumental estadoDocumental) { this.estadoDocumental = estadoDocumental; }
 }

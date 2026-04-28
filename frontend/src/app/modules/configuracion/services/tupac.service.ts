@@ -227,11 +227,9 @@ export class TUPACService {
     return true;
   }
 
-  // ========== REQUISITOS ASOCIADOS ==========
+   // ========== REQUISITOS ASOCIADOS ==========
 
-  obtenerRequisitosPorTupac(tupacId: number): Observable<RequisitoTUPAC[]> {
-    return this.http.get<TUPAC>(`${this.baseUrl}/${tupacId}/requisitos`).pipe(
-      map(tupac => tupac.requisitos || [])
-    );
-  }
+   obtenerRequisitosPorTupac(tupacId: number): Observable<RequisitoTUPAC[]> {
+     return this.http.get<RequisitoTUPAC[]>(`${this.baseUrl}/${tupacId}/requisitos`);
+   }
 }

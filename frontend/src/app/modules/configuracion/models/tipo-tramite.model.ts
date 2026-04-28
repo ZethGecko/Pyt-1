@@ -41,7 +41,7 @@ export interface TipoTramiteCreateRequest {
   codigo: string;
   descripcion: string;
   diasDescargo?: number;
-  tupacId: number | null;
+  tupac?: { id: number } | null;
 }
 
 export interface TipoTramiteUpdateRequest {
@@ -49,5 +49,5 @@ export interface TipoTramiteUpdateRequest {
   descripcion?: string;
   diasDescargo?: number;
   estado?: boolean;
-  tupacId: number | null;
+  tupac?: { id: number } | null;
 }

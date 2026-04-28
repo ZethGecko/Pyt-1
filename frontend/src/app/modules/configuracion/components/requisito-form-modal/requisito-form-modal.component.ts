@@ -243,6 +243,8 @@ export class RequisitoFormModalComponent implements OnInit, OnChanges {
       // Enviar cadena vacía para que el backend use el nombre original del archivo
       this.formatoService.upload(this.archivoSeleccionado, '').subscribe({
         next: (formato) => {
+          // Recargar lista de formatos para incluir el nuevo
+          this.cargarFormatos();
           resolve(formato.id!);
         },
         error: (err) => {
