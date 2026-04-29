@@ -1,218 +1,277 @@
-<div class="min-h-screen bg-slate-50 p-6">
-  <!-- Header -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-    <div class="flex items-center gap-3">
-      <a routerLink="/inspecciones" class="flex items-center justify-center w-10 h-10 bg-white rounded-xl shadow-sm hover:bg-slate-100 transition-colors">
-        <app-icon name="arrow-left" size="md" customClass="text-slate-600"></app-icon>
-      </a>
-      <div>
-        <h1 class="text-2xl font-bold text-slate-900">Realizar Inspección</h1>
-        <p class="text-sm text-slate-500">Completa los parámetros de la inspección</p>
+<div class="certificado-container min-h-screen bg-gray-100 p-4 md:p-6 flex items-center justify-center print:bg-white">
+  <div class="w-full max-w-4xl mx-auto">
+    <!-- Certificado Container -->
+    <div class="certificado-box bg-white p-8 md:p-10 print:shadow-none">
+      
+      <!-- Encabezado Principal -->
+      <div class="certificado-section text-center mb-8 border-b-2 border-gray-800 pb-6">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 uppercase tracking-wider mb-2" style="font-family: 'Times New Roman', serif;">
+          CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA
+        </h1>
+        <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
+          CÁTEDRA DE LA EMPRESA
+        </h2>
       </div>
-    </div>
-    <div class="flex items-center gap-3">
-      <button (click)="exportarResultados()" 
-              class="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium">
-        <app-icon name="download" size="md"></app-icon>
-        Exportar
-      </button>
+
+      <!-- Sección de Datos Generales -->
+      <div class="certificado-section mb-8">
+        <h3 class="section-header text-lg">
+          DATOS GENERALES
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-start">
+            <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Nº de la empresa:</label>
+            <input type="text" class="editable-input" placeholder="Número">
+          </div>
+          <div class="flex items-start">
+            <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Nombre del representante:</label>
+            <input type="text" class="editable-input" placeholder="Nombre">
+          </div>
+          <div class="flex items-start">
+            <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Teléfono:</label>
+            <input type="text" class="editable-input" placeholder="Teléfono">
+          </div>
+          <div class="flex items-start">
+            <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Dirección:</label>
+            <input type="text" class="editable-input" placeholder="Dirección">
+          </div>
+          <div class="flex items-start md:col-span-2">
+            <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Localización:</label>
+            <input type="text" class="editable-input" placeholder="Localización">
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de Certificación Agrícola -->
+      <div class="certificado-section mb-8">
+        <h3 class="section-header text-lg">
+          CERTIFICACIÓN AGRÍCOLA
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="certificado-table">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">N°</th>
+                <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">Nombre</th>
+                <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">Apellido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-gray-300 px-4 py-2">1</td>
+                <td class="border border-gray-300 px-4 py-2">
+                  <input type="text" class="w-full border-none focus:outline-none bg-transparent p-0" placeholder="Nombre">
+                </td>
+                <td class="border border-gray-300 px-4 py-2">
+                  <input type="text" class="w-full border-none focus:outline-none bg-transparent p-0" placeholder="Apellido">
+                </td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 px-4 py-2">2</td>
+                <td class="border border-gray-300 px-4 py-2">
+                  <input type="text" class="w-full border-none focus:outline-none bg-transparent p-0" placeholder="Nombre">
+                </td>
+                <td class="border border-gray-300 px-4 py-2">
+                  <input type="text" class="w-full border-none focus:outline-none bg-transparent p-0" placeholder="Apellido">
+                </td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 px-4 py-2">3</td>
+                <td class="border border-gray-300 px-4 py-2">
+                  <input type="text" class="w-full border-none focus:outline-none bg-transparent p-0" placeholder="Nombre">
+                </td>
+                <td class="border border-gray-300 px-4 py-2">
+                  <input type="text" class="w-full border-none focus:outline-none bg-transparent p-0" placeholder="Apellido">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sección Plan Nacional y Placa -->
+      <div class="certificado-section grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <h3 class="section-header text-lg">
+            PLAN NACIONAL
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-700 w-48 md:w-40">CARREO DE CIRCULACIÓN VIAL VIENTOS:</span>
+              <input type="text" class="editable-input flex-1" placeholder="( )">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-700 w-48 md:w-40">CARRETERA DE ACCESO:</span>
+              <input type="text" class="editable-input flex-1" placeholder="( )">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-700 w-48 md:w-40">SEÑALIZACIÓN DE OBRA:</span>
+              <input type="text" class="editable-input flex-1" placeholder="( )">
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="section-header text-lg">
+            PLACA
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-700 w-48 md:w-40">NUMERO DE PLACA:</span>
+              <input type="text" class="editable-input flex-1" placeholder="( )">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-700 w-48 md:w-40">MODELO DE LA PLACA:</span>
+              <input type="text" class="editable-input flex-1" placeholder="( )">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-700 w-48 md:w-40">AÑO DE LA PLACA:</span>
+              <input type="text" class="editable-input flex-1" placeholder="( )">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección Certificación de Seguridad -->
+      <div class="certificado-section mb-8">
+        <h3 class="section-header text-lg">
+          CERTIFICACIÓN DE SEGURIDAD
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">SEGURIDAD DE PROPIEDAD:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">SECURITY VISION TECHNIQUE:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">PROCEDIMIENTOS DE SEGURIDAD:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">PRIMEROS AUXILIOS:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">EXTINTORES DE INCENDIOS:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">SEGURO DE ACCIDENTES:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección Plan Lunca de Rodale -->
+      <div class="certificado-section mb-8">
+        <h3 class="section-header text-lg">
+          PLAN LUNCA DE RODALE
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">PRIMEROS AUXILIOS:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">EXTINTORES DE INCENDIOS:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">ACCIDENTES:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">CARRETERA DE ACCESO:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">CARREO DE CIRCULACIÓN VIAL VIENTOS:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">SEÑALIZACIÓN DE OBRA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección Laboratorio -->
+      <div class="certificado-section mb-8">
+        <h3 class="section-header text-lg">
+          LABORATORIO
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">APLICABILIDAD MUNDIAL DE PLAZA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">SELECCIÓN DE EMERGENCIA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">A MUNDIAL DE PLAZA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">CIRCULACIÓN VIARIA VIENTOS:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">SELECCIÓN DE PUNTO DE CONTACTO:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">APLICABILIDAD DE PLANTA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">FECHA DE PROGRAMA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">CARTA DE INDUCCIÓN:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">IMPLEMENTACION DE MANTENIMIENTO:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">CONSTRUCCIÓN DE CIUDAD:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">ESTRUCTURA DE PLAZA:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 w-80 md:w-64">COMPONENTE DE SEGURIDAD:</span>
+            <input type="text" class="editable-input flex-1" placeholder="( )">
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie de página / Firma -->
+      <div class="certificado-section mt-12 pt-8 border-t border-gray-300">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div class="text-center md:text-left">
+            <div class="firma-area">
+              <p class="text-sm text-gray-600 mb-2"> _______________________________</p>
+              <p class="text-sm font-medium text-gray-700">FIRMA DEL RESPONSABLE</p>
+            </div>
+          </div>
+          <div class="text-center md:text-right">
+            <div class="firma-area">
+              <p class="text-sm text-gray-600 mb-2"> _______________________________</p>
+              <p class="text-sm font-medium text-gray-700">FECHA: _______________</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
-
-  <!-- Alerts -->
-  @if (error) {
-    <div class="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 mb-4">
-      <app-icon name="alert-circle" size="md" customClass="text-red-500"></app-icon>
-      <span>{{ error }}</span>
-    </div>
-  }
-  @if (success) {
-    <div class="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 mb-4">
-      <app-icon name="check-circle" size="md" customClass="text-green-500"></app-icon>
-      <span>{{ success }}</span>
-    </div>
-  }
-
-  @if (cargando) {
-    <div class="flex justify-center items-center py-12">
-      <app-icon name="refresh" size="xl" customClass="text-blue-500 animate-spin"></app-icon>
-      <span class="ml-3 text-slate-600">Cargando...</span>
-    </div>
-  } @else if (inspeccion) {
-    <!-- Información de la Inspección -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
-            <app-icon name="building" size="md" customClass="text-blue-600"></app-icon>
-          </div>
-          <div>
-            <p class="text-xs text-slate-500">Empresa</p>
-            <p class="font-medium text-slate-900">{{ inspeccion.empresaNombre || 'N/A' }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-green-100 rounded-xl">
-            <app-icon name="calendar" size="md" customClass="text-green-600"></app-icon>
-          </div>
-          <div>
-            <p class="text-xs text-slate-500">Fecha Programada</p>
-            <p class="font-medium text-slate-900">{{ inspeccion.fechaProgramada | date:'dd/MM/yyyy HH:mm' }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-xl">
-            <app-icon name="user" size="md" customClass="text-purple-600"></app-icon>
-          </div>
-          <div>
-            <p class="text-xs text-slate-500">Inspector</p>
-            <p class="font-medium text-slate-900">{{ inspeccion.inspectorNombre || 'Sin asignar' }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-xl">
-            <app-icon name="info" size="md" customClass="text-orange-600"></app-icon>
-          </div>
-          <div>
-            <p class="text-xs text-slate-500">Estado</p>
-            <span [class]="getResultClass(inspeccion.estado) + ' px-3 py-1 rounded-full text-xs font-medium border'">
-              {{ inspeccion.estado | titlecase }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filtro por vehículo -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-slate-700 mb-1">Filtrar por vehículo:</label>
-          <div class="relative">
-            <app-icon name="search" size="sm" customClass="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></app-icon>
-            <input 
-              type="text" 
-              [(ngModel)]="filtroPlaca" 
-              placeholder="Ingrese placa del vehículo..."
-              class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Fichas de Inspección -->
-    <div class="space-y-4 mb-6">
-      @for (ficha of fichasFiltradas; track ficha.id) {
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold text-slate-900 flex items-center gap-2">
-              <app-icon name="clipboard-list" size="md" customClass="text-blue-600"></app-icon>
-              {{ ficha.parametroNombre || 'Parámetro #' + ficha.id }}
-            </h3>
-            <span [class]="ficha.cumple ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
-                  class="px-3 py-1 rounded-full text-xs font-medium">
-              {{ ficha.cumple ? 'Cumple' : 'No cumple' }}
-            </span>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Valor:</label>
-              <input 
-                type="text" 
-                [ngModel]="ficha.valor"
-                (ngModelChange)="actualizarParametro(ficha.id, $event, ficha.cumple, ficha.observaciones || '')"
-                placeholder="Ingrese valor..."
-                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">¿Cumple?</label>
-              <select 
-                [ngModel]="ficha.cumple"
-                (ngModelChange)="actualizarParametro(ficha.id, ficha.valor || '', $event, ficha.observaciones || '')"
-                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option [ngValue]="true">Sí</option>
-                <option [ngValue]="false">No</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="mt-4">
-            <label class="block text-sm font-medium text-slate-700 mb-1">Observaciones:</label>
-            <textarea 
-              [ngModel]="ficha.observaciones"
-              (ngModelChange)="actualizarParametro(ficha.id, ficha.valor || '', ficha.cumple, $event)"
-              placeholder="Observaciones adicionales..."
-              rows="2"
-              class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            ></textarea>
-          </div>
-        </div>
-      }
-      
-      @if (fichasFiltradas.length === 0) {
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-          <app-icon name="clipboard-list" size="2xl" customClass="text-slate-300 mb-3"></app-icon>
-          <p class="text-slate-500">No hay fichas de inspección para esta inspección</p>
-        </div>
-      }
-    </div>
-
-    <!-- Resultado Final -->
-    @if (inspeccion.estado !== 'realizada') {
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-        <h3 class="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <app-icon name="check-circle" size="md" customClass="text-green-600"></app-icon>
-          Resultado Final de la Inspección
-        </h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Resultado *</label>
-            <select 
-              [(ngModel)]="resultadoSeleccionado"
-              class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Seleccionar resultado</option>
-              @for (r of resultados; track r.value) {
-                <option [value]="r.value">{{ r.label }}</option>
-              }
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Observaciones Generales</label>
-            <textarea 
-              [(ngModel)]="observaciones"
-              placeholder="Observaciones generales de la inspección..."
-              rows="2"
-              class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            ></textarea>
-          </div>
-        </div>
-        
-        <div class="flex justify-end gap-3">
-          <button (click)="guardarCambios()" 
-                  [disabled]="guardando"
-                  class="flex items-center gap-2 px-5 py-2.5 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium disabled:opacity-50">
-            <app-icon name="save" size="md"></app-icon>
-            Guardar Cambios
-          </button>
-          <button (click)="finalizarInspeccion()" 
-                  [disabled]="guardando"
-                  class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-md disabled:opacity-50">
-            @if (guardando) {
-              <app-icon name="refresh" size="md" customClass="animate-spin"></app-icon>
-              Guardando...
-            } @else {
-              <app-icon name="check-circle" size="md"></app-icon>
-              Finalizar Inspección
-            }
-          </button>
-        </div>
-      </div>
-    }
-  }
 </div>

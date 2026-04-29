@@ -176,16 +176,16 @@
                     </span>
                   </td>
                   <td class="date-cell">{{tramite.fechaRegistro | date:'dd/MM/yyyy'}}</td>
-                   <td class="actions">
-                     <div class="action-buttons">
-                       <button (click)="abrirModalRevisar(tramite); $event.stopPropagation()" 
-                               class="btn btn-sm btn-primary"
-                               title="Revisar requisitos del trámite"
-                               [disabled]="!puedeRevisarRequisitos(tramite)">
-                         📝 Revisar
-                       </button>
-                     </div>
-                   </td>
+                     <td class="actions">
+                       <div class="action-buttons">
+                         <button (click)="abrirModalRevisar(tramite); $event.stopPropagation()" 
+                                 class="btn btn-sm btn-primary"
+                                 title="Revisar requisitos del trámite"
+                                 [disabled]="!puedeRevisarRequisitos(tramite)">
+                           📝 Revisar
+                         </button>
+                       </div>
+                     </td>
                 </tr>
               }
             </tbody>
@@ -194,20 +194,20 @@
       }
     </div>
     
-    <!-- Modal: Revisión de Requisitos -->
-    @if (mostrarModalRequisitos() && tramiteParaRevisar()) {
-      <div class="modal-overlay" (click)="cerrarModalRevisar()">
-        <div class="modal-content modal-large" (click)="$event.stopPropagation()">
-          <app-revision-requisitos
-            [tramiteId]="tramiteParaRevisar()!.id"
-            [tramiteCodigoRUT]="tramiteParaRevisar()!.codigoRUT"
-            [tramiteTipoDescripcion]="tramiteParaRevisar()!.tipoTramiteDescripcion"
-            [tipoTramiteId]="tramiteParaRevisar()!.tipoTramiteId"
-            (cerrarModal)="cerrarModalRevisar()"
-            (tramiteFinalizado)="cerrarModalRevisar()"
-            (tramiteObservado)="cerrarModalRevisar()">
-          </app-revision-requisitos>
-        </div>
-      </div>
-    }
+     <!-- Modal: Revisión de Requisitos -->
+     @if (mostrarModalRequisitos() && tramiteParaRevisar()) {
+       <div class="modal-overlay" (click)="cerrarModalRevisar()">
+         <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+            <app-revision-requisitos
+              [tramiteId]="tramiteParaRevisar()!.id"
+              [tramiteCodigoRUT]="tramiteParaRevisar()!.codigoRUT"
+              [tramiteTipoDescripcion]="tramiteParaRevisar()!.tipoTramiteDescripcion"
+              [tipoTramiteId]="tramiteParaRevisar()!.tipoTramiteId"
+              (cerrarModal)="cerrarModalRevisar()"
+              (tramiteFinalizado)="cerrarModalRevisar()"
+              (tramiteObservado)="cerrarModalRevisar()">
+            </app-revision-requisitos>
+         </div>
+       </div>
+     }
   </div>

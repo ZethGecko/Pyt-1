@@ -1,2 +1,132 @@
-// Styles for realizar-inspeccion component
-// Using Tailwind CSS for styling
+// Styles for realizar-inspeccion component - Certificado design
+
+.certificado-container {
+  font-family: 'Arial', 'Roboto', 'Times New Roman', sans-serif;
+  line-height: 1.6;
+}
+
+// Print styles
+@media print {
+  .certificado-container {
+    /* Ensure certificate fits on A4 page */
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  /* Hide any non-essential elements if needed */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure backgrounds print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Avoid breaking inside certificate sections */
+  .certificado-section {
+    page-break-inside: avoid;
+  }
+}
+
+// Input styling for editable fields
+.editable-input {
+  border: none;
+  border-bottom: 2px solid #e2e8f0;
+  background: transparent;
+  padding: 2px 4px;
+  width: 100%;
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.editable-input:focus {
+  outline: none;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+// Table styling
+.certificado-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.certificado-table th,
+.certificado-table td {
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.certificado-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+// Section headers
+.section-header {
+  border-bottom: 2px solid #374151;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+// Certificate visual enhancements
+.certificado-box {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .certificado-container {
+    padding: 1rem;
+  }
+
+  .section-grid-2-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .certificado-table {
+    font-size: 0.875rem;
+  }
+
+  .certificado-table th,
+  .certificado-table td {
+    padding: 6px;
+  }
+}
+
+// Typography improvements
+h1, h2, h3 {
+  line-height: 1.3;
+}
+
+// Form label styling
+.certificado-label {
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+// Signature area
+.firma-area {
+  border-top: 1px solid #9ca3af;
+  padding-top: 8px;
+  min-width: 200px;
+  text-align: center;
+}

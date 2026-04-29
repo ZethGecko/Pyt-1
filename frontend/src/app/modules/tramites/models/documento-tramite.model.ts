@@ -3,44 +3,45 @@
 // DOCUMENTO DE TRÁMITE
 // ==========================================
 
-export interface DocumentoTramite {
-  id: number;
-  tramiteId: number;
-  requisitoId: number;
-  requisitoTUPACId?: number; // Alias para compatibilidad
-  requisitoNombre?: string;
-  nombre?: string;
-  estado: string;
-  fechaPresentacion?: Date;
-  fechaRevision?: Date;
-  rutaArchivo?: string;
-  nombreArchivo?: string;
-  tipoArchivo?: string;
-  tamanoArchivo?: number;
-  observaciones?: string;
-  notasRevision?: string;
-  certificadoNumero?: string;
-  revisionUsuarioId?: number;
-  usuarioRevisaNombre?: string;
-  usuarioAsignadoId?: number;
-  usuarioAsignadoNombre?: string;
-  grupoPresentacionId?: number;
-  grupoPresentacion?: any;
-  fechaAsignacion?: Date;
-  calificacion?: number;
-  intentosRevision?: number;
-  estadoFormateado?: string;
-  colorEstado?: string;
-  iconoEstado?: string;
-  esExamen?: boolean;
-  obligatorio?: boolean;
-  // Relación con requisito (para mostrar código y descripción)
-  requisito?: {
-    id: number;
-    codigo: string;
-    descripcion: string;
-  };
-}
+ export interface DocumentoTramite {
+   id: number;
+   tramiteId: number;
+   requisitoId: number;
+   requisitoTUPACId?: number; // Alias para compatibilidad
+   requisitoNombre?: string;
+   nombre?: string;
+   estado: string;
+   fechaPresentacion?: Date;
+   fechaRevision?: Date;
+   rutaArchivo?: string;
+   nombreArchivo?: string;
+   tipoArchivo?: string;
+   tamanoArchivo?: number;
+   observaciones?: string;
+   notasRevision?: string;
+   certificadoNumero?: string;
+   revisionUsuarioId?: number;
+   usuarioRevisaNombre?: string;
+   usuarioAsignadoId?: number;
+   usuarioAsignadoNombre?: string;
+   grupoPresentacionId?: number;
+   grupoPresentacion?: any;
+   fechaAsignacion?: Date;
+   calificacion?: number;
+   intentosRevision?: number;
+   estadoFormateado?: string;
+   colorEstado?: string;
+   iconoEstado?: string;
+   esExamen?: boolean;
+   obligatorio?: boolean;
+   instanciaTramiteId?: number; // <-- añadido
+   // Relación con requisito (para mostrar código y descripción)
+   requisito?: {
+     id: number;
+     codigo: string;
+     descripcion: string;
+   };
+ }
 
 export interface DocumentoTramiteCreateRequest {
   tramiteId: number;

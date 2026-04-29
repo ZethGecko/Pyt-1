@@ -67,12 +67,12 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/vehiculos/pages/gestion-vehiculos.component').then(m => m.GestionVehiculosComponent)
   },
 
-  // Privadas - Expedientes
-  {
-    path: 'expedientes',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/expedientes/pages/gestion-expedientes.component').then(m => m.GestionExpedientesComponent)
-  },
+   // Privadas - Expedientes (Instancias/Expedientes de Inspección)
+   {
+     path: 'expedientes',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/expedientes/pages/gestion-instancias/gestion-instancias.component').then(m => m.GestionInstanciasComponent)
+   },
 
   // Privadas - Inspecciones
   {

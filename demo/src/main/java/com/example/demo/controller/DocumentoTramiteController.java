@@ -38,10 +38,15 @@ public class DocumentoTramiteController {
         return service.buscarPorId(id).orElse(null);
     }
 
-     @GetMapping("/tramite/{tramiteId}/projected")
-     public List<java.util.Map<String, Object>> getProyeccionesPorTramite(@PathVariable Long tramiteId) {
-         return service.getProyeccionesPorTramite(tramiteId);
-     }
+      @GetMapping("/tramite/{tramiteId}/projected")
+      public List<java.util.Map<String, Object>> getProyeccionesPorTramite(@PathVariable Long tramiteId) {
+          return service.getProyeccionesPorTramite(tramiteId);
+      }
+
+      @GetMapping("/instancia/{instanciaId}/proyecciones")
+      public List<java.util.Map<String, Object>> getProyeccionesPorInstancia(@PathVariable Long instanciaId) {
+          return service.getProyeccionesPorInstancia(instanciaId);
+      }
 
      @GetMapping("/tramite/{tramiteId}")
      public List<DocumentoTramite> listarPorTramite(@PathVariable Long tramiteId) {
@@ -78,7 +83,24 @@ public class DocumentoTramiteController {
         return service.presentarDocumento(doc);
     }
 
-    @PostMapping("/{id}/presentar")
+      @PutMapping("/{id}")
+      public DocumentoTramite actualizar(@PathVariable Long id, @RequestBody DocumentoTramite datos) {
+          // Solo permitir actualizar ciertos campos: observaciones, estado, etc.
+          DocumentoTramite existente = service.buscarPorId(id)
+                  .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento no encontrado"));
+          
+          if (datos.getObservaciones() != null) {
+              existente.setObservaciones(datos.getObservaciones());
+          }
+          if (datos.getEstado() != null) {
+              existente.setEstado(datos.getEstado());
+          }
+          // Se pueden agregar más campos actualizables aquí
+          
+          return service.guardar(existente);
+      }
+     
+     @PostMapping("/{id}/presentar")
     public ResponseEntity<DocumentoTramite> presentarArchivo(@PathVariable Long id, @RequestParam("archivo") MultipartFile archivo) throws IOException {
         DocumentoTramite doc = service.buscarPorId(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento no encontrado"));

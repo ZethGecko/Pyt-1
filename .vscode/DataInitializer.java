@@ -21,8 +21,10 @@ import com.example.demo.model.Empresa;
 import com.example.demo.model.Formatos;
 import com.example.demo.model.Gerente;
 import com.example.demo.model.PersonaNatural;
+import com.example.demo.model.PuntoRuta;
 import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.model.Roles;
+import com.example.demo.model.Ruta;
 import com.example.demo.model.SubtipoTransporte;
 import com.example.demo.model.TUPAC;
 import com.example.demo.model.TipoTramite;
@@ -35,8 +37,10 @@ import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.FormatosRepository;
 import com.example.demo.repository.GerenteRepository;
 import com.example.demo.repository.PersonaNaturalRepository;
+import com.example.demo.repository.PuntoRutaRepository;
 import com.example.demo.repository.RequisitoTUPACRepository;
 import com.example.demo.repository.RolesRepository;
+import com.example.demo.repository.RutaRepository;
 import com.example.demo.repository.SubtipoTransporteRepository;
 import com.example.demo.repository.TUPACRepository;
 import com.example.demo.repository.TipoTramiteRepository;
@@ -67,8 +71,12 @@ public class DataInitializer {
        @Autowired private SubtipoTransporteRepository subtipoTransporteRepository;
         @Autowired private com.example.demo.service.TramiteService tramiteService;
         @Autowired private TramiteRepository tramiteRepository;
-        @PersistenceContext private EntityManager entityManager;
 
+        @PersistenceContext
+        private EntityManager entityManager;
+
+        @Autowired private RutaRepository rutaRepository;
+        @Autowired private PuntoRutaRepository puntoRutaRepository;
 
     @PostConstruct
     @Transactional

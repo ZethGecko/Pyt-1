@@ -1,7 +1,7 @@
-import { Component, Input, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, Output, EventEmitter, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { combineLatest, Observable, of, Subject, from } from 'rxjs';
+import { Observable, of, Subject, from, forkJoin } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, concatMap, toArray } from 'rxjs/operators';
 import { RequisitoTramiteRevisionService, RequisitoRevision } from '../../services/requisito-tramite-revision.service';
 import { TramiteService } from '../../services/tramite.service';
@@ -9,10 +9,12 @@ import { HistorialTramiteService, HistorialTramite } from '../../services/histor
 import { NotificationService } from '../../../../shared/services/notification.service';
 import { DocumentoTramiteService } from '../../services/documento-tramite.service';
 import { TipoTramiteService } from '../../../configuracion/services/tipo-tramite.service';
-import { RequisitoTUPACService } from '../../services/requisito-tupac.service';
+import { RequisitoTUPACService } from '../../../configuracion/services/requisito-tupac.service';
 import { FormatoService } from '../../../configuracion/services/formato.service';
 import { RequisitoTUPACEnriquecido } from '../../models/requisito-tupac.model';
 import { TipoTramiteEnriquecido } from '../../../configuracion/models/tipo-tramite.model';
+import { InstanciaTramiteService } from '../../../configuracion/services/instancia-tramite.service';
+import { InstanciaTramite } from '../../../configuracion/models/instancia-tramite.model';
 
 interface HistorialItem {
   accion: string;
@@ -34,101 +36,146 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
   @Input() tramiteCodigoRUT: string = '';
   @Input() tramiteTipoDescripcion: string = '';
   @Input() tipoTramiteId?: number;
+  @Input() instanciaId?: number;
   @Output() cerrarModal = new EventEmitter<void>();
   @Output() tramiteFinalizado = new EventEmitter<void>();
   @Output() tramiteObservado = new EventEmitter<void>();
 
-   private destroy$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
 
-   requisitos: RequisitoRevision[] = [];
-   originalRequisitos: RequisitoRevision[] = []; // Store initial state
-   cargando = false;
-   error: string | null = null;
-   success: string | null = null;
-   filtroEstado: string = '';
-   tramiteParaRevisar: any = null;
+  requisitos: RequisitoRevision[] = [];
+  originalRequisitos: RequisitoRevision[] = [];
+  cargando = false;
+  error: string | null = null;
+  success: string | null = null;
+  filtroEstado: string = '';
+  tramiteParaRevisar: any = null;
+  instanciaEnEdicion = signal<InstanciaTramite | null>(null);
 
-   historial: HistorialItem[] = [];
+  historial: HistorialItem[] = [];
+  
+  // Estado para múltiples instancias
+  instanciasCreadas: InstanciaTramite[] = [];
+  
+  // Estado para modal de ingreso de identificador
+  mostrarPromptIdentificador = signal<boolean>(false);
+  nuevoIdentificador = signal<string>('');
 
-    constructor(
-      private revisionService: RequisitoTramiteRevisionService,
-      private tramiteService: TramiteService,
-      private historialService: HistorialTramiteService,
-      private notificationService: NotificationService,
-      private documentoTramiteService: DocumentoTramiteService,
-      private tipoTramiteService: TipoTramiteService,
-      private requisitoTUPACService: RequisitoTUPACService,
-      private formatoService: FormatoService
-    ) {}
-
-  ngOnInit(): void {
-    if (this.tramiteId) {
-      this.cargarRequisitos();
-      this.cargarHistorial();
-    }
+  // Tipo de trámite actual (para controlar botón Convertir)
+  tipoTramiteActual: TipoTramiteEnriquecido | null = null;
+   
+  // Getters computados
+  get hayInstanciaEnEdicion(): boolean {
+    return this.instanciaEnEdicion() !== null;
   }
+  
+  get hayInstanciasGuardadas(): boolean {
+    return this.instanciasCreadas.length > 0;
+  }
+  
+  get puedeFinalizar(): boolean {
+    // Puede finalizar solo si hay al menos una instancia guardada
+    return this.hayInstanciasGuardadas;
+  }
+
+  get permiteConvertir(): boolean {
+    // Solo permits crear expedientes (instancias) para trámites de inspección.
+    // Ajustar según lógica de negocio: por ejemplo, código 'INSP' o id 7.
+    const codigo = this.tipoTramiteActual?.codigo?.toUpperCase();
+    return codigo === 'INSP' || this.tipoTramiteId === 7;
+  }
+
+  constructor(
+    private revisionService: RequisitoTramiteRevisionService,
+    private tramiteService: TramiteService,
+    private historialService: HistorialTramiteService,
+    private notificationService: NotificationService,
+    private documentoTramiteService: DocumentoTramiteService,
+    private tipoTramiteService: TipoTramiteService,
+    private requisitoTUPACService: RequisitoTUPACService,
+    private formatoService: FormatoService,
+    private instanciaTramiteService: InstanciaTramiteService
+  ) {}
+
+   ngOnInit(): void {
+     if (this.tramiteId) {
+       // Si hay instanciaId (viene de fuera), cargarla y agregarla a instancias guardadas
+       if (this.instanciaId) {
+         this.instanciaTramiteService.obtener(this.instanciaId!).pipe(
+           takeUntil(this.destroy$)
+         ).subscribe({
+           next: (inst: InstanciaTramite) => {
+             this.instanciaEnEdicion.set(inst);
+             this.instanciasCreadas.push(inst);
+           },
+           error: (err: any) => console.error('Error cargando instancia:', err)
+         });
+       }
+       this.cargarRequisitos();
+       this.cargarHistorial();
+     }
+   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-   cargarRequisitos(): void {
-     this.cargando = true;
-     this.error = null;
+  cargarRequisitos(): void {
+    this.cargando = true;
+    this.error = null;
 
-     // Always fetch tramite data first for the header
-     this.tramiteService.obtener(this.tramiteId).pipe(
-       takeUntil(this.destroy$),
-       switchMap((tramite: any) => {
-         this.tramiteParaRevisar = tramite;
-         this.tipoTramiteId = tramite.tipoTramiteId || this.tipoTramiteId;
-         return this.cargarDatosCombinados();
-       })
-     ).pipe(
-       takeUntil(this.destroy$)
-     ).subscribe({
-       next: (requisitos: any[]) => {
-         this.requisitos = requisitos as RequisitoRevision[];
-         this.originalRequisitos = JSON.parse(JSON.stringify(this.requisitos));
-         this.cargando = false;
-       },
-       error: (err: any) => {
-         console.error('Error en cargarRequisitos:', err);
-         this.error = 'Error al cargar los requisitos del trámite';
-         this.cargando = false;
-       }
-     });
-   }
+    // Always fetch tramite data first for the header
+    this.tramiteService.obtener(this.tramiteId).pipe(
+      takeUntil(this.destroy$),
+      switchMap((tramite: any) => {
+        this.tramiteParaRevisar = tramite;
+        this.tipoTramiteId = tramite.tipoTramiteId || this.tipoTramiteId;
+        return this.cargarDatosCombinados();
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (requisitos: any[]) => {
+        this.requisitos = requisitos as RequisitoRevision[];
+        this.originalRequisitos = JSON.parse(JSON.stringify(this.requisitos));
+        this.cargando = false;
+      },
+      error: (err: any) => {
+        console.error('Error en cargarRequisitos:', err);
+        this.error = 'Error al cargar los requisitos del trámite';
+        this.cargando = false;
+      }
+    });
+  }
 
-   cargarHistorial(): void {
-     this.historialService.getByTramite(this.tramiteId).pipe(
-       takeUntil(this.destroy$),
-       map((historial: HistorialTramite[]) => {
-         return historial.map((h: HistorialTramite) => ({
-           accion: h.accion,
-           fecha: new Date(h.fechaAccion).toLocaleString('es-PE', {
-             day: '2-digit',
-             month: 'short',
-             year: 'numeric',
-             hour: '2-digit',
-             minute: '2-digit'
-           }),
-           usuario: h.usuarioAccion?.nombre || h.usuarioAccionId?.toString() || 'Sistema',
-           observacion: h.observacion,
-           etapaNombre: h.departamentoOrigen?.nombre || h.departamentoOrigenId?.toString()
-         })).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-       }),
-       catchError(err => {
-         console.error('Error cargando historial:', err);
-         return of([]);
-       })
-     ).subscribe({
-       next: (historialFormateado: HistorialItem[]) => {
-         this.historial = historialFormateado;
-       }
-      });
-    }
+  cargarHistorial(): void {
+    this.historialService.getByTramite(this.tramiteId).pipe(
+      takeUntil(this.destroy$),
+      map((historial: HistorialTramite[]) => {
+        return historial.map((h: HistorialTramite) => ({
+          accion: h.accion,
+          fecha: new Date(h.fechaAccion).toLocaleString('es-PE', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          usuario: h.usuarioAccion?.nombre || h.usuarioAccionId?.toString() || 'Sistema',
+          observacion: h.observacion,
+          etapaNombre: h.departamentoOrigen?.nombre || h.departamentoOrigenId?.toString()
+        })).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      }),
+      catchError(err => {
+        console.error('Error cargando historial:', err);
+        return of([]);
+      })
+    ).subscribe({
+      next: (historialFormateado: HistorialItem[]) => {
+        this.historial = historialFormateado;
+      }
+    });
+  }
 
   private cargarDatosCombinados(): Observable<RequisitoRevision[]> {
     if (!this.tipoTramiteId) {
@@ -136,42 +183,51 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       return of([]);
     }
 
-    return this.tipoTramiteService.listarTodos().pipe(
-      switchMap((tipos: TipoTramiteEnriquecido[]) => {
-        const tipo = tipos.find(t => t.id === this.tipoTramiteId);
-        if (!tipo || !tipo.tupacId) {
-          console.warn('[Revision] Tipo no encontrado o sin tupacId', { tipoTramiteId: this.tipoTramiteId, tipos });
-          return of([]);
-        }
-        const tupacId = tipo.tupacId;
-        console.log('[Revision] Tipo cargado:', { id: tipo.id, codigo: tipo.codigo, requisitosIds: tipo.requisitosIds, tupacId });
+     return this.tipoTramiteService.listarTodos().pipe(
+       switchMap((tipos: TipoTramiteEnriquecido[]) => {
+         const tipo = tipos.find(t => t.id === this.tipoTramiteId);
+         if (!tipo || !tipo.tupacId) {
+           console.warn('[Revision] Tipo no encontrado o sin tupacId', { tipoTramiteId: this.tipoTramiteId, tipos });
+           return of([]);
+         }
+         // Asignar tipo actual para控制 de botón Convertir
+         this.tipoTramiteActual = tipo;
+         const tupacId = tipo.tupacId;
+         console.log('[Revision] Tipo cargado:', { id: tipo.id, codigo: tipo.codigo, requisitosIds: tipo.requisitosIds, tupacId });
 
         const requisitosIdsSet = new Set<number>((tipo.requisitosIds as number[]) || []);
         console.log('[Revision] requisitosIdsSet size:', requisitosIdsSet.size);
 
-        return combineLatest([
-          this.requisitoTUPACService.listarEnriquecidosPorTupac(tupacId),
-          this.revisionService.getProyeccionesPorTramite(this.tramiteId)
-        ]).pipe(
-          map(([requisitosEnriquecidos, documentos]) => {
-            console.log('[Revision] requisitosEnriquecidos count:', requisitosEnriquecidos.length);
+         // Decidir fuente de documentos: priorizar instancia en edición si existe
+         const instanciaIdParaConsulta = this.instanciaEnEdicion()?.idInstancia || this.instanciaId;
+         const documentosSource: Observable<any[]> = instanciaIdParaConsulta != null
+           ? this.revisionService.getProyeccionesPorInstancia(instanciaIdParaConsulta)
+           : this.revisionService.getProyeccionesPorTramite(this.tramiteId);
+
+        // Usar forkJoin para cargar ambos conjuntos de datos una vez
+        return forkJoin({
+          requisitosEnriquecidos: this.requisitoTUPACService.listarEnriquecidosPorTupac(tupacId),
+          documentos: documentosSource
+        }).pipe(
+          map(({ requisitosEnriquecidos, documentos }) => {
+            console.log('[Revision] requisitosEnriquecidos count:', requisitosEnriquecidos?.length || 0);
 
             let requisitosFiltrados: RequisitoTUPACEnriquecido[];
             if (requisitosIdsSet.size === 0) {
               console.log('[Revision] Usando todos los requisitos del TUPAC (fallback por array vacío)');
-              requisitosFiltrados = requisitosEnriquecidos;
+              requisitosFiltrados = requisitosEnriquecidos || [];
             } else {
-              requisitosFiltrados = requisitosEnriquecidos.filter(r => r.id && requisitosIdsSet.has(r.id));
-              console.log('[Revision] Después de filtrar por IDs:', requisitosFiltrados.length, 'de', requisitosEnriquecidos.length);
+              requisitosFiltrados = (requisitosEnriquecidos || []).filter(r => r.id && requisitosIdsSet.has(r.id));
+              console.log('[Revision] Después de filtrar por IDs:', requisitosFiltrados.length, 'de', requisitosEnriquecidos?.length || 0);
               // Fallback secundario: si el filtro no encuentra ningún requisito, mostrar todos
               if (requisitosFiltrados.length === 0) {
                 console.log('[Revision] No se encontraron requisitos que coincidan con los IDs; mostrando todos (fallback secundario)');
-                requisitosFiltrados = requisitosEnriquecidos;
+                requisitosFiltrados = requisitosEnriquecidos || [];
               }
             }
 
             const documentosMap = new Map<number, any>();
-            documentos.forEach(doc => {
+            (documentos || []).forEach(doc => {
               documentosMap.set(doc.requisitoId, doc);
             });
 
@@ -230,33 +286,33 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     );
   }
 
-   get requisitosFiltrados(): RequisitoRevision[] {
-     let resultado = this.requisitos.filter(r => {
-       if (this.filtroEstado && r.estado !== this.filtroEstado) return false;
-       return true;
-     });
-     // Filtrar: solo mostrar requisitos que NO sean exámenes
-     resultado = resultado.filter(r => !r.esExamen);
-     return resultado;
-   }
+  get requisitosFiltrados(): RequisitoRevision[] {
+    let resultado = this.requisitos.filter(r => {
+      if (this.filtroEstado && r.estado !== this.filtroEstado) return false;
+      return true;
+    });
+    // Filtrar: solo mostrar requisitos que NO sean exámenes
+    resultado = resultado.filter(r => !r.esExamen);
+    return resultado;
+  }
 
-   aprobarRequisito(requisito: RequisitoRevision): void {
-     requisito.estado = 'APROBADO';
-   }
+  aprobarRequisito(requisito: RequisitoRevision): void {
+    requisito.estado = 'APROBADO';
+  }
 
-   reprobarRequisito(requisito: RequisitoRevision): void {
-     requisito.estado = 'REPROBADO';
-   }
+  reprobarRequisito(requisito: RequisitoRevision): void {
+    requisito.estado = 'REPROBADO';
+  }
 
-   observarRequisito(requisito: RequisitoRevision): void {
-     requisito.estado = 'OBSERVADO';
-   }
+  observarRequisito(requisito: RequisitoRevision): void {
+    requisito.estado = 'OBSERVADO';
+  }
 
-   puedeEditarRequisito(requisito: RequisitoRevision): boolean {
-     // Mostrar botones para todos los requisitos, aunque no tengan documento.
-     // La validación de id > 0 se maneja en los métodos de acción con notificación.
-     return true;
-   }
+  puedeEditarRequisito(requisito: RequisitoRevision): boolean {
+    // Mostrar botones para todos los requisitos, aunque no tengan documento.
+    // La validación de id > 0 se maneja en los métodos de acción con notificación.
+    return true;
+  }
 
   getColorEstado(estado: string): string {
     switch (estado?.toLowerCase()) {
@@ -268,7 +324,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     }
   }
 
-   getIconoEstado(estado: string): string {
+  getIconoEstado(estado: string): string {
     switch (estado?.toLowerCase()) {
       case 'aprobado': return '✅';
       case 'reprobado': return '❌';
@@ -287,12 +343,12 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     return 'timeline-marker-default';
   }
 
-   get todosAprobados(): boolean {
-      // Solo considerar requisitos que NO sean exámenes
-      const requisitosNoExamenes = this.requisitos.filter(r => !r.esExamen);
-      if (requisitosNoExamenes.length === 0) return false;
-      return requisitosNoExamenes.every(r => r.estado === 'APROBADO');
-    }
+  get todosAprobados(): boolean {
+    // Solo considerar requisitos que NO sean exámenes
+    const requisitosNoExamenes = this.requisitos.filter(r => !r.esExamen);
+    if (requisitosNoExamenes.length === 0) return false;
+    return requisitosNoExamenes.every(r => r.estado === 'APROBADO');
+  }
 
   get hayRechazados(): boolean {
     return this.requisitos.some(r => r.estado === 'REPROBADO');
@@ -306,33 +362,37 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     return this.requisitos.length;
   }
 
-   // Getters para estadísticas
-   get aprobadosCount(): number {
-     return this.requisitos.filter(r => r.estado === 'APROBADO').length;
-   }
+  // Getters para estadísticas
+  get aprobadosCount(): number {
+    return this.requisitos.filter(r => r.estado === 'APROBADO').length;
+  }
 
-   get observadosCount(): number {
-     return this.requisitos.filter(r => r.estado === 'OBSERVADO').length;
-   }
+  get observadosCount(): number {
+    return this.requisitos.filter(r => r.estado === 'OBSERVADO').length;
+  }
 
-   get rechazadosCount(): number {
-     return this.requisitos.filter(r => r.estado === 'REPROBADO').length;
-   }
+  get rechazadosCount(): number {
+    return this.requisitos.filter(r => r.estado === 'REPROBADO').length;
+  }
 
-   get pendientesCount(): number {
-     return this.requisitos.filter(r => r.estado === 'PENDIENTE').length;
-   }
+  get pendientesCount(): number {
+    return this.requisitos.filter(r => r.estado === 'PENDIENTE').length;
+  }
 
-   get progresoPorcentaje(): number {
-     if (this.requisitos.length === 0) return 0;
-     const conDocumento = this.requisitos.filter(r => r.id > 0);
-     if (conDocumento.length === 0) return 0;
-     const aprobados = this.aprobadosCount;
-     return Math.round((aprobados / conDocumento.length) * 100);
-   }
+  get progresoPorcentaje(): number {
+    if (this.requisitos.length === 0) return 0;
+    const conDocumento = this.requisitos.filter(r => r.id > 0);
+    if (conDocumento.length === 0) return 0;
+    const aprobados = this.aprobadosCount;
+    return Math.round((aprobados / conDocumento.length) * 100);
+  }
 
-    private aplicarCambiosDocumentos(): Observable<any>[] {
+   private aplicarCambiosDocumentos(): Observable<any>[] {
      const operaciones: Observable<any>[] = [];
+     
+     // Si hay una instancia en edición, incluirla en los documentos nuevos
+     const instanciaParaAsociar = this.instanciaEnEdicion() ? 
+       { idInstancia: this.instanciaEnEdicion()!.idInstancia } : undefined;
 
      for (const req of this.requisitos) {
        const original = this.originalRequisitos.find(r => r.id === req.id);
@@ -354,17 +414,22 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
          } else {
            // Para otros estados (ej. PENDIENTE), actualizar observaciones si hay cambios
            if (cambiosEnObservaciones) {
-             operaciones.push(this.documentoTramiteService.update(req.id, { observaciones: req.observaciones }));
+             operaciones.push(this.documentoTramiteService.update(req.id, { 
+               observaciones: req.observaciones,
+               // Si hay instancia, asegurar asociación
+               ...(instanciaParaAsociar && { instanciaTramite: instanciaParaAsociar })
+             }));
            }
          }
        } else {
          // Requisito sin documento previo: crear documento y luego aplicar estado
-         // Nota: el id será asignado después de la creación
-          const crearDoc$ = this.documentoTramiteService.create({
-            tramiteId: this.tramiteId,
-            requisitoId: req.requisitoId!,
-            observaciones: req.observaciones || ''
-          }).pipe(
+         const crearDoc$ = this.documentoTramiteService.create({
+           tramiteId: this.tramiteId,
+           requisitoId: req.requisitoId!,
+           observaciones: req.observaciones || '',
+           // Asociar a la instancia si existe
+           ...(instanciaParaAsociar && { instanciaTramite: instanciaParaAsociar })
+         }).pipe(
            switchMap((doc: any) => {
              const nuevoId = doc?.id;
              if (!nuevoId) {
@@ -387,129 +452,271 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
        }
      }
 
-      return operaciones;
-    }
+     return operaciones;
+   }
 
-    guardarYObservar(): void {
-      if (this.requisitos.length === 0) return;
-
-      const operaciones = this.aplicarCambiosDocumentos();
-
-      if (operaciones.length === 0) {
-        alert('No hay cambios para guardar');
-        return;
-      }
-
-      // Ejecutar secuencialmente para evitar problemas de concurrencia en el estado del trámite
-      from(operaciones).pipe(
-        concatMap(op => op),
-        toArray(),
-        takeUntil(this.destroy$)
-       ).subscribe({
-        next: () => {
-          this.notificationService.showSuccess('Trámite observado exitosamente');
-          this.tramiteObservado.emit();
-          this.cerrar();
-        },
-        error: (err) => {
-          console.error('Error al observar trámite:', err);
-          this.notificationService.showError('Error al observar el trámite: ' + (err.message || 'Error desconocido'));
-        }
-      });
-    }
-
-     guardarYFinalizar(): void {
-       if (this.requisitos.length === 0) return;
-
+   guardarYObservar(): void {
+     // Si hay requisitos en edición, aplicar cambios
+     if (this.requisitos.length > 0) {
        const operaciones = this.aplicarCambiosDocumentos();
-
+       
        if (operaciones.length === 0) {
-         alert('No hay cambios para guardar');
+         this.finalizarObservacion();
          return;
        }
-
-       // Ejecutar secuencialmente para evitar problemas de concurrencia en el estado del trámite
+       
        from(operaciones).pipe(
          concatMap(op => op),
          toArray(),
          takeUntil(this.destroy$)
-        ).subscribe({
-          next: (results) => {
-            this.notificationService.showSuccess('Trámite revisado completamente exitosamente');
-            this.tramiteFinalizado.emit();
-            this.cerrar();
-          },
-          error: (err) => {
-            console.error('Error al finalizar trámite:', err);
-            this.notificationService.showError('Error al finalizar el trámite: ' + (err.message || 'Error desconocido'));
-          }
-        });
-     }
-
-     verFormato(requisito: RequisitoRevision): void {
-       if (!requisito.formatoId) {
-         this.error = 'Este requisito no tiene formato asociado';
-         setTimeout(() => this.error = null, 3000);
-         return;
-       }
-
-       this.formatoService.download(requisito.formatoId).subscribe({
-         next: (blob) => {
-           const url = window.URL.createObjectURL(blob);
-           const newWindow = window.open(url, '_blank');
-           if (!newWindow) {
-             // Fallback to download if popup blocked
-              const a = document.createElement('a');
-              a.href = url;
-              const filename = requisito.formatoArchivoRuta ? (requisito.formatoArchivoRuta.split('/').pop() || 'formato.pdf') : 'formato.pdf';
-              a.download = filename;
-             document.body.appendChild(a);
-             a.click();
-             window.URL.revokeObjectURL(url);
-             document.body.removeChild(a);
-             this.success = 'Descarga iniciada';
-             setTimeout(() => this.success = null, 2000);
-           } else {
-             this.success = 'Formato abierto en nueva ventana';
-             setTimeout(() => this.success = null, 2000);
-           }
-         },
-         error: (err) => {
-           console.error('Error al ver formato:', err);
-           this.error = 'Error al abrir el formato';
+       ).subscribe({
+         next: () => this.finalizarObservacion(),
+         error: (err: any) => {
+           console.error('Error al observar trámite:', err);
+           this.notificationService.showError('Error al observar el trámite: ' + (err.message || 'Error desconocido'));
          }
        });
+     } else {
+       // No hay instancia en edición, solo finalizar
+       this.finalizarObservacion();
      }
+   }
+   
+   private finalizarObservacion(): void {
+     // Si hay instancia en edición, guardarla en la lista
+     if (this.instanciaEnEdicion()) {
+       this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+       this.instanciaEnEdicion.set(null);
+     }
+     this.notificationService.showSuccess('Trámite observado exitosamente');
+     this.tramiteObservado.emit();
+     this.cerrar();
+   }
 
-     descargarFormato(requisito: RequisitoRevision): void {
-       if (!requisito.formatoId) {
-         this.error = 'Este requisito no tiene formato asociado';
-         setTimeout(() => this.error = null, 3000);
+   guardarYFinalizar(): void {
+     // Si hay requisitos en edición, aplicar cambios
+     if (this.requisitos.length > 0) {
+       const operaciones = this.aplicarCambiosDocumentos();
+       
+       if (operaciones.length === 0) {
+         this.finalizarRevision();
          return;
        }
-
-       this.formatoService.download(requisito.formatoId).subscribe({
-         next: (blob) => {
-           const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const filename = requisito.formatoArchivoRuta ? (requisito.formatoArchivoRuta.split('/').pop() || 'formato.pdf') : 'formato.pdf';
-            a.download = filename;
-           document.body.appendChild(a);
-           a.click();
-           window.URL.revokeObjectURL(url);
-           document.body.removeChild(a);
-           this.success = 'Descarga iniciada';
-           setTimeout(() => this.success = null, 2000);
-         },
-         error: (err) => {
-           console.error('Error al descargar formato:', err);
-           this.error = 'Error al descargar el formato';
+       
+       from(operaciones).pipe(
+         concatMap(op => op),
+         toArray(),
+         takeUntil(this.destroy$)
+       ).subscribe({
+         next: () => this.finalizarRevision(),
+         error: (err: any) => {
+           console.error('Error al finalizar trámite:', err);
+           this.notificationService.showError('Error al finalizar el trámite: ' + (err.message || 'Error desconocido'));
          }
        });
+     } else {
+       // No hay instancia en edición, solo finalizar
+       this.finalizarRevision();
+     }
+   }
+   
+   private finalizarRevision(): void {
+     // Si hay instancia en edición, guardarla en la lista
+     if (this.instanciaEnEdicion()) {
+       this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+       this.instanciaEnEdicion.set(null);
+     }
+     this.notificationService.showSuccess('Trámite revisado completamente exitosamente');
+     this.tramiteFinalizado.emit();
+     this.cerrar();
+   }
+   
+   /**
+    * Guarda la instancia actual y automáticamente prepara la siguiente
+    */
+   guardarInstanciaActual(): void {
+     if (this.requisitos.length === 0) {
+       this.notificationService.showWarning('No hay requisitos para guardar');
+       return;
      }
 
-     cerrar(): void {
-       this.cerrarModal.emit();
+     if (!this.instanciaEnEdicion()) {
+       this.notificationService.showWarning('No hay instancia en edición. Cree una primero.');
+       return;
      }
+
+     const operaciones = this.aplicarCambiosDocumentos();
+
+     if (operaciones.length === 0) {
+       this.notificationService.showInfo('No hay cambios en los documentos para guardar');
+       // Aún así avanzar a siguiente
+       this.avanzarASiguienteInstancia();
+       return;
+     }
+
+     from(operaciones).pipe(
+       concatMap(op => op),
+       toArray(),
+       takeUntil(this.destroy$)
+     ).subscribe({
+       next: () => {
+         // Guardar la instancia actual en la lista
+         this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+         this.notificationService.showSuccess('Instancia guardada. Ingrese datos de la siguiente.');
+         // Avanzar automáticamente a siguiente instancia
+         this.avanzarASiguienteInstancia();
+       },
+       error: (err: any) => {
+         console.error('Error guardando instancia:', err);
+         this.notificationService.showError('Error al guardar instancia: ' + (err.message || 'Error desconocido'));
+       }
+     });
+   }
+   
+   /**
+    * Limpia la instancia actual y solicita el siguiente identificador
+    */
+   private avanzarASiguienteInstancia(): void {
+     // Limpiar estado
+     this.instanciaEnEdicion.set(null);
+     this.requisitos = [];
+     this.originalRequisitos = [];
+     // Mostrar prompt para nueva placa (automáticamente)
+     setTimeout(() => this.convertirAExpediente(), 300);
+   }
+
+  verFormato(requisito: RequisitoRevision): void {
+    if (!requisito.formatoId) {
+      this.error = 'Este requisito no tiene formato asociado';
+      setTimeout(() => this.error = null, 3000);
+      return;
+    }
+
+    this.formatoService.download(requisito.formatoId).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+          const a = document.createElement('a');
+          a.href = url;
+          const filename = requisito.formatoArchivoRuta ? (requisito.formatoArchivoRuta.split('/').pop() || 'formato.pdf') : 'formato.pdf';
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          this.success = 'Descarga iniciada';
+          setTimeout(() => this.success = null, 2000);
+        } else {
+          this.success = 'Formato abierto en nueva ventana';
+          setTimeout(() => this.success = null, 2000);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error al ver formato:', err);
+        this.error = 'Error al abrir el formato';
+      }
+    });
+  }
+
+  descargarFormato(requisito: RequisitoRevision): void {
+    if (!requisito.formatoId) {
+      this.error = 'Este requisito no tiene formato asociado';
+      setTimeout(() => this.error = null, 3000);
+      return;
+    }
+
+    this.formatoService.download(requisito.formatoId).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = requisito.formatoArchivoRuta ? (requisito.formatoArchivoRuta.split('/').pop() || 'formato.pdf') : 'formato.pdf';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        this.success = 'Descarga iniciada';
+        setTimeout(() => this.success = null, 2000);
+      },
+      error: (err: any) => {
+        console.error('Error al descargar formato:', err);
+        this.error = 'Error al descargar el formato';
+      }
+    });
+  }
+
+  cerrar(): void {
+    this.cerrarModal.emit();
+  }
+
+   /**
+    * Muestra el modal para ingresar el identificador del vehículo
+    */
+   convertirAExpediente(): void {
+     this.mostrarPromptIdentificador.set(true);
+     this.nuevoIdentificador.set('');
+     // Enfocar el input después de que se renderice
+     setTimeout(() => {
+       const input = document.getElementById('identificador-input');
+       if (input) input.focus();
+     }, 100);
+   }
+
+   /**
+    * Acepta el identificador y crea la instancia
+    */
+   aceptarPrompt(): void {
+     const identificador = this.nuevoIdentificador().trim();
+     if (!identificador) {
+       this.notificationService?.showWarning('Ingrese un identificador válido');
+       return;
+     }
+     this.mostrarPromptIdentificador.set(false);
+     this.crearInstancia(identificador);
+   }
+
+   /**
+    * Cancela el prompt
+    */
+   cancelarPrompt(): void {
+     this.mostrarPromptIdentificador.set(false);
+     this.nuevoIdentificador.set('');
+   }
+
+   /**
+    * Crea una nueva instancia con el identificador dado
+    */
+   private crearInstancia(identificador: string): void {
+     if (!this.tramiteId) {
+       this.notificationService.showError('No se puede crear expediente sin trámite');
+       return;
+     }
+
+     this.cargando = true;
+     this.error = null;
+
+     this.instanciaTramiteService.crear(this.tramiteId, {
+       identificador,
+       descripcion: ''
+     }).pipe(
+       takeUntil(this.destroy$)
+     ).subscribe({
+       next: (instancia: InstanciaTramite) => {
+         this.notificationService.showSuccess(`Expediente creado para vehículo ${identificador}. Califique los documentos.`);
+         // Establecer como instancia en edición
+         this.instanciaEnEdicion.set(instancia);
+         // Cargar los documentos de esta instancia recién creada
+         this.cargarRequisitos();
+         this.cargando = false;
+       },
+       error: (err: any) => {
+         console.error('Error creando expediente:', err);
+         this.error = 'Error al crear expediente: ' + (err.error?.message || err.message || 'Error desconocido');
+         this.cargando = false;
+         this.notificationService.showError(this.error);
+       }
+     });
+   }
 }

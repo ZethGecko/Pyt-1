@@ -1,0 +1,378 @@
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { InstanciaTramiteService } from '../../../configuracion/services/instancia-tramite.service';
+import { InstanciaTramite } from '../../../configuracion/models/instancia-tramite.model';
+import { TramiteService } from '../../../tramites/services/tramite.service';
+import { NotificationService } from '../../../../shared/services/notification.service';
+import { RevisionRequisitosComponent } from '../../../tramites/components/revision-requisitos/revision-requisitos.component';
+import { DocumentoTramiteService } from '../../../tramites/services/documento-tramite.service';
+import { DocumentoTramite } from '../../../tramites/models/documento-tramite.model';
+
+ @Component({
+   selector: 'app-gestion-instancias',
+   standalone: true,
+   imports: [CommonModule, FormsModule, RevisionRequisitosComponent],
+   templateUrl: './gestion-instancias.component.html',
+   styleUrls: ['./gestion-instancias.component.scss']
+ })
+  export class GestionInstanciasComponent implements OnInit {
+    
+    // 🎯 DEPENDENCY INJECTION
+   constructor(
+     private instanciaService: InstanciaTramiteService,
+     private tramiteService: TramiteService,
+     private notificationService: NotificationService,
+     private documentoTramiteService: DocumentoTramiteService,
+     private cd: ChangeDetectorRef
+   ) {}
+    
+    // 🎯 ESTADOS
+    instancias: InstanciaTramite[] = [];
+    expedientesAgrupados: { rut: string; tramiteId: number; tipoTramiteDescripcion?: string; instancias: InstanciaTramite[] }[] = [];
+    
+    cargando = false;
+    error: string | null = null;
+    exito: string | null = null;
+    
+    // 🎯 FILTROS
+    filtroRut = '';
+    filtroTramiteId = '';
+    
+    // 🎯 MODALES Y VARIABLES DE CONTROL
+    mostrarRevision = false;
+    mostrandoModalInstancias = false;
+    mostrandoModalEdicion = false;
+    mostrarPromptNuevaInstancia = false;
+    
+    // 🎯 DATOS SELECCIONADOS
+    expedienteSeleccionado: { rut: string; tramiteId: number; tipoTramiteDescripcion?: string; instancias: InstanciaTramite[] } | null = null;
+    instanciaEditando: InstanciaTramite | null = null;
+    
+    // 🎯 FORMULARIO Y DATOS TEMPORALES
+    nuevoIdentificadorInstancia = '';
+    formInstancia = { identificador: '', estado: '' };
+    documentosInstancia: DocumentoTramite[] = [];
+    
+    // 🎯 REVISIÓN DE DOCUMENTOS
+    tramiteParaRevision: number | null = null;
+    instanciaParaRevision: number | null = null;
+    tramiteCodigoRUT = '';
+    tramiteTipoDescripcion = '';
+    
+    // 🎯 PAGINACIÓN
+    totalElements = 0;
+    
+    // 🎯 CLASES DE ESTADO
+    clasesEstado: { [key: string]: string } = {
+      'APROBADO': 'bg-green-100 text-green-800',
+      'DESAPROBADO': 'bg-red-100 text-red-800',
+      'OBSERVADO': 'bg-yellow-100 text-yellow-800'
+    };
+    
+     // 🎯 OPCIONES DE ESTADO PARA INSTANCIAS
+     estadosInstancia = [
+       { value: 'APROBADO', label: 'Aprobado' },
+       { value: 'DESAPROBADO', label: 'Desaprobado' },
+       { value: 'OBSERVADO', label: 'Observado' }
+     ];
+     
+     ngOnInit(): void {
+      this.cargarInstancias();
+    }
+    
+   cargarInstancias(): void {
+     this.cargando = true;
+     this.error = null;
+     
+     this.instanciaService.listarTodas().subscribe({
+       next: (instancias: InstanciaTramite[]) => {
+         this.instancias = instancias;
+         
+         // Agrupar instancias por RUT del expediente (tramite.codigoRut)
+         const gruposMap = new Map<string, { rut: string; tramiteId: number; tipoTramiteDescripcion?: string; instancias: InstanciaTramite[] }>();
+         
+          instancias.forEach(inst => {
+            const rut = inst.tramite?.codigoRut || 'Sin RUT';
+            const tramiteId = inst.tramiteId || 0;
+            const tipoTramiteDescripcion = inst.tramite?.tipoTramiteDescripcion || '';
+            
+            if (!gruposMap.has(rut)) {
+              gruposMap.set(rut, {
+                rut,
+                tramiteId,
+                tipoTramiteDescripcion,
+                instancias: []
+              });
+            }
+            gruposMap.get(rut)!.instancias.push(inst);
+          });
+         
+         // Convertir a array y ordenar por RUT
+         this.expedientesAgrupados = Array.from(gruposMap.values())
+           .sort((a, b) => a.rut.localeCompare(b.rut));
+         
+         this.totalElements = instancias.length;
+         this.cargando = false;
+         this.cd.detectChanges();
+       },
+       error: (err: any) => {
+         this.error = err.error?.message || 'Error al cargar instancias';
+         this.cargando = false;
+         this.cd.detectChanges();
+         console.error('Error cargando instancias:', err);
+       }
+     });
+   }
+  
+   // Filtros sobre expedientes agrupados
+   get expedientesFiltrados(): { rut: string; tramiteId: number; tipoTramiteDescripcion?: string; instancias: InstanciaTramite[] }[] {
+     return this.expedientesAgrupados.filter(exp => {
+       const coincideRut = !this.filtroRut || exp.rut.toLowerCase().includes(this.filtroRut.toLowerCase());
+       const coincideTramite = !this.filtroTramiteId || exp.tramiteId.toString().includes(this.filtroTramiteId);
+       return coincideRut && coincideTramite;
+     });
+   }
+  
+   // Estadísticas
+   get totalExpedientes(): number { return this.expedientesAgrupados.length; }
+   get totalInstancias(): number { return this.instancias.length; }
+   
+   // Obtiene la última fecha de actualización de un expediente (la más reciente entre sus instancias)
+   getUltimaActualizacion(instancias: InstanciaTramite[]): string | null {
+     if (!instancias || instancias.length === 0) return null;
+     
+     const fechas = instancias
+       .map(inst => inst.fechaActualizacion || inst.fechaCreacion)
+       .filter(fecha => fecha != null) as string[];
+     
+     if (fechas.length === 0) return null;
+     
+     const maxFecha = new Date(Math.max(...fechas.map(f => new Date(f).getTime())));
+     return maxFecha.toLocaleString('es-ES', { 
+       day: '2-digit', 
+       month: '2-digit', 
+       year: 'numeric',
+       hour: '2-digit',
+       minute: '2-digit'
+     });
+   }
+  
+   // 🎯 MODAL DE GESTIÓN DE INSTANCIAS POR EXPEDIENTE
+   abrirModalInstancias(expediente: { rut: string; tramiteId: number; tipoTramiteDescripcion?: string; instancias: InstanciaTramite[] }): void {
+     this.expedienteSeleccionado = expediente;
+     this.mostrandoModalInstancias = true;
+   }
+   
+   cerrarModalInstancias(): void {
+    this.mostrandoModalInstancias = false;
+    this.expedienteSeleccionado = null;
+  }
+  
+  // Añadir nueva instancia al expediente actual
+  abrirPromptNuevaInstancia(): void {
+    this.nuevoIdentificadorInstancia = '';
+    this.mostrarPromptNuevaInstancia = true;
+  }
+  
+  cancelarPromptNuevaInstancia(): void {
+    this.mostrarPromptNuevaInstancia = false;
+    this.nuevoIdentificadorInstancia = '';
+  }
+  
+  aceptarPromptNuevaInstancia(): void {
+    if (!this.nuevoIdentificadorInstancia.trim()) {
+      this.notificationService.showError('El identificador es obligatorio');
+      return;
+    }
+    if (!this.expedienteSeleccionado) return;
+    
+    this.cargando = true;
+    this.instanciaService.crear(this.expedienteSeleccionado.tramiteId, {
+      identificador: this.nuevoIdentificadorInstancia.trim(),
+      descripcion: ''
+    }).subscribe({
+      next: (nuevaInstancia: InstanciaTramite) => {
+        // Añadir a la lista local
+        this.expedienteSeleccionado!.instancias.push(nuevaInstancia);
+        // Recargar lista global
+        this.cargarInstancias();
+        this.cancelarPromptNuevaInstancia();
+        this.notificationService.showSuccess('Instancia creada correctamente');
+      },
+      error: (err: any) => {
+        this.error = err.error?.message || 'Error al crear instancia';
+        this.cargando = false;
+      }
+    });
+  }
+  
+   abrirModalEdicion(instancia: InstanciaTramite): void {
+     this.instanciaEditando = instancia;
+     this.formInstancia = { identificador: instancia.identificador, estado: instancia.estado };
+     this.documentosInstancia = [];
+     this.cargarDocumentosInstancia(instancia.idInstancia!);
+     this.mostrandoModalEdicion = true;
+   }
+   
+   cargarDocumentosInstancia(instanciaId: number): void {
+     this.cargando = true;
+     this.instanciaService.obtenerDocumentosDeInstancia(instanciaId).subscribe({
+       next: (documentos: DocumentoTramite[]) => {
+         this.documentosInstancia = documentos;
+         this.cargando = false;
+         this.cd.detectChanges();
+       },
+       error: (err: any) => {
+         this.notificationService.showError('Error al cargar requisitos de la instancia');
+         this.cargando = false;
+         this.cd.detectChanges();
+       }
+     });
+   }
+  
+  cerrarModalEdicion(): void {
+    this.mostrandoModalEdicion = false;
+    this.instanciaEditando = null;
+  }
+  
+   guardarEdicionInstancia(): void {
+     if (!this.instanciaEditando) return;
+     if (!this.formInstancia.identificador || this.formInstancia.identificador.trim() === '') {
+       this.notificationService.showError('El identificador es obligatorio');
+       return;
+     }
+     
+     this.cargando = true;
+     this.instanciaService.actualizar(this.instanciaEditando.idInstancia, this.formInstancia as InstanciaTramite).subscribe({
+       next: (instanciaActualizada) => {
+         // Actualizar local en expedienteSeleccionado
+         const index = this.expedienteSeleccionado!.instancias.findIndex(i => i.idInstancia === this.instanciaEditando!.idInstancia);
+         if (index !== -1) {
+           this.expedienteSeleccionado!.instancias[index] = instanciaActualizada;
+         }
+         
+         // Actualizar también en el array global de instancias
+         const indexGlobal = this.instancias.findIndex(i => i.idInstancia === this.instanciaEditando!.idInstancia);
+         if (indexGlobal !== -1) {
+           this.instancias[indexGlobal] = instanciaActualizada;
+         }
+         
+         // Actualizar documentos (requisitos) de la instancia
+         const actualizaciones = this.documentosInstancia
+           .filter(doc => doc.id != null)
+           .map(doc => 
+             this.documentoTramiteService.update(doc.id, {
+               estado: doc.estado,
+               observaciones: doc.observaciones
+             })
+           );
+         
+         if (actualizaciones.length > 0) {
+           forkJoin(actualizaciones).subscribe({
+             next: () => {
+               // Recargar lista completa para obtener fechas actualizadas
+               this.cargarInstancias();
+               this.cerrarModalEdicion();
+               this.notificationService.showSuccess('Instancia y requisitos actualizados correctamente');
+             },
+             error: (err) => {
+               this.notificationService.showError('Error al actualizar algunos documentos');
+               this.cargando = false;
+             }
+           });
+         } else {
+           this.cargarInstancias();
+           this.cerrarModalEdicion();
+           this.notificationService.showSuccess('Instancia actualizada correctamente');
+         }
+       },
+       error: (err: any) => {
+         this.notificationService.showError(err.error?.message || 'Error al guardar');
+         this.cargando = false;
+       }
+     });
+   }
+  
+  eliminarInstancia(instancia: InstanciaTramite): void {
+    if (!confirm(`¿Eliminar la instancia ${instancia.identificador}?`)) return;
+    
+    this.cargando = true;
+    this.instanciaService.eliminar(instancia.idInstancia).subscribe({
+      next: () => {
+        // Eliminar de lista local
+        this.expedienteSeleccionado!.instancias = this.expedienteSeleccionado!.instancias.filter(i => i.idInstancia !== instancia.idInstancia);
+        // Recargar lista global
+        this.cargarInstancias();
+        this.notificationService.showSuccess('Instancia eliminada');
+      },
+      error: (err: any) => {
+        this.notificationService.showError(err.error?.message || 'Error al eliminar');
+        this.cargando = false;
+      }
+    });
+  }
+  
+  // 🎯 VER DOCUMENTOS (reutiliza el modal existente)
+  verDocumentos(instancia: InstanciaTramite): void {
+    this.tramiteParaRevision = instancia.tramiteId!;
+    this.instanciaParaRevision = instancia.idInstancia!;
+    this.tramiteService.obtener(instancia.tramiteId!).subscribe({
+      next: (tramite: any) => {
+        this.tramiteCodigoRUT = tramite.codigoRUT || '';
+        this.tramiteTipoDescripcion = tramite.tipoTramiteDescripcion || '';
+        this.mostrarRevision = true;
+      },
+      error: (err) => {
+        console.error('Error cargando trámite:', err);
+        this.notificationService.showError('No se pudo cargar el trámite');
+      }
+    });
+  }
+  
+  cerrarRevision(): void {
+    this.mostrarRevision = false;
+    this.cargarInstancias();
+  }
+  
+  onTramiteObservado(): void {
+    this.cerrarRevision();
+    this.notificationService.showSuccess('Trámite observado');
+  }
+  
+  onTramiteFinalizado(): void {
+    this.cerrarRevision();
+    this.notificationService.showSuccess('Trámite revisado completamente');
+  }
+  
+  limpiarFiltros(): void {
+    this.filtroRut = '';
+    this.filtroTramiteId = '';
+  }
+  
+   // 🎯 FORMATEO
+   getEstadoFormateado(estado: string): string {
+     const estados: { [key: string]: string } = {
+       'APROBADO': 'Aprobado',
+       'DESAPROBADO': 'Desaprobado',
+       'OBSERVADO': 'Observado'
+     };
+     return estados[estado] || estado;
+   }
+  
+   getColorEstado(estado: string): string {
+     return this.clasesEstado[estado] || 'bg-gray-100 text-gray-800';
+   }
+   
+   trackById(index: number, item: any): number {
+     return item.idInstancia || index;
+   }
+  
+   mostrarExito(mensaje: string): void {
+   mostrarExito(mensaje: string): void {
+     this.exito = mensaje;
+     setTimeout(() => this.exito = null, 3000);
+   }
+ }

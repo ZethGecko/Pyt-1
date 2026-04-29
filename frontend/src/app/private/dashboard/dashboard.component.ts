@@ -22,9 +22,9 @@ export class DashboardComponent implements OnInit {
   authState = inject(AuthStateService);
   tokenService = inject(TokenService);
   tramiteService = inject(TramiteService);
-  notificationService = inject(NotificationService);
-  private cdr = inject(ChangeDetectorRef);
-  private destroy$ = new Subject<void>();
+   notificationService = inject(NotificationService);
+   private cdr = inject(ChangeDetectorRef);
+   private destroy$ = new Subject<void>();
 
   constructor() {
     this.initDepartamentoNombreEffect();
@@ -39,11 +39,11 @@ export class DashboardComponent implements OnInit {
   loadingTramites = signal<boolean>(false);
   departamentoNombre = signal<string>('');
 
-  // Modal de revisión
-  mostrarModalRequisitos = signal<boolean>(false);
-  tramiteParaRevisar = signal<TramiteEnriquecido | null>(null);
+    // Modal de revisión
+    mostrarModalRequisitos = signal<boolean>(false);
+    tramiteParaRevisar = signal<TramiteEnriquecido | null>(null);
 
-  // Computed values
+   // Computed values
   tokenUsername = computed(() => this.tokenInfo()?.username || 'N/A');
   tokenRoles = computed(() => this.tokenInfo()?.roles?.join(', ') || 'N/A');
   userInitial = computed(() => {
@@ -163,33 +163,33 @@ export class DashboardComponent implements OnInit {
      return ['registrado', 'en_revision', 'observado'].includes(estado);
    }
 
-    abrirModalRevisar(tramite: TramiteEnriquecido): void {
-      const estado = tramite.estado?.toLowerCase();
-      if (estado !== 'registrado' && estado !== 'en_revision' && estado !== 'observado') {
-        this.notificationService.showWarning('Solo se pueden revisar trámites en estado "Registrado", "En Revisión" u "Observado"');
-        return;
-      }
+   abrirModalRevisar(tramite: TramiteEnriquecido): void {
+     const estado = tramite.estado?.toLowerCase();
+     if (estado !== 'registrado' && estado !== 'en_revision' && estado !== 'observado') {
+       this.notificationService.showWarning('Solo se pueden revisar trámites en estado "Registrado", "En Revisión" u "Observado"');
+       return;
+     }
 
-      if (estado === 'registrado') {
-        // Iniciar revisión sin solicitar motivo
-        this.tramiteService.cambiarEstado(tramite.id, 'en_revision').pipe(
-          takeUntil(this.destroy$),
-          catchError(err => {
-            this.notificationService.showError('Error al iniciar revisión');
-            return of(null);
-          })
-        ).subscribe({
-          next: () => {
-            this.notificationService.showSuccess('Trámite en revisión');
-            const tramiteActualizado = { ...tramite, estado: 'en_revision' as const };
+     if (estado === 'registrado') {
+       // Iniciar revisión sin solicitar motivo
+       this.tramiteService.cambiarEstado(tramite.id, 'en_revision').pipe(
+         takeUntil(this.destroy$),
+         catchError(err => {
+           this.notificationService.showError('Error al iniciar revisión');
+           return of(null);
+         })
+       ).subscribe({
+         next: () => {
+           this.notificationService.showSuccess('Trámite en revisión');
+           const tramiteActualizado = { ...tramite, estado: 'en_revision' as const };
             const listaActual = this.tramitesDepartamento();
             const nuevaLista = listaActual.map(t => t.id === tramite.id ? tramiteActualizado : t);
             this.tramitesDepartamento.set(nuevaLista);
             this.tramiteParaRevisar.set(tramiteActualizado);
             this.mostrarModalRequisitos.set(true);
             this.cdr.detectChanges();
-          }
-        });
+         }
+       });
       } else {
         // Ya está en revisión o observado, abrir modal directamente
         this.tramiteParaRevisar.set(tramite);
@@ -198,9 +198,9 @@ export class DashboardComponent implements OnInit {
       }
     }
 
-   cerrarModalRevisar(): void {
-     this.mostrarModalRequisitos.set(false);
-     this.tramiteParaRevisar.set(null);
-     this.cargarTramitesDepartamento();
-   }
+    cerrarModalRevisar(): void {
+      this.mostrarModalRequisitos.set(false);
+      this.tramiteParaRevisar.set(null);
+      this.cargarTramitesDepartamento();
+    }
 }

@@ -1,0 +1,393 @@
+<div class="gestion-instancias-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-8 h-8">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+        Gestión de Expedientes
+      </h1>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <input type="text" 
+               placeholder="Buscar por RUT..." 
+               [(ngModel)]="filtroRut"
+               class="filter-input">
+      </div>
+      <div class="filter-group">
+        <input type="text" 
+               placeholder="Trámite ID..." 
+               [(ngModel)]="filtroTramiteId"
+               class="filter-input">
+      </div>
+      <button class="btn btn-secondary" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  @if (error) {
+    <div class="alert alert-error">
+      {{ error }}
+      <button (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+  @if (exito) {
+    <div class="alert alert-success">
+      {{ exito }}
+      <button (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+
+  <!-- Tabla de Expedientes (Agrupados por RUT) -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>RUT Expediente</th>
+          <th>ID Trámite</th>
+          <th>Tipo Trámite</th>
+          <th>Instancias</th>
+          <th>Última Actualización</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let expediente of expedientesFiltrados">
+          <td>
+            <span class="codigo-badge">{{ expediente.rut }}</span>
+          </td>
+          <td>{{ expediente.tramiteId }}</td>
+          <td>{{ expediente.tipoTramiteDescripcion || '-' }}</td>
+          <td>
+            <span class="solicitudes-badge">
+              {{ expediente.instancias.length }}
+            </span>
+          </td>
+          <td>
+            <div class="fecha-cell">
+              <svg class="fecha-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              {{ getUltimaActualizacion(expediente.instancias) }}
+            </div>
+          </td>
+          <td class="actions">
+            <button class="btn-icon btn-view" (click)="abrirModalInstancias(expediente)" title="Gestionar instancias">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="expedientesFiltrados.length === 0">
+          <td colspan="6" class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+            <p>No se encontraron expedientes</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal: Gestión de Instancias por Expediente -->
+  @if (mostrandoModalInstancias) {
+    <div class="modal-overlay" (click)="cerrarModalInstancias()">
+      <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <svg class="modal-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m2 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m0 0V3a2 2 0 012-2h2a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            Instancias del Expediente: {{ expedienteSeleccionado?.rut }}
+          </h2>
+          <button class="btn-close" (click)="cerrarModalInstancias()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Header del expediente -->
+          <div class="expediente-resumen">
+            <div class="expediente-info">
+              <div class="info-item">
+                <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                  <span class="info-label">RUT Expediente</span>
+                  <span class="info-value">{{ expedienteSeleccionado?.rut }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <div>
+                  <span class="info-label">Trámite</span>
+                  <span class="info-value">{{ expedienteSeleccionado?.tramiteId }} - {{ expedienteSeleccionado?.tipoTramiteDescripcion || 'Sin descripción' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="expediente-stats">
+              <div class="stat-box">
+                <span class="stat-number">{{ expedienteSeleccionado?.instancias.length }}</span>
+                <span class="stat-label">Total Instancias</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de instancias existentes -->
+          <div class="instancias-list">
+            <div class="instancias-header">
+              <h3>Instancias existentes</h3>
+              <button class="btn btn-primary btn-sm" (click)="abrirPromptNuevaInstancia()" [disabled]="cargando">
+                <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nueva Instancia
+              </button>
+            </div>
+            @if (expedienteSeleccionado?.instancias.length === 0) {
+              <p class="empty-text">No hay instancias registradas</p>
+            }             @else {
+              <table class="data-table data-table-sm instancias-table">
+                <thead>
+                  <tr>
+                    <th style="width: 25%">Identificador</th>
+                    <th style="width: 15%">Estado</th>
+                    <th style="width: 25%">Creación</th>
+                    <th style="width: 25%">Actualización</th>
+                    <th style="width: 10%">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let instancia of expedienteSeleccionado?.instancias; trackBy: trackById">
+                    <td>
+                      <div class="identifier-cell">
+                        <strong>{{ instancia.identificador }}</strong>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge"
+                            [class.badge-aprobado]="instancia.estado === 'APROBADO'"
+                            [class.badge-desaprobado]="instancia.estado === 'DESAPROBADO'"
+                            [class.badge-observado]="instancia.estado === 'OBSERVADO'">
+                        {{ getEstadoFormateado(instancia.estado) }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="fecha-cell-small">
+                        <svg class="fecha-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        {{ instancia.fechaCreacion | date:'dd/MM/yyyy' }}
+                        <span class="hora-text">{{ instancia.fechaCreacion | date:'HH:mm' }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="fecha-cell-small">
+                        <svg class="fecha-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        {{ instancia.fechaActualizacion ? (instancia.fechaActualizacion | date:'dd/MM/yyyy') : 'Sin actualizar' }}
+                        <span *ngIf="instancia.fechaActualizacion" class="hora-text">{{ instancia.fechaActualizacion | date:'HH:mm' }}</span>
+                      </div>
+                    </td>
+                    <td class="actions">
+                      <button class="btn-icon btn-edit" (click)="abrirModalEdicion(instancia)" title="Editar instancia">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                      </button>
+                      <button class="btn-icon btn-delete" (click)="eliminarInstancia(instancia)" title="Eliminar instancia">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Nueva Instancia (Prompt) -->
+  @if (mostrarPromptNuevaInstancia) {
+    <div class="modal-overlay" (click)="cancelarPromptNuevaInstancia()">
+      <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Nueva Instancia</h3>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="aceptarPromptNuevaInstancia()">
+            <div class="form-group">
+              <label for="nuevoIdentificadorInstancia">Identificador *</label>
+              <input
+                type="text"
+                id="nuevoIdentificadorInstancia"
+                [(ngModel)]="nuevoIdentificadorInstancia"
+                name="identificador"
+                required
+                placeholder="Ej: INST-001"
+                [disabled]="cargando"
+                (keydown.enter)="$event.preventDefault(); aceptarPromptNuevaInstancia()">
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" (click)="cancelarPromptNuevaInstancia()" [disabled]="cargando">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="cargando">
+                <svg class="btn-icon-svg" *ngIf="!cargando" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span *ngIf="cargando" class="spinner-small"></span>
+                {{ cargando ? 'Creando...' : 'Crear' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Edición de Instancia -->
+  @if (mostrandoModalEdicion && instanciaEditando) {
+    <div class="modal-overlay" (click)="cerrarModalEdicion()">
+      <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <svg class="modal-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Editar Instancia
+          </h2>
+          <button class="btn-close" (click)="cerrarModalEdicion()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="guardarEdicionInstancia()">
+            <div class="form-group">
+              <label for="editIdentificador">Identificador *</label>
+              <input
+                type="text"
+                id="editIdentificador"
+                [(ngModel)]="formInstancia.identificador"
+                name="identificador"
+                required
+                placeholder="Ej: INST-001"
+                [disabled]="cargando">
+            </div>
+            
+            <div class="form-group">
+              <label for="editEstado">Estado *</label>
+              <select
+                id="editEstado"
+                [(ngModel)]="formInstancia.estado"
+                name="estado"
+                required
+                [disabled]="cargando">
+                <option *ngFor="let estado of estadosInstancia" [value]="estado.value">
+                  {{ estado.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Sección de documentos/requisitos -->
+            @if (documentosInstancia && documentosInstancia.length > 0) {
+              <div class="requisitos-edicion">
+                <h4 class="section-title">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  Requisitos
+                </h4>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Requisito</th>
+                        <th>Estado</th>
+                        <th>Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let doc of documentosInstancia">
+                        <td>
+                          <div class="requisito-info">
+                            <strong>{{ doc.requisito?.descripcion || doc.requisitoNombre || 'Requisito ' + doc.requisitoId }}</strong>
+                            <span class="requisito-codigo">Código: {{ doc.requisito?.codigo || 'N/A' }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <select [(ngModel)]="doc.estado" class="form-control-sm" [disabled]="cargando" name="estado-{{doc.id}}">
+                            <option value="APROBADO">Aprobado</option>
+                            <option value="DESAPROBADO">Desaprobado</option>
+                            <option value="OBSERVADO">Observado</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input type="text" 
+                                 [(ngModel)]="doc.observaciones" 
+                                 placeholder="Observaciones"
+                                 class="form-control-sm"
+                                 [disabled]="cargando"
+                                 name="observaciones-{{doc.id}}">
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" (click)="cerrarModalEdicion()" [disabled]="cargando">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="cargando">
+                <svg class="btn-icon-svg" *ngIf="!cargando" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span *ngIf="cargando" class="spinner-small"></span>
+                {{ cargando ? 'Guardando...' : 'Guardar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Revisión de Requisitos -->
+  @if (mostrarRevision) {
+    <app-revision-requisitos
+      [tramiteId]="tramiteParaRevision"
+      [tramiteCodigoRUT]="tramiteCodigoRUT"
+      [tramiteTipoDescripcion]="tramiteTipoDescripcion"
+      [instanciaId]="instanciaParaRevision"
+      (cerrarModal)="cerrarRevision()"
+      (tramiteObservado)="onTramiteObservado()"
+      (tramiteFinalizado)="onTramiteFinalizado()">
+    </app-revision-requisitos>
+  }
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="cargando">
+    <div class="spinner"></div>
+    <span class="loading-text">Cargando...</span>
+  </div>
+</div>

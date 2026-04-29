@@ -85,6 +85,11 @@ public class DocumentoTramite {
     private GrupoPresentacion grupoPresentacion;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "instancia_tramite_id")
+    @JsonIgnore
+    private InstanciaTramite instanciaTramite;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_asignado_id")
     private Users usuarioAsignado;
 
@@ -168,4 +173,15 @@ public class DocumentoTramite {
 
     public Users getUsuarioRevisa() { return usuarioRevisa; }
     public void setUsuarioRevisa(Users usuarioRevisa) { this.usuarioRevisa = usuarioRevisa; }
-}
+
+     public InstanciaTramite getInstanciaTramite() { return instanciaTramite; }
+     public void setInstanciaTramite(InstanciaTramite instanciaTramite) { this.instanciaTramite = instanciaTramite; }
+
+     @JsonProperty("instanciaTramiteId")
+     public Long getInstanciaTramiteId() {
+         return instanciaTramite != null ? instanciaTramite.getIdInstancia() : null;
+     }
+     public void setInstanciaTramiteId(Long instanciaTramiteId) {
+         // Setter vacío para Jackson, la relación se maneja por objeto
+     }
+ }

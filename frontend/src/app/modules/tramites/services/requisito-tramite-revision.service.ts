@@ -45,9 +45,13 @@ export class RequisitoTramiteRevisionService {
     return this.http.get<RequisitoRevision[]>(`${this.apiUrl}/tramite/${tramiteId}`);
   }
 
-  getProyeccionesPorTramite(tramiteId: number): Observable<RequisitoRevision[]> {
-    return this.http.get<RequisitoRevision[]>(`${this.apiUrl}/tramite/${tramiteId}/projected`);
-  }
+   getProyeccionesPorTramite(tramiteId: number): Observable<RequisitoRevision[]> {
+     return this.http.get<RequisitoRevision[]>(`${this.apiUrl}/tramite/${tramiteId}/projected`);
+   }
+
+   getProyeccionesPorInstancia(instanciaId: number): Observable<RequisitoRevision[]> {
+     return this.http.get<RequisitoRevision[]>(`${this.apiUrl}/instancia/${instanciaId}/proyecciones`);
+   }
 
    aprobarDocumento(documentoId: number, datos: { notasRevision?: string }): Observable<any> {
      const params = new HttpParams()

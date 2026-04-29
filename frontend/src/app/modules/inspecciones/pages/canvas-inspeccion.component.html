@@ -1,0 +1,351 @@
+<div class="certificado-container min-h-screen bg-gray-100 flex">
+  <!-- Menú Lateral de Acciones -->
+  <aside class="action-sidebar no-print">
+    <div class="sidebar-content">
+      <div class="sidebar-header">
+        <h3>Acciones</h3>
+        <p class="sidebar-subtitle">Ficha de Inspección</p>
+      </div>
+
+      <nav class="action-nav">
+        <button class="action-btn primary" (click)="volverAtras()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">Volver</span>
+            <span class="btn-description">Regresar a la lista</span>
+          </div>
+        </button>
+
+        <button class="action-btn success" (click)="guardarCertificado()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">Guardar</span>
+            <span class="btn-description">Guardar cambios</span>
+          </div>
+        </button>
+
+        <button class="action-btn info" (click)="toggleModoEdicion()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">{{ modoEdicion ? 'Desactivar' : 'Editar' }}</span>
+            <span class="btn-description">{{ modoEdicion ? 'Bloquear campos' : 'Modo edición' }}</span>
+          </div>
+        </button>
+
+        <button class="action-btn warning" (click)="imprimirCertificado()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">Imprimir</span>
+            <span class="btn-description">Versión impresa</span>
+          </div>
+        </button>
+
+        <button class="action-btn danger" (click)="limpiarCampos()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">Limpiar</span>
+            <span class="btn-description">Borrar todos los datos</span>
+          </div>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="info-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p>Los datos se guardan automáticamente al editar</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal del Certificado -->
+  <main class="main-content">
+    <div class="w-full">
+      <!-- Certificado Container -->
+      <div class="certificado-box bg-white p-8 md:p-10 print:shadow-none">
+        
+        <!-- Encabezado Principal -->
+        <div class="certificado-section text-center mb-8 border-b-2 border-gray-800 pb-6">
+          <h1 class="text-2xl md:text-3xl font-bold text-gray-900 uppercase tracking-wider mb-2" style="font-family: 'Times New Roman', serif;">
+            CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA
+          </h1>
+          <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
+            CÁTEDRA DE LA EMPRESA
+          </h2>
+        </div>
+
+        <!-- Sección de Datos Generales -->
+        <div class="certificado-section mb-8">
+          <h3 class="section-header text-lg">
+            DATOS GENERALES
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-start">
+              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Nº de la empresa:</label>
+              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.numEmpresa" placeholder="Número" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-start">
+              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Nombre del representante:</label>
+              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.nombreRepresentante" placeholder="Nombre" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-start">
+              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Teléfono:</label>
+              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.telefono" placeholder="Teléfono" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-start">
+              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Dirección:</label>
+              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.direccion" placeholder="Dirección" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-start md:col-span-2">
+              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Localización:</label>
+              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.localizacion" placeholder="Localización" [readonly]="!modoEdicion">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de Certificación Agrícola -->
+        <div class="certificado-section mb-8">
+          <h3 class="section-header text-lg">
+            CERTIFICACIÓN AGRÍCOLA
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="certificado-table">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">N°</th>
+                  <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">Nombre</th>
+                  <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">Apellido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="border border-gray-300 px-4 py-2">1</td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaNombres[0]" placeholder="Nombre" [readonly]="!modoEdicion">
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaApellidos[0]" placeholder="Apellido" [readonly]="!modoEdicion">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="border border-gray-300 px-4 py-2">2</td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaNombres[1]" placeholder="Nombre" [readonly]="!modoEdicion">
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaApellidos[1]" placeholder="Apellido" [readonly]="!modoEdicion">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="border border-gray-300 px-4 py-2">3</td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaNombres[2]" placeholder="Nombre" [readonly]="!modoEdicion">
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaApellidos[2]" placeholder="Apellido" [readonly]="!modoEdicion">
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sección Plan Nacional y Placa -->
+        <div class="certificado-section grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <h3 class="section-header text-lg">
+              PLAN NACIONAL
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">CARREO DE CIRCULACIÓN VIAL VIENTOS:</span>
+                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreoVial" placeholder="( )" [readonly]="!modoEdicion">
+              </div>
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">CARRETERA DE ACCESO:</span>
+                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreteraAcceso" placeholder="( )" [readonly]="!modoEdicion">
+              </div>
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">SEÑALIZACIÓN DE OBRA:</span>
+                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.senalizacionObra" placeholder="( )" [readonly]="!modoEdicion">
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="section-header text-lg">
+              PLACA
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">NUMERO DE PLACA:</span>
+                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.numPlaca" placeholder="( )" [readonly]="!modoEdicion">
+              </div>
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">MODELO DE LA PLACA:</span>
+                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.modeloPlaca" placeholder="( )" [readonly]="!modoEdicion">
+              </div>
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">AÑO DE LA PLACA:</span>
+                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.anioPlaca" placeholder="( )" [readonly]="!modoEdicion">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Certificación de Seguridad -->
+        <div class="certificado-section mb-8">
+          <h3 class="section-header text-lg">
+            CERTIFICACIÓN DE SEGURIDAD
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">SEGURIDAD DE PROPIEDAD:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seguridadPropiedad" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">SECURITY VISION TECHNIQUE:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.securityVision" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">PROCEDIMIENTOS DE SEGURIDAD:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.procedimientosSeguridad" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">PRIMEROS AUXILIOS:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.primerosAuxiliosSeguridad" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">EXTINTORES DE INCENDIOS:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.extintoresSeguridad" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">SEGURO DE ACCIDENTES:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seguroAccidentes" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Plan Lunca de Rodale -->
+        <div class="certificado-section mb-8">
+          <h3 class="section-header text-lg">
+            PLAN LUNCA DE RODALE
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">PRIMEROS AUXILIOS:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.primerosAuxiliosLunca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">EXTINTORES DE INCENDIOS:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.extintoresLunca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">ACCIDENTES:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.accidentesLunca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">CARRETERA DE ACCESO:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreteraAccesoLunca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">CARREO DE CIRCULACIÓN VIAL VIENTOS:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreoVialLunca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">SEÑALIZACIÓN DE OBRA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.senalizacionObraLunca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Laboratorio -->
+        <div class="certificado-section mb-8">
+          <h3 class="section-header text-lg">
+            LABORATORIO
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">APLICABILIDAD MUNDIAL DE PLAZA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.aplicabilidadMundialPlaza" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">SELECCIÓN DE EMERGENCIA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seleccionEmergencia" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">A MUNDIAL DE PLAZA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.aMundialPlaza" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">CIRCULACIÓN VIARIA VIENTOS:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.circulacionViariaVientos" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">SELECCIÓN DE PUNTO DE CONTACTO:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seleccionPuntoContacto" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">APLICABILIDAD DE PLANTA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.aplicabilidadPlanta" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">FECHA DE PROGRAMA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.fechaPrograma" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">CARTA DE INDUCCIÓN:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.cartaInduccion" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">IMPLEMENTACION DE MANTENIMIENTO:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.implementacionMantenimiento" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">CONSTRUCCIÓN DE CIUDAD:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.construccionCiudad" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">ESTRUCTURA DE PLAZA:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.estructuraPlaza" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-700 w-80 md:w-64">COMPONENTE DE SEGURIDAD:</span>
+              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.componenteSeguridad" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+          </div>
+        </div>
+
+        <!-- Pie de página / Firma -->
+        <div class="certificado-section mt-12 pt-8 border-t border-gray-300">
+          <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+              <div class="firma-area">
+                <p class="text-sm text-gray-600 mb-2"> _______________________________</p>
+                <p class="text-sm font-medium text-gray-700">FIRMA DEL RESPONSABLE</p>
+              </div>
+            </div>
+            <div class="text-center md:text-right">
+              <div class="firma-area">
+                <p class="text-sm text-gray-600 mb-2"> _______________________________</p>
+                <p class="text-sm font-medium text-gray-700">FECHA: _______________</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
