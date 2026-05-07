@@ -12,5 +12,10 @@ export interface InstanciaTramite {
     codigoRut: string;
     tipoTramiteDescripcion?: string;
     estado?: string;
+    empresa?: {
+      idEmpresa: number;
+      nombre: string;
+      ruc: string;
+    };
   };
 }

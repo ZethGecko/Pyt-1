@@ -1,8 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { IconComponent } from '../../../shared/components/ui/icon.component';
 import { AuthStateService } from '../../../core/auth/state/auth.state';
+import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
+import { Subscription } from 'rxjs';
 
 interface MenuItem {
   title: string;
@@ -19,19 +21,50 @@ interface MenuItem {
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.scss']
 })
-export class InicioComponent implements OnInit {
+export class InicioComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private authState = inject(AuthStateService);
-
+  private imagenSitioService = inject(ImagenSitioService);
+  
   title = 'Sistema de Gestión de Transporte';
+  
+  // Map to store image URLs by ubicacion key
+  imagenes: Map<string, ImagenSitio> = new Map();
+  private subscription?: Subscription;
 
-   ngOnInit(): void {
-     // Si está logueado, redirigir al dashboard privado (ya tiene sesión)
-     if (this.authState.isLoggedIn()) {
-       this.router.navigate(['/dashboard']);
-     }
-     // Si NO está logueado, se queda en la página pública (no hace nada)
-   }
+  ngOnInit(): void {
+    if (this.authState.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
+    }
+    this.cargarImagenes();
+  }
+  
+  cargarImagenes(): void {
+    this.imagenSitioService.listarTodas().subscribe({
+      next: (data) => {
+        this.imagenes.clear();
+        data.forEach(img => {
+          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
+        });
+      },
+      error: (err) => {
+        console.error('Error cargando imágenes:', err);
+      }
+    });
+  }
+  
+  getImagenUrl(ubicacion: string): string | null {
+    return this.imagenes.get(ubicacion)?.url || null;
+  }
+  
+  tieneImagen(ubicacion: string): boolean {
+    return !!this.imagenes.get(ubicacion);
+  }
+  
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
+  }
   
   menuItems: MenuItem[] = [
     {

@@ -44,9 +44,13 @@ export class TramiteService {
     );
   }
 
-  obtenerTipoTramitePorCodigoRUT(codigoRUT: string): Observable<{tipoTramiteId: number, tipoTramiteDescripcion: string, tipoTramiteCodigo: string}> {
-    return this.http.get<{tipoTramiteId: number, tipoTramiteDescripcion: string, tipoTramiteCodigo: string}>(`${this.apiUrl}/codigo/${codigoRUT}/tipo-tramite`);
-  }
+   obtenerTipoTramitePorCodigoRUT(codigoRUT: string): Observable<{tipoTramiteId: number, tipoTramiteDescripcion: string, tipoTramiteCodigo: string}> {
+     return this.http.get<{tipoTramiteId: number, tipoTramiteDescripcion: string, tipoTramiteCodigo: string}>(`${this.apiUrl}/codigo/${codigoRUT}/tipo-tramite`);
+   }
+
+   listarConInstancias(): Observable<TramiteEnriquecido[]> {
+     return this.http.get<TramiteEnriquecido[]>(`${this.apiUrl}/con-instancias`);
+   }
 
   verificarExisteCodigoRUT(codigoRUT: string): Observable<{existe: boolean}> {
     return this.http.get<{existe: boolean}>(`${this.apiUrl}/verificar/existe-codigo/${codigoRUT}`);
@@ -67,9 +71,14 @@ export class TramiteService {
     return this.http.put<Tramite>(`${this.apiUrl}/${id}`, tramite);
   }
   
-  eliminar(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
+   eliminar(id: number, motivo?: string): Observable<void> {
+     let params = new HttpParams();
+     if (motivo) {
+       params = params.set('motivo', motivo);
+     }
+     // El backend obtiene usuarioId del token JWT, no se envía
+     return this.http.delete<void>(`${this.apiUrl}/${id}`, { params });
+   }
   
   // ========== LISTADOS ==========
   listarTodos(): Observable<TramiteEnriquecido[]> {

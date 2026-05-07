@@ -86,13 +86,6 @@ public class Empresa {
     @JsonIgnore
     private List<Ruta> rutas;
 
-    // Relación con Inspeccion
-    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Inspeccion> inspecciones;
-
-    // Relación con PuntoGeografico? No está definida en empresa.
-
     // Getters y setters
     public Long getId() { return idEmpresa; }
     public void setId(Long id) { this.idEmpresa = id; }
@@ -273,11 +266,5 @@ public class Empresa {
         this.rutas = rutas;
     }
 
-    public List<Inspeccion> getInspecciones() {
-        return inspecciones;
-    }
 
-    public void setInspecciones(List<Inspeccion> inspecciones) {
-        this.inspecciones = inspecciones;
-    }
 }

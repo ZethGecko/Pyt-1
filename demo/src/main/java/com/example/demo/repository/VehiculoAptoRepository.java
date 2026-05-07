@@ -52,7 +52,8 @@ public interface VehiculoAptoRepository extends JpaRepository<VehiculoApto, Long
         "vehiculo",
         "vehiculo.empresa",
         "tramite",
-        "tramite.expediente"
+        "tramite.tipoTramite",
+        "usuarioAprobador"
     })
     @Query("SELECT va FROM VehiculoApto va " +
            "JOIN va.tramite t " +

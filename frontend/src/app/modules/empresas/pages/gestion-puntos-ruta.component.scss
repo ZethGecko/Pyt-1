@@ -556,14 +556,45 @@
  }
 }
 
- .from-blue-600 {
-   --tw-gradient-from: #2563eb;
-   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(37, 99, 235, 0));
- }
+  // Drawing toolbar overlay
+  .drawing-toolbar {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1100;
 
- .to-indigo-700 {
-   --tw-gradient-to: #1e40af;
- }
+    .drawing-instructions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: #4b5563;
+      border-right: 1px solid #e5e7eb;
+      padding-right: 1rem;
+    }
+
+    .drawing-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+  }
+
+   .from-blue-600 {
+    --tw-gradient-from: #2563eb;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(37, 99, 235, 0));
+  }
+
+  .to-indigo-700 {
+    --tw-gradient-to: #1e40af;
+  }
 
 // Route item refinements
 .route-item {

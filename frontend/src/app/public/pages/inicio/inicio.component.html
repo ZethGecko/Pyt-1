@@ -4,7 +4,11 @@
     <div class="navbar-content">
       <div class="navbar-brand">
         <div class="logo-wrapper">
-          <app-icon name="truck" size="md" customClass="text-white"></app-icon>
+          @if (tieneImagen('HEADER_LOGO_LEFT')) {
+            <img [src]="getImagenUrl('HEADER_LOGO_LEFT')" alt="Logo" class="navbar-logo-img" />
+          } @else {
+            <app-icon name="truck" size="md" customClass="text-white"></app-icon>
+          }
         </div>
         <div class="brand-text">
           <h1 class="text-lg font-bold text-slate-800">{{title}}</h1>
@@ -41,40 +45,54 @@
   </div>
 </nav>
 
-<!-- Hero Section - AHORA USANDO CLASES SCSS -->
-<div class="hero">
-  <div class="hero-container">
-    <div class="hero-content">
-      <h1 class="hero-title">
-        <span class="block">Sistema Integral de</span>
-        <span class="highlight block"> Gestión de Transporte</span>
-      </h1>
-      <p class="hero-description">
-        Plataforma centralizada para la gestión de empresas, vehículos, trámites y documentos del sector transporte.
-      </p>
-      <div class="hero-actions">
-        <a routerLink="/publicaciones" class="btn-secondary">
-          <app-icon name="megaphone" size="md"></app-icon>
-          Ver publicaciones
-        </a>
+  <!-- Hero Section - AHORA USANDO CLASES SCSS -->
+  <div class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        @if (tieneImagen('HERO_TITLE_LEFT')) {
+          <div class="hero-side-image hero-side-left">
+            <img [src]="getImagenUrl('HERO_TITLE_LEFT')" alt="Imagen izquierda" />
+          </div>
+        }
+        <h1 class="hero-title">
+          <span class="block">Sistema Integral de</span>
+          <span class="highlight block"> Gestión de Transporte</span>
+        </h1>
+        @if (tieneImagen('HERO_TITLE_RIGHT')) {
+          <div class="hero-side-image hero-side-right">
+            <img [src]="getImagenUrl('HERO_TITLE_RIGHT')" alt="Imagen derecha" />
+          </div>
+        }
+        <p class="hero-description">
+          Plataforma centralizada para la gestión de empresas, vehículos, trámites y documentos del sector transporte.
+        </p>
+        <div class="hero-actions">
+          <a routerLink="/publicaciones" class="btn-secondary">
+            <app-icon name="megaphone" size="md"></app-icon>
+            Ver publicaciones
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-wrapper">
+        @if (tieneImagen('HERO_BLUE_BOX')) {
+          <img [src]="getImagenUrl('HERO_BLUE_BOX')" alt="Hero visual" class="hero-main-image" />
+        } @else {
+          <!-- Iconos decorativos -->
+          <div class="decorative-icon top-left">
+            <app-icon name="truck" size="2xl" customClass="text-white"></app-icon>
+          </div>
+          <div class="decorative-icon bottom-right">
+            <app-icon name="route" size="2xl" customClass="text-white"></app-icon>
+          </div>
+          <div class="decorative-icon center">
+            <app-icon name="building" size="2xl" customClass="text-white"></app-icon>
+          </div>
+        }
       </div>
     </div>
   </div>
-  <div class="hero-visual">
-    <div class="hero-visual-wrapper">
-      <!-- Iconos decorativos -->
-      <div class="decorative-icon top-left">
-        <app-icon name="truck" size="2xl" customClass="text-white"></app-icon>
-      </div>
-      <div class="decorative-icon bottom-right">
-        <app-icon name="route" size="2xl" customClass="text-white"></app-icon>
-      </div>
-      <div class="decorative-icon center">
-        <app-icon name="building" size="2xl" customClass="text-white"></app-icon>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Services Section - AHORA USANDO CLASES SCSS -->
 <div class="services">
@@ -126,30 +144,24 @@
   </div>
 </div>
 
-<!-- CTA Section - AHORA USANDO CLASES SCSS -->
-<div class="cta">
-  <div class="cta-container">
-    <h2>¿Necesitas gestionar tu empresa de transporte?</h2>
-    <div class="cta-actions">
-      <a routerLink="/auth/login" class="btn-secondary">
-        <app-icon name="login" size="md"></app-icon>
-        Iniciar Sesión
-      </a>
-    </div>
-  </div>
-</div>
-
 <!-- Footer - AHORA USANDO CLASES SCSS -->
 <footer class="footer">
-  <div class="footer-container">
-    <div class="footer-grid">
+   <div class="footer-banner" *ngIf="tieneImagen('FOOTER_BANNER')">
+     <img [src]="getImagenUrl('FOOTER_BANNER')" alt="Banner" class="footer-banner-img" />
+   </div>
+   <div class="footer-container">
+     <div class="footer-grid">
       <div class="footer-brand">
         <div class="logo-wrapper">
-          <div class="logo-icon">
-            <app-icon name="truck" size="md" customClass="text-white"></app-icon>
-          </div>
-          <h3>{{title}}</h3>
+          @if (tieneImagen('FOOTER_LOGO')) {
+            <img [src]="getImagenUrl('FOOTER_LOGO')" alt="Logo" class="footer-logo-img" />
+          } @else {
+            <div class="logo-icon">
+              <app-icon name="truck" size="md" customClass="text-white"></app-icon>
+            </div>
+          }
         </div>
+        <h3>{{title}}</h3>
         <p>Sistema desarrollado para la gestión integral del sector transporte.</p>
       </div>
       

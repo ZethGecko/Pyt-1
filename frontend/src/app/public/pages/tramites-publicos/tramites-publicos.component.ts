@@ -1,7 +1,9 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 import { environment } from 'src/environments/environment';
+import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 
 export interface RequisitoTUPCDTO {
   id: number;
@@ -11,7 +13,6 @@ export interface RequisitoTUPCDTO {
   obligatorio: boolean;
   esExamen: boolean;
   formatoArchivo?: string;
-  // Computed properties (optional)
   tipoClase?: string;
   badgeObligatorioClase?: string;
   badgeExamenClase?: string;
@@ -25,14 +26,13 @@ export interface TipoTramitePublicoDTO {
   tupacCodigo: string;
   tupacDescripcion: string;
   requisitos: RequisitoTUPCDTO[];
-  // Computed
   obligatoriosCount?: number;
 }
 
 @Component({
   selector: 'app-tramites-publicos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './tramites-publicos.component.html',
   styleUrls: ['./tramites-publicos.component.scss']
 })
@@ -42,6 +42,8 @@ export class TramitesPublicosComponent implements OnInit {
   error: string | null = null;
   tipoSeleccionado: TipoTramitePublicoDTO | null = null;
   mostrarModal = false;
+  
+  imagenes: Map<string, ImagenSitio> = new Map();
 
   private tipoDocumentoMap: { [key: string]: string } = {
     'archivo': 'Archivo adjunto',
@@ -50,10 +52,20 @@ export class TramitesPublicosComponent implements OnInit {
     'Otro': 'Otro'
   };
 
-  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef, private imagenSitioService: ImagenSitioService) {}
 
   ngOnInit(): void {
     this.cargarTiposTramite();
+    this.imagenSitioService.listarTodas().subscribe({
+      next: (data) => {
+        this.imagenes.clear();
+        data.forEach(img => {
+          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
+        });
+      },
+      error: (err) => console.error('Error cargando imágenes:', err)
+    });
   }
 
   private cargarTiposTramite(): void {
@@ -63,9 +75,9 @@ export class TramitesPublicosComponent implements OnInit {
     this.http.get<TipoTramitePublicoDTO[]>(`${environment.apiUrl}/tipos-tramite/publico`).subscribe({
       next: (data) => {
         this.tiposTramite = data.map(tipo => {
-          const requisitosList = tipo.requisitos || [];
-          const obligatoriosCount = requisitosList.filter(r => r.obligatorio).length;
-          const requisitos = requisitosList.map(req => ({
+          const requisitosList: RequisitoTUPCDTO[] = tipo.requisitos || [];
+          const obligatoriosCount = requisitosList.filter((r: RequisitoTUPCDTO) => r.obligatorio).length;
+          const requisitos = requisitosList.map((req: RequisitoTUPCDTO) => ({
             ...req,
             tipoClase: 'tipo-' + (req.tipoDocumento ? req.tipoDocumento.toLowerCase() : ''),
             badgeObligatorioClase: req.obligatorio ? 'badge-success' : 'badge-secondary',
@@ -77,24 +89,24 @@ export class TramitesPublicosComponent implements OnInit {
             obligatoriosCount,
             requisitos
           };
-        }) as TipoTramitePublicoDTO[];
-
+        });
         this.cargando = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = 'No se pudieron cargar los tipos de trámite. Intente más tarde.';
+        console.error('Error cargando tipos de trámite:', err);
+        this.error = 'Error al cargar los tipos de trámite';
         this.cargando = false;
         this.cdr.detectChanges();
       }
-    });
-  }
+     });
+   }
 
-  verRequisitos(tipo: TipoTramitePublicoDTO): void {
-    this.tipoSeleccionado = tipo;
-    this.mostrarModal = true;
-    this.cdr.detectChanges();
-  }
+   verRequisitos(tipo: TipoTramitePublicoDTO): void {
+     this.tipoSeleccionado = tipo;
+     this.mostrarModal = true;
+     this.cdr.detectChanges();
+   }
 
   cerrarModal(): void {
     this.mostrarModal = false;
@@ -102,8 +114,18 @@ export class TramitesPublicosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  clearError(): void {
-    this.error = null;
-    this.cdr.detectChanges();
-  }
-}
+   clearError(): void {
+     this.error = null;
+     this.cdr.detectChanges();
+   }
+   
+   // ========== IMÁGENES DEL SITIO ==========
+   
+   getImagenUrl(ubicacion: string): string | null {
+     return this.imagenes.get(ubicacion)?.url || null;
+   }
+   
+   tieneImagen(ubicacion: string): boolean {
+     return !!this.imagenes.get(ubicacion);
+   }
+ }

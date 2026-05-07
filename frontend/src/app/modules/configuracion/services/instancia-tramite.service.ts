@@ -17,8 +17,16 @@ export class InstanciaTramiteService {
      return this.http.get<InstanciaTramite[]>(`${this.apiUrl}/tramite/${tramiteId}`);
    }
 
+   listarPorEmpresa(empresaId: number): Observable<InstanciaTramite[]> {
+     return this.http.get<InstanciaTramite[]>(`${this.apiUrl}/empresa/${empresaId}`);
+   }
+
    listarTodas(): Observable<InstanciaTramite[]> {
-     return this.http.get<InstanciaTramite[]>(`${this.apiUrl}`);
+      return this.http.get<InstanciaTramite[]>(`${this.apiUrl}`);
+   }
+
+   listarPorRuc(ruc: string): Observable<InstanciaTramite[]> {
+     return this.http.get<InstanciaTramite[]>(`${this.apiUrl}/por-ruc/${ruc}`);
    }
 
   obtener(id: number): Observable<InstanciaTramite> {

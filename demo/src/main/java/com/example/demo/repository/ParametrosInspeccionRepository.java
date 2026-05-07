@@ -10,6 +10,8 @@ public interface ParametrosInspeccionRepository extends JpaRepository<Parametros
 
     List<ParametrosInspeccion> findByFichaInspeccion_IdFichaInspeccion(Long fichaId);
 
+    void deleteByFichaInspeccion_IdFichaInspeccion(Long fichaId);
+
     // Assuming disponibles are all parameters (reusable)
     @Query("SELECT p FROM ParametrosInspeccion p")
     List<ParametrosInspeccion> findDisponibles();

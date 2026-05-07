@@ -18,7 +18,7 @@
           </div>
         </button>
 
-        <button class="action-btn success" (click)="guardarCertificado()">
+        <button class="action-btn success" (click)="guardarCertificado()" [hidden]="modoDiseno">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
           </svg>
@@ -28,7 +28,7 @@
           </div>
         </button>
 
-        <button class="action-btn info" (click)="toggleModoEdicion()">
+        <button class="action-btn info" (click)="toggleModoEdicion()" [hidden]="modoDiseno">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
           </svg>
@@ -48,7 +48,7 @@
           </div>
         </button>
 
-        <button class="action-btn danger" (click)="limpiarCampos()">
+        <button class="action-btn danger" (click)="limpiarCampos()" [hidden]="modoDiseno">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
           </svg>
@@ -72,260 +72,343 @@
 
   <!-- Contenido Principal del Certificado -->
   <main class="main-content">
-    <div class="w-full">
+    <div class="w-full flex justify-center">
+      <!-- Mensaje de error solo en modo inspección real (no en modo diseño) -->
+      <div *ngIf="errorCarga && !modoDiseno" class="error-container">
+        <div class="error-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div [innerHTML]="mensajeError"></div>
+          <button *ngIf="!cargandoFicha" class="btn-create-ficha" (click)="crearFichaManual()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Crear Ficha de Inspección
+          </button>
+          <div *ngIf="cargandoFicha" class="loading-spinner-small"></div>
+        </div>
+      </div>
+
       <!-- Certificado Container -->
-      <div class="certificado-box bg-white p-8 md:p-10 print:shadow-none">
-        
+      <div class="certificado-box bg-white p-8 md:p-10 print:shadow-none max-w-4xl">
+
         <!-- Encabezado Principal -->
         <div class="certificado-section text-center mb-8 border-b-2 border-gray-800 pb-6">
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-900 uppercase tracking-wider mb-2" style="font-family: 'Times New Roman', serif;">
-            CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA
+           <h1 class="text-2xl md:text-3xl font-bold text-gray-900 uppercase tracking-wider mb-2" style="font-family: 'Times New Roman', serif;">
+             <span *ngIf="!editandoTituloPrincipal"
+                   (click)="modoDiseno && iniciarEdicionTituloPrincipal()"
+                   [class.editable-title]="modoDiseno">
+               {{ tituloPrincipal }}
+             </span>
+            <input *ngIf="editandoTituloPrincipal"
+                   type="text"
+                   class="editable-title-input large"
+                   [(ngModel)]="tituloPrincipalTemp"
+                   (blur)="guardarEdicionTituloPrincipal()"
+                   (keydown.enter)="guardarEdicionTituloPrincipal()"
+                   (keydown.escape)="cancelarEdicionTituloPrincipal()">
           </h1>
-          <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
-            CÁTEDRA DE LA EMPRESA
-          </h2>
+           <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
+             <span *ngIf="!editandoSubtituloPrincipal"
+                   (click)="modoDiseno && iniciarEdicionSubtituloPrincipal()"
+                   [class.editable-title]="modoDiseno">
+               {{ subtituloPrincipal }}
+             </span>
+           </h2>
         </div>
 
-        <!-- Sección de Datos Generales -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            DATOS GENERALES
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex items-start">
-              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Nº de la empresa:</label>
-              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.numEmpresa" placeholder="Número" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-start">
-              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Nombre del representante:</label>
-              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.nombreRepresentante" placeholder="Nombre" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-start">
-              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Teléfono:</label>
-              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.telefono" placeholder="Teléfono" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-start">
-              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Dirección:</label>
-              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.direccion" placeholder="Dirección" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-start md:col-span-2">
-              <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40">Localización:</label>
-              <input type="text" class="editable-input" [(ngModel)]="datosCertificado.localizacion" placeholder="Localización" [readonly]="!modoEdicion">
-            </div>
-          </div>
-        </div>
-
-        <!-- Sección de Certificación Agrícola -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            CERTIFICACIÓN AGRÍCOLA
-          </h3>
-          <div class="overflow-x-auto">
-            <table class="certificado-table">
-              <thead class="bg-gray-100">
-                <tr>
-                  <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">N°</th>
-                  <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">Nombre</th>
-                  <th class="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">Apellido</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="border border-gray-300 px-4 py-2">1</td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaNombres[0]" placeholder="Nombre" [readonly]="!modoEdicion">
-                  </td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaApellidos[0]" placeholder="Apellido" [readonly]="!modoEdicion">
-                  </td>
-                </tr>
-                <tr>
-                  <td class="border border-gray-300 px-4 py-2">2</td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaNombres[1]" placeholder="Nombre" [readonly]="!modoEdicion">
-                  </td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaApellidos[1]" placeholder="Apellido" [readonly]="!modoEdicion">
-                  </td>
-                </tr>
-                <tr>
-                  <td class="border border-gray-300 px-4 py-2">3</td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaNombres[2]" placeholder="Nombre" [readonly]="!modoEdicion">
-                  </td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    <input type="text" class="editable-input-table w-full" [(ngModel)]="datosCertificado.agricolaApellidos[2]" placeholder="Apellido" [readonly]="!modoEdicion">
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Sección Plan Nacional y Placa -->
-        <div class="certificado-section grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
+         <!-- Sección de Datos Generales -->
+         <div class="certificado-section mb-8">
             <h3 class="section-header text-lg">
-              PLAN NACIONAL
+              <span *ngIf="!editandoTitulo['DATOS GENERALES']"
+                    (click)="modoDiseno && iniciarEdicionTitulo('DATOS GENERALES')"
+                    [class.editable-title]="modoDiseno">
+                {{ titulosSecciones['DATOS GENERALES'] }}
+              </span>
+              <input *ngIf="editandoTitulo['DATOS GENERALES']"
+                     type="text"
+                     class="editable-title-input"
+                     [(ngModel)]="tituloTemp['DATOS GENERALES']"
+                     (blur)="guardarEdicionTitulo('DATOS GENERALES')"
+                     (keydown.enter)="guardarEdicionTitulo('DATOS GENERALES')"
+                     (keydown.escape)="cancelarEdicionTitulo('DATOS GENERALES')"
+                    >
+              <button *ngIf="modoDiseno"
+                      type="button"
+                      (click)="agregarCampoSeccion('DATOS GENERALES')"
+                      class="btn-add-section"
+                      title="Agregar campo a esta sección">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
             </h3>
-            <div class="space-y-3">
-              <div class="flex items-center">
-                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">CARREO DE CIRCULACIÓN VIAL VIENTOS:</span>
-                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreoVial" placeholder="( )" [readonly]="!modoEdicion">
-              </div>
-              <div class="flex items-center">
-                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">CARRETERA DE ACCESO:</span>
-                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreteraAcceso" placeholder="( )" [readonly]="!modoEdicion">
-              </div>
-              <div class="flex items-center">
-                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">SEÑALIZACIÓN DE OBRA:</span>
-                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.senalizacionObra" placeholder="( )" [readonly]="!modoEdicion">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ng-container *ngFor="let param of secciones['DATOS GENERALES']">
+                <div class="flex items-start">
+                  <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
+                         [class.editable-label]="modoDiseno && !param._editando"
+                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                    <input *ngIf="param._editando"
+                           type="text"
+                           class="inline-edit-input"
+                           [(ngModel)]="param._valorTemp"
+                           (blur)="guardarEdicionCampo(param)"
+                           (keydown.enter)="guardarEdicionCampo(param)"
+                           (keydown.escape)="cancelarEdicionCampo(param)"
+                           #inputEdit>
+                  </label>
+                  <div class="flex-1 flex items-center gap-2">
+                    <input type="text"
+                           class="editable-input flex-1"
+                           [(ngModel)]="param.valor"
+                           placeholder="( )"
+                           [readonly]="!puedeEditar()">
+                    <div *ngIf="modoDiseno" class="flex gap-1">
+                      <button type="button"
+                              (click)="eliminarCampo(param)"
+                              class="btn-icon delete"
+                              title="Eliminar campo">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+              <!-- Botón para agregar campo al final de la sección -->
+              <div class="col-span-2" *ngIf="modoDiseno">
+                <button (click)="agregarCampoSeccion('DATOS GENERALES')" class="btn-add-field-full">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  <span>Agregar nuevo campo a DATOS GENERALES</span>
+                </button>
               </div>
             </div>
-          </div>
-          <div>
+        </div>
+
+         <!-- Sección Placa -->
+         <div class="certificado-section mb-8">
             <h3 class="section-header text-lg">
-              PLACA
+              <span *ngIf="!editandoTitulo['PLACA']"
+                    (click)="modoDiseno && iniciarEdicionTitulo('PLACA')"
+                    [class.editable-title]="modoDiseno">
+                {{ titulosSecciones['PLACA'] }}
+              </span>
+              <input *ngIf="editandoTitulo['PLACA']"
+                     type="text"
+                     class="editable-title-input"
+                     [(ngModel)]="tituloTemp['PLACA']"
+                     (blur)="guardarEdicionTitulo('PLACA')"
+                     (keydown.enter)="guardarEdicionTitulo('PLACA')"
+                     (keydown.escape)="cancelarEdicionTitulo('PLACA')"
+                    >
+              <button *ngIf="modoDiseno"
+                      type="button"
+                      (click)="agregarCampoSeccion('PLACA')"
+                      class="btn-add-section"
+                      title="Agregar campo a esta sección">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
             </h3>
-            <div class="space-y-3">
-              <div class="flex items-center">
-                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">NUMERO DE PLACA:</span>
-                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.numPlaca" placeholder="( )" [readonly]="!modoEdicion">
+           <div class="space-y-3">
+             <ng-container *ngFor="let param of secciones['PLACA']">
+                <div class="flex items-center">
+                  <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
+                         [class.editable-label]="modoDiseno && !param._editando"
+                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                    <input *ngIf="param._editando"
+                           type="text"
+                           class="inline-edit-input"
+                           [(ngModel)]="param._valorTemp"
+                           (blur)="guardarEdicionCampo(param)"
+                           (keydown.enter)="guardarEdicionCampo(param)"
+                           (keydown.escape)="cancelarEdicionCampo(param)"
+                           #inputEdit>
+                  </label>
+                  <div class="flex-1 flex items-center gap-2">
+                    <input type="text"
+                           class="editable-input flex-1"
+                           [(ngModel)]="param.valor"
+                           placeholder="( )"
+                           [readonly]="!puedeEditar()">
+                    <div *ngIf="modoDiseno" class="flex gap-1">
+                      <button type="button"
+                              (click)="eliminarCampo(param)"
+                              class="btn-icon delete"
+                              title="Eliminar campo">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+             </ng-container>
+              <!-- Botón para agregar campo al final de la sección -->
+              <div *ngIf="modoDiseno">
+                <button (click)="agregarCampoSeccion('PLACA')" class="btn-add-field-full">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  <span>Agregar nuevo campo</span>
+                </button>
               </div>
-              <div class="flex items-center">
-                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">MODELO DE LA PLACA:</span>
-                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.modeloPlaca" placeholder="( )" [readonly]="!modoEdicion">
+           </div>
+         </div>
+
+         <!-- Sección Plan Lunca de Rodale -->
+         <div class="certificado-section mb-8">
+            <h3 class="section-header text-lg">
+              <span *ngIf="!editandoTitulo['PLAN LUNCA DE RODALE']"
+                    (click)="modoDiseno && iniciarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                    [class.editable-title]="modoDiseno">
+                {{ titulosSecciones['PLAN LUNCA DE RODALE'] }}
+              </span>
+              <input *ngIf="editandoTitulo['PLAN LUNCA DE RODALE']"
+                     type="text"
+                     class="editable-title-input"
+                     [(ngModel)]="tituloTemp['PLAN LUNCA DE RODALE']"
+                     (blur)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                     (keydown.enter)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                     (keydown.escape)="cancelarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                    >
+              <button *ngIf="modoDiseno"
+                      type="button"
+                      (click)="agregarCampoSeccion('PLAN LUNCA DE RODALE')"
+                      class="btn-add-section"
+                      title="Agregar campo a esta sección">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <ng-container *ngFor="let param of secciones['PLAN LUNCA DE RODALE']">
+                <div class="flex items-center">
+                  <label class="certificado-label text-sm text-gray-700 w-80 md:w-64"
+                         [class.editable-label]="modoDiseno && !param._editando"
+                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                    <input *ngIf="param._editando"
+                           type="text"
+                           class="inline-edit-input"
+                           [(ngModel)]="param._valorTemp"
+                           (blur)="guardarEdicionCampo(param)"
+                           (keydown.enter)="guardarEdicionCampo(param)"
+                           (keydown.escape)="cancelarEdicionCampo(param)"
+                          >
+                  </label>
+                  <div class="flex-1 flex items-center gap-2">
+                    <input type="text"
+                           class="editable-input flex-1"
+                           [(ngModel)]="param.valor"
+                           placeholder="( )"
+                           [readonly]="!puedeEditar()">
+                    <div *ngIf="modoDiseno" class="flex gap-1">
+                      <button type="button"
+                              (click)="eliminarCampo(param)"
+                              class="btn-icon delete"
+                              title="Eliminar campo">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+              <!-- Botón para agregar campo al final de la sección -->
+              <div *ngIf="modoDiseno">
+                <button (click)="agregarCampoSeccion('PLAN LUNCA DE RODALE')" class="btn-add-field-full">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  <span>Agregar nuevo campo</span>
+                </button>
               </div>
-              <div class="flex items-center">
-                <span class="text-sm font-medium text-gray-700 w-48 md:w-40">AÑO DE LA PLACA:</span>
-                <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.anioPlaca" placeholder="( )" [readonly]="!modoEdicion">
+            </div>
+          </div>
+
+          <!-- Sección Laboratorio -->
+         <div class="certificado-section mb-8">
+            <h3 class="section-header text-lg">
+              <span *ngIf="!editandoTitulo['LABORATORIO']"
+                    (click)="modoDiseno && iniciarEdicionTitulo('LABORATORIO')"
+                    [class.editable-title]="modoDiseno">
+                {{ titulosSecciones['LABORATORIO'] }}
+              </span>
+              <input *ngIf="editandoTitulo['LABORATORIO']"
+                     type="text"
+                     class="editable-title-input"
+                     [(ngModel)]="tituloTemp['LABORATORIO']"
+                     (blur)="guardarEdicionTitulo('LABORATORIO')"
+                     (keydown.enter)="guardarEdicionTitulo('LABORATORIO')"
+                     (keydown.escape)="cancelarEdicionTitulo('LABORATORIO')"
+                    >
+              <button *ngIf="modoDiseno"
+                      type="button"
+                      (click)="agregarCampoSeccion('LABORATORIO')"
+                      class="btn-add-section"
+                      title="Agregar campo a esta sección">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <ng-container *ngFor="let param of secciones['LABORATORIO']">
+                <div class="flex items-center">
+                  <label class="certificado-label text-sm text-gray-700 w-80 md:w-64"
+                         [class.editable-label]="modoDiseno && !param._editando"
+                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                    <input *ngIf="param._editando"
+                           type="text"
+                           class="inline-edit-input"
+                           [(ngModel)]="param._valorTemp"
+                           (blur)="guardarEdicionCampo(param)"
+                           (keydown.enter)="guardarEdicionCampo(param)"
+                           (keydown.escape)="cancelarEdicionCampo(param)"
+                          >
+                  </label>
+                  <div class="flex-1 flex items-center gap-2">
+                    <input type="text"
+                           class="editable-input flex-1"
+                           [(ngModel)]="param.valor"
+                           placeholder="( )"
+                           [readonly]="!puedeEditar()">
+                    <div *ngIf="modoDiseno" class="flex gap-1">
+                      <button type="button"
+                              (click)="eliminarCampo(param)"
+                              class="btn-icon delete"
+                              title="Eliminar campo">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+              <!-- Botón para agregar campo al final de la sección -->
+              <div class="col-span-2" *ngIf="modoDiseno">
+                <button (click)="agregarCampoSeccion('LABORATORIO')" class="btn-add-field-full">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  <span>Agregar nuevo campo</span>
+                </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Sección Certificación de Seguridad -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            CERTIFICACIÓN DE SEGURIDAD
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">SEGURIDAD DE PROPIEDAD:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seguridadPropiedad" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">SECURITY VISION TECHNIQUE:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.securityVision" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">PROCEDIMIENTOS DE SEGURIDAD:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.procedimientosSeguridad" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">PRIMEROS AUXILIOS:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.primerosAuxiliosSeguridad" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">EXTINTORES DE INCENDIOS:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.extintoresSeguridad" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">SEGURO DE ACCIDENTES:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seguroAccidentes" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-          </div>
-        </div>
-
-        <!-- Sección Plan Lunca de Rodale -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            PLAN LUNCA DE RODALE
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">PRIMEROS AUXILIOS:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.primerosAuxiliosLunca" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">EXTINTORES DE INCENDIOS:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.extintoresLunca" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">ACCIDENTES:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.accidentesLunca" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">CARRETERA DE ACCESO:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreteraAccesoLunca" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">CARREO DE CIRCULACIÓN VIAL VIENTOS:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.carreoVialLunca" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">SEÑALIZACIÓN DE OBRA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.senalizacionObraLunca" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-          </div>
-        </div>
-
-        <!-- Sección Laboratorio -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            LABORATORIO
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">APLICABILIDAD MUNDIAL DE PLAZA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.aplicabilidadMundialPlaza" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">SELECCIÓN DE EMERGENCIA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seleccionEmergencia" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">A MUNDIAL DE PLAZA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.aMundialPlaza" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">CIRCULACIÓN VIARIA VIENTOS:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.circulacionViariaVientos" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">SELECCIÓN DE PUNTO DE CONTACTO:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.seleccionPuntoContacto" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">APLICABILIDAD DE PLANTA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.aplicabilidadPlanta" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">FECHA DE PROGRAMA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.fechaPrograma" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">CARTA DE INDUCCIÓN:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.cartaInduccion" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">IMPLEMENTACION DE MANTENIMIENTO:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.implementacionMantenimiento" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">CONSTRUCCIÓN DE CIUDAD:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.construccionCiudad" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">ESTRUCTURA DE PLAZA:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.estructuraPlaza" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-700 w-80 md:w-64">COMPONENTE DE SEGURIDAD:</span>
-              <input type="text" class="editable-input flex-1" [(ngModel)]="datosCertificado.componenteSeguridad" placeholder="( )" [readonly]="!modoEdicion">
-            </div>
-          </div>
-        </div>
+         </div>
 
         <!-- Pie de página / Firma -->
         <div class="certificado-section mt-12 pt-8 border-t border-gray-300">

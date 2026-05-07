@@ -1,0 +1,23 @@
+
+Configuración de pruebas de estrés con K6
+
+Endpoints probados:
+- smoke-test.js: GET /api/tipos-tramite/publico (endpoint público, sin autenticación)
+- load-test.js: GET /api/tramites/publico/seguimiento/{codigoRUT} (endpoint público)
+- stress-test.js: GET /api/tipos-tramite/publico (con carga progresiva)
+
+Para ejecutar:
+
+1. Asegúrate de que la aplicación esté corriendo en http://localhost:8080
+
+2. Prueba de humo (verifica que los endpoints respondan):
+   k6 run smoke-test.js
+
+3. Prueba de carga (verifica comportamiento con pocos usuarios):
+   k6 run load-test.js
+
+4. Prueba de estrés (aumenta gradualmente la carga):
+   k6 run stress-test.js
+
+Nota: El endpoint de seguimiento en load-test.js usa un código RUT de ejemplo.
+Puedes cambiarlo por uno real que exista en tu base de datos.

@@ -13,17 +13,20 @@ public class FichaInspeccion {
     @Column(name = "id_ficha_inspeccion")
     private Long idFichaInspeccion;
 
-    @Column(name = "solicitud", nullable = false)
+    @Column(name = "solicitud")
     private Long solicitud;
 
     @Column(name = "inspeccion", nullable = false)
     private Long inspeccion;
 
-    @Column(name = "usuario_inspector", nullable = false)
+    @Column(name = "usuario_inspector", nullable = true)
     private Long usuarioInspector;
 
-    @Column(name = "vehiculo", nullable = false)
+    @Column(name = "vehiculo")
     private Long vehiculo;
+
+    @Column(name = "instancia_tramite_id")
+    private Long instanciaTramiteId;
 
     @Column(name = "estado")
     private Boolean estado;
@@ -87,6 +90,9 @@ public class FichaInspeccion {
 
     public Long getVehiculo() { return vehiculo; }
     public void setVehiculo(Long vehiculo) { this.vehiculo = vehiculo; }
+
+    public Long getInstanciaTramiteId() { return instanciaTramiteId; }
+    public void setInstanciaTramiteId(Long instanciaTramiteId) { this.instanciaTramiteId = instanciaTramiteId; }
 
     public Boolean getEstado() { return estado; }
     public void setEstado(Boolean estado) { this.estado = estado; }

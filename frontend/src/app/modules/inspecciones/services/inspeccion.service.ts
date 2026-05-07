@@ -4,38 +4,66 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 export interface InspeccionResponse {
-  id: number;
+  idInspeccion: number;
   codigo: string;
-  tipo: string;
   fechaProgramada: Date;
-  horaProgramada: string;
+  hora: string;
   lugar: string;
-  expedienteId?: number;
-  expedienteCodigo?: string;
+  estado: string;
+  resultadoGeneral?: string;
+  observacionesGenerales?: string;
+  fechaCreacion?: string;
+  fechaActualizacion?: string;
+  codigoGrupo?: string;
+  // Relaciones
   empresaId?: number;
   empresaNombre?: string;
-  vehiculoId?: number;
-  vehiculoPlaca?: string;
+  empresaRuc?: string;
+  empresaDireccion?: string;
+  empresaTelefono?: string;
+  gerenteNombre?: string;
   inspectorId?: number;
   inspectorNombre?: string;
+  vehiculoId?: number;
+  vehiculoPlaca?: string;
+  // Instancias
+  instancias?: {
+    idInstancia: number;
+    identificador: string;
+    codigoRut: string;
+    tramiteId: number;
+    estadoInstancia: string;
+    placa?: string;
+    fechaInspeccion?: string;
+    observaciones?: string;
+  }[];
+}
+
+export interface BloqueInspeccionDTO {
+  idTramite: number;
+  empresaNombre: string;
   estado: string;
-  resultado?: string;
-  resultadoGeneral?: string;
-  observaciones?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  totalInstancias: number;
+  count: number;
+  inspecciones: InspeccionResponse[];
 }
 
 export interface InspeccionCreateRequest {
-  tipo: string;
-  fechaProgramada: Date;
-  horaProgramada: string;
+  instanciasTramiteIds: number[];
+  fechaProgramada: string;
+  hora: string;
+  lugar: string;
+  observacionesGenerales?: string;
+  codigoGrupo?: string;
+}
+
+export interface InspeccionRezagadaRequest {
+  instanciaTramiteId: number;
+  fechaProgramada: string;
+  hora: string;
   lugar: string;
   observaciones?: string;
-  expedienteId?: number;
-  empresaId?: number;
-  vehiculoId?: number;
-  inspectorId?: number;
+  vehiculosIds: number[];
 }
 
 export interface FichaInspeccionResponse {
@@ -79,48 +107,79 @@ export class InspeccionService {
     return this.http.post<FichaInspeccionResponse>(`${this.fichaUrl}/inspeccion/${inspeccionId}`, ficha);
   }
 
-  // ========== CRUD ==========
-  obtener(id: number): Observable<InspeccionResponse> {
-    return this.http.get<InspeccionResponse>(`${this.apiUrl}/${id}`);
-  }
+   // ========== CRUD ==========
+   obtener(id: number): Observable<InspeccionResponse> {
+     return this.http.get<InspeccionResponse>(`${this.apiUrl}/${id}`);
+   }
 
-  listarTodos(): Observable<InspeccionResponse[]> {
-    return this.http.get<InspeccionResponse[]>(this.apiUrl);
-  }
+    listarTodos(): Observable<InspeccionResponse[]> {
+      return this.http.get<InspeccionResponse[]>(this.apiUrl);
+    }
 
-  listarPorEstado(estado: string): Observable<InspeccionResponse[]> {
-    return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/estado/${estado}`);
-  }
+    listarPorBloque(): Observable<BloqueInspeccionDTO[]> {
+      return this.http.get<BloqueInspeccionDTO[]>(`${this.apiUrl}/por-bloque`);
+    }
 
-  listarPorFecha(fecha: Date): Observable<InspeccionResponse[]> {
-    return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/fecha`, {
-      params: { fecha: fecha.toISOString().split('T')[0] }
-    });
-  }
+   listarPorEstado(estado: string): Observable<InspeccionResponse[]> {
+     return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/estado/${estado}`);
+   }
 
-  listarPorInspector(inspectorId: number): Observable<InspeccionResponse[]> {
-    return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/inspector/${inspectorId}`);
-  }
+   listarPorFecha(fecha: Date): Observable<InspeccionResponse[]> {
+     return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/fecha`, {
+       params: { fecha: fecha.toISOString().split('T')[0] }
+     });
+   }
 
-  crear(inspeccion: InspeccionCreateRequest): Observable<InspeccionResponse> {
-    return this.http.post<InspeccionResponse>(this.apiUrl, inspeccion);
-  }
+   listarPorInspector(inspectorId: number): Observable<InspeccionResponse[]> {
+     return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/inspector/${inspectorId}`);
+   }
 
-  actualizar(id: number, inspeccion: Partial<InspeccionCreateRequest>): Observable<InspeccionResponse> {
-    return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}`, inspeccion);
-  }
+   crear(inspeccion: InspeccionCreateRequest): Observable<InspeccionResponse> {
+     return this.http.post<InspeccionResponse>(this.apiUrl, inspeccion);
+   }
 
-  eliminar(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
+   crearConInstancias(data: {
+     instanciasTramiteIds: number[];
+     fechaProgramada: string;
+     horaProgramada: string;
+     lugar: string;
+     observaciones?: string;
+     codigoGrupo?: string;
+   }): Observable<InspeccionResponse> {
+     return this.http.post<InspeccionResponse>(`${this.apiUrl}/con-instancias`, data);
+   }
 
-  // ========== PROGRAMACIÓN ==========
-  reprogramar(id: number, nuevaFecha: Date, nuevaHora: string): Observable<InspeccionResponse> {
-    return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}/reprogramar`, {
-      fechaProgramada: nuevaFecha,
-      horaProgramada: nuevaHora
-    });
-  }
+   actualizar(id: number, inspeccion: Partial<InspeccionCreateRequest>): Observable<InspeccionResponse> {
+     return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}`, inspeccion);
+   }
+
+   eliminar(id: number): Observable<void> {
+     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+   }
+
+   obtenerConInstancias(id: number): Observable<InspeccionResponse> {
+     return this.http.get<InspeccionResponse>(`${this.apiUrl}/${id}/con-instancias`);
+   }
+
+   agregarInstancias(inspeccionId: number, instanciasIds: number[]): Observable<InspeccionResponse> {
+     return this.http.post<InspeccionResponse>(`${this.apiUrl}/${inspeccionId}/instancias`, { instanciasIds });
+   }
+
+   removerInstancia(inspeccionId: number, instanciaId: number): Observable<void> {
+     return this.http.delete<void>(`${this.apiUrl}/${inspeccionId}/instancias/${instanciaId}`);
+   }
+
+   // ========== PROGRAMACIÓN ==========
+   reprogramar(id: number, nuevaFecha: Date, nuevaHora: string): Observable<InspeccionResponse> {
+     return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}/reprogramar`, {
+       fechaProgramada: nuevaFecha,
+       horaProgramada: nuevaHora
+     });
+   }
+
+   cambiarEstado(id: number, estado: string): Observable<InspeccionResponse> {
+     return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}`, { estado });
+   }
 
   asignarInspector(id: number, inspectorId: number): Observable<InspeccionResponse> {
     return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}/asignar-inspector`, { inspectorId });
@@ -191,29 +250,31 @@ export class InspeccionService {
    return this.http.get<{id: number, parametro: string, observacion?: string}[]>(`${this.parametrosUrl}/disponibles`);
  }
 
- crearParametrosBasicos(fichaInspeccionId: number): Observable<ParametroInspeccionResponse[]> {
-   return this.http.post<ParametroInspeccionResponse[]>(`${this.parametrosUrl}/ficha/${fichaInspeccionId}/basicos`, {});
+  crearParametrosBasicos(fichaInspeccionId: number): Observable<ParametroInspeccionResponse[]> {
+    return this.http.post<ParametroInspeccionResponse[]>(`${this.parametrosUrl}/ficha/${fichaInspeccionId}/basicos`, {});
+  }
+
+   // ========== INSPECCIONES REZAGADAS ==========
+   crearInspeccionRezagada(dto: InspeccionRezagadaRequest): Observable<InspeccionResponse> {
+     return this.http.post<InspeccionResponse>(`${this.apiUrl}/rezagadas`, dto);
+   }
+
+   // ========== ACCIONES POR BLOQUE ==========
+   crearEnBloque(fecha: string, lugar: string, data: {
+     instanciasTramiteIds: number[];
+     hora: string;
+     observacionesGenerales?: string;
+     usuarioInspectorId?: number;
+   }): Observable<InspeccionResponse> {
+     return this.http.post<InspeccionResponse>(`${this.apiUrl}/bloques/${fecha}/${lugar}/inspecciones`, data);
+   }
+
+   iniciarBloque(fecha: string, lugar: string, usuarioInspectorId?: number): Observable<InspeccionResponse[]> {
+     const body = usuarioInspectorId ? { usuarioInspectorId } : {};
+     return this.http.put<InspeccionResponse[]>(`${this.apiUrl}/bloques/${fecha}/${lugar}/iniciar`, body);
+   }
+
+   cancelarBloque(fecha: string, lugar: string): Observable<InspeccionResponse[]> {
+     return this.http.put<InspeccionResponse[]>(`${this.apiUrl}/bloques/${fecha}/${lugar}/cancelar`, {});
+   }
  }
-
-  // ========== EXPEDIENTES ==========
-  listarPorExpediente(expedienteId: number): Observable<InspeccionResponse[]> {
-    return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/expediente/${expedienteId}`);
-  }
-
-  // ========== CALENDARIO ==========
-  obtenerCalendario(mes: number, año: number): Observable<InspeccionResponse[]> {
-    return this.http.get<InspeccionResponse[]>(`${this.apiUrl}/calendario`, {
-      params: { mes: mes.toString(), año: año.toString() }
-    });
-  }
-
-  // ========== ESTADÍSTICAS ==========
-  obtenerEstadisticas(inspeccionId: number): Observable<{
-    totalParametros: number;
-    cumplen: number;
-    noCumplen: number;
-    observados: number;
-  }> {
-    return this.http.get<any>(`${this.apiUrl}/${inspeccionId}/estadisticas`);
-  }
-}

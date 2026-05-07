@@ -1,7 +1,26 @@
-// Styles for canvas-inspeccion component - Certificado design with sidebar
+// Styles for canvas-inspeccion component - consistent with design system
 
+// ========== VARIABLES (alineadas con styles.scss global) ==========
+$color-primary: #3b82f6;
+$color-primary-dark: #2563eb;
+$color-secondary: #64748b;
+$color-success: #10b981;
+$color-warning: #f59e0b;
+$color-danger: #ef4444;
+$color-info: #06b6d4;
+$color-text-primary: #1e293b;
+$color-text-secondary: #64748b;
+$color-border: #e2e8f0;
+$color-bg: #f8fafc;
+$color-card-bg: #ffffff;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$radius-md: 0.5rem;
+$radius-lg: 0.75rem;
+
+// ========== CONTENEDOR PRINCIPAL ==========
 .certificado-container {
-  font-family: 'Arial', 'Roboto', 'Times New Roman', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
   min-height: 100vh;
 }
@@ -9,7 +28,8 @@
 // ========== MENÚ LATERAL DE ACCIONES ==========
 .action-sidebar {
   width: 280px;
-  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  background: $color-card-bg;
+  border-right: 1px solid $color-border;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -17,7 +37,7 @@
   top: 0;
   bottom: 0;
   z-index: 1000;
-  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: $shadow-sm;
 }
 
 .sidebar-content {
@@ -28,20 +48,20 @@
 }
 
 .sidebar-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid $color-border;
 }
 
 .sidebar-header h3 {
-  color: white;
+  color: $color-text-primary;
   font-size: 1.125rem;
   font-weight: 700;
   margin: 0 0 0.25rem 0;
 }
 
 .sidebar-subtitle {
-  color: #9ca3af;
+  color: $color-text-secondary;
   font-size: 0.875rem;
   margin: 0;
 }
@@ -59,20 +79,24 @@
   gap: 1rem;
   padding: 1rem;
   border: none;
-  border-radius: 12px;
+  border-radius: $radius-lg;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  position: relative;
-  overflow: hidden;
-}
+  background: $color-bg;
+  color: $color-text-primary;
 
-.action-btn svg {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  color: white;
-  opacity: 0.9;
+  svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    color: inherit;
+  }
+
+  &:hover {
+    background: $color-border;
+    transform: translateY(-1px);
+  }
 }
 
 .btn-content {
@@ -82,67 +106,87 @@
 }
 
 .btn-label {
-  color: white;
+  color: inherit;
   font-weight: 600;
   font-size: 0.9375rem;
   display: block;
 }
 
 .btn-description {
-  color: rgba(255, 255, 255, 0.7);
+  color: $color-text-secondary;
   font-size: 0.75rem;
   display: block;
 }
 
-// Variantes de botones
+// Variantes de botones (colores del design system)
 .action-btn.primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  color: white;
 
-.action-btn.primary:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  &:hover {
+    background: linear-gradient(135deg, $color-primary-dark 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 12px rgba($color-primary, 0.4);
+  }
+
+  .btn-description {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .action-btn.success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
+  background: $color-success;
+  color: white;
 
-.action-btn.success:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  &:hover {
+    background: #059669;
+    box-shadow: 0 4px 12px rgba($color-success, 0.4);
+  }
+
+  .btn-description {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .action-btn.info {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-}
+  background: $color-info;
+  color: white;
 
-.action-btn.info:hover {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  &:hover {
+    background: #0891b2;
+    box-shadow: 0 4px 12px rgba($color-info, 0.4);
+  }
+
+  .btn-description {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .action-btn.warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
+  background: $color-warning;
+  color: white;
 
-.action-btn.warning:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  &:hover {
+    background: #b45309;
+    box-shadow: 0 4px 12px rgba($color-warning, 0.4);
+  }
+
+  .btn-description {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .action-btn.danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
+  background: $color-danger;
+  color: white;
 
-.action-btn.danger:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  &:hover {
+    background: #b91c1c;
+    box-shadow: 0 4px 12px rgba($color-danger, 0.4);
+  }
+
+  .btn-description {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .action-btn:active {
@@ -153,7 +197,7 @@
 .sidebar-footer {
   margin-top: auto;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid $color-border;
 }
 
 .info-box {
@@ -161,21 +205,21 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: $color-bg;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
 }
 
 .info-box svg {
   width: 18px;
   height: 18px;
-  color: #60a5fa;
+  color: $color-primary;
   flex-shrink: 0;
   margin-top: 2px;
 }
 
 .info-box p {
-  color: #d1d5db;
+  color: $color-text-secondary;
   font-size: 0.75rem;
   line-height: 1.4;
   margin: 0;
@@ -186,30 +230,29 @@
   flex: 1;
   margin-left: 280px;
   padding: 2rem;
-  background: #f3f4f6;
+  background: $color-bg;
   min-height: 100vh;
 }
 
 // ========== CERTIFICADO ==========
 .certificado-container {
-  /* Redefinido para el layout principal */
   padding: 0;
   background: transparent;
   display: flex;
 }
 
 .certificado-box {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  box-shadow: $shadow-sm;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
   overflow: hidden;
-  background: white;
+  background: $color-card-bg;
 }
 
 // ========== INPUTS ==========
 .editable-input {
   border: none;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid $color-border;
   background: transparent;
   padding: 2px 4px;
   width: 100%;
@@ -220,8 +263,8 @@
 
 .editable-input:focus {
   outline: none;
-  border-bottom-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
+  border-bottom-color: $color-primary;
+  background: rgba($color-primary, 0.05);
 }
 
 .editable-input[readonly] {
@@ -238,7 +281,7 @@
 
 .editable-input-table {
   border: none;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid $color-border;
   background: transparent;
   padding: 2px 4px;
   width: 100%;
@@ -249,8 +292,8 @@
 
 .editable-input-table:focus {
   outline: none;
-  border-bottom-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
+  border-bottom-color: $color-primary;
+  background: rgba($color-primary, 0.05);
 }
 
 .editable-input-table[readonly] {
@@ -267,24 +310,27 @@
 
 .certificado-table th,
 .certificado-table td {
-  border: 1px solid #d1d5db;
+  border: 1px solid $color-border;
   padding: 8px 12px;
   text-align: left;
 }
 
 .certificado-table th {
-  background-color: #f3f4f6;
+  background-color: $color-bg;
   font-weight: 600;
+  color: $color-text-primary;
 }
 
 // ========== SECCIONES ==========
 .section-header {
-  border-bottom: 2px solid #374151;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  border-bottom: 2px solid $color-primary;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: $color-text-primary;
+  font-size: 1.125rem;
 }
 
 .certificado-section {
@@ -293,10 +339,11 @@
 
 // ========== FIRMA ==========
 .firma-area {
-  border-top: 1px solid #9ca3af;
-  padding-top: 8px;
+  border-top: 1px solid $color-border;
+  padding-top: 0.5rem;
   min-width: 200px;
   text-align: center;
+  color: $color-text-primary;
 }
 
 // ========== PRINT ==========
@@ -384,3 +431,438 @@
     grid-template-columns: 1fr;
   }
 }
+
+// ========== MENSAJE DE ERROR ==========
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  width: 100%;
+}
+
+.error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  text-align: center;
+  color: #991b1b;
+
+  svg {
+    width: 64px;
+    height: 64px;
+    color: #dc2626;
+    margin-bottom: 1rem;
+  }
+
+  a {
+    color: #2563eb;
+    text-decoration: underline;
+
+    &:hover {
+      color: #1d4ed8;
+  }
+}
+
+// ========== EDICIÓN INLINE ==========
+.editable-label {
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba($color-primary, 0.05);
+  }
+
+  &:active {
+    background: rgba($color-primary, 0.1);
+  }
+
+  // Indicador visual de que es editable
+  &::after {
+    content: '✎';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: $color-primary;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+.inline-edit-input {
+  border: 2px solid $color-primary;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: inherit;
+  font-family: inherit;
+  width: 100%;
+  min-width: 150px;
+  background: white;
+  outline: none;
+
+  &:focus {
+    border-color: $color-primary-dark;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+  }
+}
+
+  strong {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+  }
+}
+
+// Banner de modo diseño
+.design-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 2px dashed #9ca3af;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 0.9375rem;
+
+  svg {
+    width: 24px;
+    height: 24px;
+    color: #6b7280;
+  }
+}
+
+// Botón para crear ficha
+.btn-create-ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+}
+
+// Spinner pequeño
+.loading-spinner-small {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(16, 185, 129, 0.3);
+  border-radius: 50%;
+  border-top-color: #10b981;
+  animation: spin 1s ease-in-out infinite;
+  margin-top: 1.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ========== BOTONES DE GESTIÓN DE CAMPOS ==========
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.btn-icon.edit {
+  background: rgba($color-info, 0.1);
+  color: $color-info;
+
+  &:hover {
+    background: $color-info;
+    color: white;
+  }
+}
+
+.btn-icon.save {
+  background: rgba($color-success, 0.1);
+  color: $color-success;
+
+  &:hover {
+    background: $color-success;
+    color: white;
+  }
+}
+
+.btn-icon.cancel {
+  background: rgba($color-secondary, 0.1);
+  color: $color-secondary;
+
+  &:hover {
+    background: $color-secondary;
+    color: white;
+  }
+}
+
+.btn-icon.delete {
+  background: rgba($color-danger, 0.1);
+  color: $color-danger;
+
+  &:hover {
+    background: $color-danger;
+    color: white;
+  }
+}
+
+// ========== EDICIÓN INLINE ==========
+// Botón para agregar nuevo campo (al final de sección)
+.btn-add-field-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px dashed $color-border;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $color-text-secondary;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.75rem;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+    background: rgba($color-primary, 0.05);
+  }
+}
+
+// Botón para agregar campo de sección (inline junto al título)
+.btn-add-section {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba($color-success, 0.15);
+  color: $color-success;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.75rem;
+  vertical-align: middle;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: $color-success;
+    color: white;
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba($color-success, 0.4);
+  }
+
+  &:active {
+    transform: scale(1.05);
+  }
+}
+
+// Label editable (cuando se puede hacer clic para editar)
+.editable-label {
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba($color-primary, 0.05);
+  }
+
+  &:active {
+    background: rgba($color-primary, 0.1);
+  }
+}
+
+// Input de edición inline
+.inline-edit-input {
+  border: 2px solid $color-primary;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: inherit;
+  font-family: inherit;
+  width: 100%;
+  min-width: 150px;
+  background: white;
+  outline: none;
+
+   &:focus {
+     border-color: $color-primary-dark;
+     box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+  }
+}
+
+// Botón grande para agregar campo al final de sección
+.btn-add-field-full {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border: 2px dashed $color-border;
+  border-radius: $radius-lg;
+  background: rgba($color-success, 0.03);
+  color: $color-text-secondary;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: $color-success;
+  }
+
+  &:hover {
+    border-color: $color-success;
+    color: $color-success;
+    background: rgba($color-success, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($color-success, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Inputs para encabezado
+.editable-title-input.large {
+  font-size: 2.25rem; // 36px
+  min-width: 400px;
+  max-width: 600px;
+  line-height: 1.2;
+  padding: 6px 12px;
+}
+
+.editable-title-input.medium {
+  font-size: 1.25rem; // 20px
+  min-width: 300px;
+  max-width: 500px;
+  line-height: 1.4;
+  padding: 4px 10px;
+}
+
+// ========== EDICIÓN DE TÍTULOS DE SECCIÓN ==========
+  .editable-title {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    border: 1px dashed transparent;
+
+    &:hover {
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+      border-color: rgba($color-primary, 0.3);
+    }
+
+    &:active {
+      background: rgba($color-primary, 0.15);
+      border-color: $color-primary;
+    }
+
+    // Indicador de edición
+    &::after {
+      content: '✎';
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: $color-primary;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    &:hover::after {
+      opacity: 1;
+    }
+  }
+
+  .editable-title-input {
+    border: 2px solid $color-primary;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    font-family: inherit;
+    width: 100%;
+    min-width: 250px;
+    max-width: 400px;
+    background: white;
+    outline: none;
+    color: $color-text-primary;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    &:focus {
+      border-color: $color-primary-dark;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+ // Ocultar el colon cuando el label es editable (se maneja en el template)

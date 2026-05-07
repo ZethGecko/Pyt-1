@@ -1,8 +1,11 @@
 package com.example.demo.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -30,6 +33,7 @@ import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.GerenteRepository;
 import com.example.demo.repository.HistorialTramiteRepository;
 import com.example.demo.repository.InscripcionExamenRepository;
+import com.example.demo.repository.InstanciaTramiteRepository;
 import com.example.demo.repository.PersonaNaturalRepository;
 import com.example.demo.repository.TipoTramiteRepository;
 import com.example.demo.repository.TramiteRepository;
@@ -41,6 +45,9 @@ public class TramiteService {
 
     @Autowired
     private TramiteRepository repo;
+
+    @Autowired
+    private InstanciaTramiteRepository instanciaRepository;
 
     @Autowired
     private TipoTramiteRepository repoTipoTramite;
@@ -68,9 +75,6 @@ public class TramiteService {
 
       @Autowired
       private RequisitoTUPACService requisitoService;
-
-      @Autowired
-      private InscripcionExamenService inscripcionExamenService;
 
       @Autowired
       private InscripcionExamenRepository inscripcionExamenRepository;
@@ -107,14 +111,13 @@ public class TramiteService {
          tramite.setDocumentos(null);
          tramite.setHistorialTramites(null);
          tramite.setObservacionesSolicitudes(null);
-         // Limpiar referencias en relaciones útiles para evitar ciclos
-         if (tramite.getDepartamentoActual() != null) {
-             tramite.getDepartamentoActual().setTramites(null);
-         }
-         if (tramite.getTipoTramite() != null) {
-             tramite.getTipoTramite().setTramites(null);
-             tramite.getTipoTramite().setExpedientes(null);
-         }
+          // Limpiar referencias en relaciones útiles para evitar ciclos
+          if (tramite.getDepartamentoActual() != null) {
+              tramite.getDepartamentoActual().setTramites(null);
+          }
+          if (tramite.getTipoTramite() != null) {
+              tramite.getTipoTramite().setTramites(null);
+          }
 
          // Obtener historial con todas las relaciones
          List<HistorialTramite> historial = historialRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
@@ -147,19 +150,15 @@ public class TramiteService {
              }
          });
 
-         // Obtener requisitos del tipo de trámite (incluye exámenes)
-         // Relación: Tramite -> TipoTramite -> TUPAC -> RequisitoTUPAC
-         final Long tupacId = (tramite.getTipoTramite() != null && tramite.getTipoTramite().getTupac() != null) ?
-                 tramite.getTipoTramite().getTupac().getIdTupac() : null;
-
-         List<RequisitoTUPAC> requisitosTipo;
-         if (tupacId != null) {
-             requisitosTipo = requisitoService.listarActivos().stream()
-                 .filter(r -> r.getTupac() != null && tupacId.equals(r.getTupac().getIdTupac()))
-                 .collect(java.util.stream.Collectors.toList());
-         } else {
-             requisitosTipo = new java.util.ArrayList<>();
-         }
+          // Obtener requisitos del tipo de trámite (incluye exámenes)
+          // Usar la lista de requisitosIds del tipo de trámite
+          List<RequisitoTUPAC> requisitosTipo = new ArrayList<>();
+          if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
+              List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
+              requisitosTipo = requisitoService.listarActivos().stream()
+                      .filter(r -> r.getId() != null && requisitosIds.contains(r.getId()))
+                      .collect(Collectors.toList());
+          }
 
          // Mapa de requisitoId a DocumentoTramite para rápida búsqueda
          Map<Long, DocumentoTramite> docMap = documentos.stream()
@@ -443,13 +442,12 @@ public class TramiteService {
             if (datos.getCodigoRut() != null) tramite.setCodigoRut(datos.getCodigoRut());
             if (datos.getEstado() != null) tramite.setEstado(datos.getEstado());
             if (datos.getTipoSolicitante() != null) tramite.setTipoSolicitante(datos.getTipoSolicitante());
-            if (datos.getPrioridad() != null) tramite.setPrioridad(datos.getPrioridad());
-            if (datos.getFechaLimite() != null) tramite.setFechaLimite(datos.getFechaLimite());
-            if (datos.getMotivoRechazo() != null) tramite.setMotivoRechazo(datos.getMotivoRechazo());
-            if (datos.getObservaciones() != null) tramite.setObservaciones(datos.getObservaciones());
-            if (datos.getTipoTramite() != null) tramite.setTipoTramite(datos.getTipoTramite());
-            if (datos.getExpediente() != null) tramite.setExpediente(datos.getExpediente());
-            if (datos.getEmpresa() != null) tramite.setEmpresa(datos.getEmpresa());
+             if (datos.getPrioridad() != null) tramite.setPrioridad(datos.getPrioridad());
+             if (datos.getMotivoRechazo() != null) tramite.setMotivoRechazo(datos.getMotivoRechazo());
+             if (datos.getObservaciones() != null) tramite.setObservaciones(datos.getObservaciones());
+             if (datos.getTipoTramite() != null) tramite.setTipoTramite(datos.getTipoTramite());
+             // Expediente eliminado
+             if (datos.getEmpresa() != null) tramite.setEmpresa(datos.getEmpresa());
             if (datos.getPersonaNatural() != null) tramite.setPersonaNatural(datos.getPersonaNatural());
             if (datos.getDepartamentoActual() != null) tramite.setDepartamentoActual(datos.getDepartamentoActual());
             tramite.setFechaActualizacion(java.time.LocalDateTime.now());
@@ -527,7 +525,29 @@ public class TramiteService {
     }
 
     @Transactional
-    public void eliminar(Long id) {
+    public void eliminar(Long id, String motivo) {
+        // 1. Registrar en historial la eliminación
+        HistorialTramite historial = new HistorialTramite();
+        historial.setTramiteId(id);
+        historial.setFechaAccion(LocalDateTime.now());
+        historial.setAccion("ELIMINACION");
+        historial.setObservacion(motivo);
+
+         // Obtener usuario actual
+         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+         if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+             String username = ((UserDetails) auth.getPrincipal()).getUsername();
+             Users user = usersRepo.findByUsername(username);
+             if (user != null) {
+                 historial.setUsuarioAccionId(user.getIdUsuarios());
+             }
+         }
+        historialRepo.save(historial);
+
+        // 2. Eliminar instancias asociadas
+        instanciaRepository.deleteByTramiteId(id);
+
+        // 3. Eliminar trámite
         repo.deleteById(id);
     }
 
@@ -577,20 +597,84 @@ public class TramiteService {
         }).orElse(null);
     }
 
+    @Transactional
     public Tramite aprobar(Long id, String observaciones) {
-        return cambiarEstado(id, "APROBADO", observaciones);
+        Tramite tramite = repo.findById(id).orElse(null);
+        if (tramite == null) {
+            return null;
+        }
+
+        Users currentUser = obtenerUsuarioActual();
+        if (currentUser == null) {
+            throw new SecurityException("Usuario no autenticado");
+        }
+
+        // Obtener todos los documentos del trámite (con datos de requisito)
+        List<DocumentoTramite> documentos = documentoRepo.findByTramiteIdWithRequisito(id);
+
+        // Separar requisitos (no exámenes)
+        List<DocumentoTramite> requisitos = documentos.stream()
+            .filter(doc -> doc.getRequisito() != null && !Boolean.TRUE.equals(doc.getRequisito().getEsExamen()))
+            .toList();
+
+        // Validar que no haya requisitos reprobados
+        boolean hayReprobados = requisitos.stream()
+            .anyMatch(doc -> "REPROBADO".equals(doc.getEstado()));
+
+        if (hayReprobados) {
+            throw new IllegalStateException("No se puede aprobar el trámite porque hay documentos reprobados");
+        }
+
+        // Aprobar todos los requisitos que no estén ya aprobados
+        for (DocumentoTramite doc : requisitos) {
+            if (!"APROBADO".equals(doc.getEstado())) {
+                doc.setEstado("APROBADO");
+                doc.setFechaRevision(LocalDateTime.now());
+                doc.setUsuarioRevisa(currentUser);
+                if (observaciones != null) {
+                    doc.setObservaciones(observaciones);
+                }
+            }
+        }
+        documentoRepo.saveAll(requisitos);
+
+        // Actualizar estado del trámite
+        tramite.setEstado("APROBADO");
+        if (observaciones != null) {
+            tramite.setObservaciones(observaciones);
+        }
+        tramite.setFechaActualizacion(LocalDateTime.now());
+        return repo.save(tramite);
     }
 
+    private Users obtenerUsuarioActual() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserDetails) {
+                String username = ((UserDetails) principal).getUsername();
+                return usersRepo.findByUsername(username);
+            } else if (principal instanceof Users) {
+                return (Users) principal;
+            }
+        }
+        return null;
+    }
+
+    @Transactional
     public Tramite rechazar(Long id, String motivo) {
         return cambiarEstado(id, "RECHAZADO", motivo);
     }
 
+    @Transactional
     public Tramite observar(Long id, String observaciones) {
         return cambiarEstado(id, "OBSERVADO", observaciones);
     }
 
+    @Transactional
     public Tramite finalizar(Long id, String observaciones) {
-        return cambiarEstado(id, "FINALIZADO", observaciones);
+        // "Revisión completada" debe aprobar el trámite, no marcarlo como FINALIZADO
+        return aprobar(id, observaciones);
     }
 
     @Transactional
@@ -641,6 +725,22 @@ public class TramiteService {
         }
     }
 
+    private List<Long> parseRequisitosIds(String requisitosIdsCsv) {
+        List<Long> ids = new ArrayList<>();
+        if (requisitosIdsCsv == null || requisitosIdsCsv.trim().isEmpty()) {
+            return ids;
+        }
+        String[] parts = requisitosIdsCsv.split(",");
+        for (String part : parts) {
+            try {
+                ids.add(Long.parseLong(part.trim()));
+            } catch (NumberFormatException e) {
+                // ignorar IDs inválidos
+            }
+        }
+        return ids;
+    }
+
     public List<TramiteListadoDTO> listarPorDepartamento(Long departamentoId) {
         return repo.findByDepartamentoId(departamentoId);
     }
@@ -674,5 +774,59 @@ public class TramiteService {
                 repo.save(tramite);
             }
         }
+    }
+
+    public List<TramiteListadoDTO> listarConInstancias() {
+        List<Tramite> tramites = repo.findAll();
+        return tramites.stream()
+                .filter(tramite -> instanciaRepository.countByTramite_IdTramite(tramite.getIdTramite()) > 0)
+                .map(tramite -> {
+                    TramiteListadoDTO dto = new TramiteListadoDTO();
+                    dto.setId(tramite.getIdTramite());
+                    dto.setCodigoRUT(tramite.getCodigoRut());
+                    dto.setEstado(tramite.getEstado());
+                    dto.setPrioridad(tramite.getPrioridad());
+                    dto.setFechaRegistro(tramite.getFechaRegistro());
+                    dto.setFechaActualizacion(tramite.getFechaActualizacion());
+                    dto.setDepartamentoActualNombre(
+                        tramite.getDepartamentoActual() != null ? tramite.getDepartamentoActual().getNombre() : null
+                    );
+                    dto.setUsuarioRegistraNombre(
+                        tramite.getUsuarioRegistra() != null ? tramite.getUsuarioRegistra().getUsername() : null
+                    );
+
+                    // Solicitante: puede ser Empresa, PersonaNatural o Gerente
+                    if (tramite.getEmpresa() != null) {
+                        Empresa e = tramite.getEmpresa();
+                        dto.setSolicitanteNombre(e.getNombre());
+                        dto.setSolicitanteId(e.getIdEmpresa());
+                        dto.setSolicitanteTipo("EMPRESA");
+                        dto.setSolicitanteIdentificacion(e.getRuc() != null ? e.getRuc() : null);
+                    } else if (tramite.getPersonaNatural() != null) {
+                        PersonaNatural p = tramite.getPersonaNatural();
+                        String nombreCompleto = (p.getNombres() != null ? p.getNombres() : "") + " " +
+                                               (p.getApellidos() != null ? p.getApellidos() : "");
+                        dto.setSolicitanteNombre(nombreCompleto.trim());
+                        dto.setSolicitanteId(p.getIdPersonaNatural());
+                        dto.setSolicitanteTipo("PERSONA_NATURAL");
+                        dto.setSolicitanteIdentificacion(p.getDni() != null ? p.getDni().toString() : null);
+                    } else if (tramite.getGerente() != null) {
+                        Gerente g = tramite.getGerente();
+                        dto.setSolicitanteNombre(g.getNombre());
+                        dto.setSolicitanteId(g.getIdGerente());
+                        dto.setSolicitanteTipo("GERENTE");
+                        dto.setSolicitanteIdentificacion(g.getDni() != null ? g.getDni().toString() : null);
+                    }
+
+                    if (tramite.getTipoTramite() != null) {
+                        dto.setTipoTramiteDescripcion(tramite.getTipoTramite().getDescripcion());
+                        dto.setTipoTramiteId(tramite.getTipoTramite().getIdTipoTramite());
+                    }
+
+                    Long conteo = instanciaRepository.countByTramite_IdTramite(tramite.getIdTramite());
+                    dto.setConteoInstancias(conteo);
+                    return dto;
+                })
+                .toList();
     }
 }

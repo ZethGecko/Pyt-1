@@ -1,8 +1,19 @@
 package com.example.demo.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "solicitud")
@@ -48,11 +59,6 @@ public class Solicitud {
 
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
-
-    // Relación con Expediente
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_expediente", nullable = false)
-    private Expediente expediente;
 
     // Relación con Vehiculo
     @ManyToOne(fetch = FetchType.LAZY)
@@ -176,14 +182,6 @@ public class Solicitud {
 
     public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
         this.fechaActualizacion = fechaActualizacion;
-    }
-
-    public Expediente getExpediente() {
-        return expediente;
-    }
-
-    public void setExpediente(Expediente expediente) {
-        this.expediente = expediente;
     }
 
     public Vehiculo getVehiculo() {

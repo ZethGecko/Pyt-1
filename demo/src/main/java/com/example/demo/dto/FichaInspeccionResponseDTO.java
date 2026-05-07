@@ -18,7 +18,6 @@ public class FichaInspeccionResponseDTO {
     private LocalDateTime fechaInspeccion;
     private List<ParametroInspeccionResponseDTO> parametros;
     // Nuevos campos
-    private String expediente;
     private String empresaNombre;
     private EstadoDocumental estadoDocumental;
 
@@ -56,9 +55,6 @@ public class FichaInspeccionResponseDTO {
 
     public List<ParametroInspeccionResponseDTO> getParametros() { return parametros; }
     public void setParametros(List<ParametroInspeccionResponseDTO> parametros) { this.parametros = parametros; }
-
-    public String getExpediente() { return expediente; }
-    public void setExpediente(String expediente) { this.expediente = expediente; }
 
     public String getEmpresaNombre() { return empresaNombre; }
     public void setEmpresaNombre(String empresaNombre) { this.empresaNombre = empresaNombre; }

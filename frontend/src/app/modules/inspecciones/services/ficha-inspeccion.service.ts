@@ -1,37 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../environments/environment';
+import { environment } from 'src/environments/environment';
+
+export interface ParametroInspeccion {
+  idParametros?: number;
+  parametro: string;
+  observacion?: string;
+  tipoEvaluacion?: string;
+  fichaInspeccionId?: number;
+}
 
 export interface FichaInspeccion {
-  id: number;
+  id?: number;
   inspeccionId: number;
-  vehiculoId: number;
-  solicitudId: number;
-  estado: boolean;
-  resultado?: string;
-  fechaInspeccion?: string;
-  observaciones?: string;
-  usuarioInspectorId: number;
-  inspeccion?: {
-    id: number;
-    fechaProgramada: string;
-    estado: string;
-  };
-  vehiculo?: {
-    id: number;
-    placa: string;
-    modelo: string;
-  };
-  solicitud?: {
-    id: number;
-    tipoSolicitud: string;
-  };
-  usuarioInspector?: {
-    id: number;
-    nombre: string;
-  };
-  evaluacionesParametros?: any[];
+  estado?: string;
+  usuarioInspector?: number;
+  parametros?: ParametroInspeccion[];
 }
 
 export interface FichaInspeccionResponse {
@@ -57,21 +42,17 @@ export class FichaInspeccionService {
     return this.http.get<FichaInspeccionResponse>(this.apiUrl, { params });
   }
 
-  getById(id: number): Observable<FichaInspeccion> {
-    return this.http.get<FichaInspeccion>(`${this.apiUrl}/${id}`);
-  }
+   getById(id: number): Observable<FichaInspeccion> {
+     return this.http.get<FichaInspeccion>(`${this.apiUrl}/${id}`);
+   }
 
-  getByInspeccion(inspeccionId: number): Observable<FichaInspeccion[]> {
-    return this.http.get<FichaInspeccion[]>(`${this.apiUrl}/inspeccion/${inspeccionId}`);
-  }
+   getByVehiculo(vehiculoId: number): Observable<FichaInspeccion[]> {
+     return this.http.get<FichaInspeccion[]>(`${this.apiUrl}/vehiculo/${vehiculoId}`);
+   }
 
-  getByVehiculo(vehiculoId: number): Observable<FichaInspeccion[]> {
-    return this.http.get<FichaInspeccion[]>(`${this.apiUrl}/vehiculo/${vehiculoId}`);
-  }
-
-  getBySolicitud(solicitudId: number): Observable<FichaInspeccion> {
-    return this.http.get<FichaInspeccion>(`${this.apiUrl}/solicitud/${solicitudId}`);
-  }
+   getBySolicitud(solicitudId: number): Observable<FichaInspeccion> {
+     return this.http.get<FichaInspeccion>(`${this.apiUrl}/solicitud/${solicitudId}`);
+   }
 
   create(ficha: Partial<FichaInspeccion>): Observable<FichaInspeccion> {
     return this.http.post<FichaInspeccion>(this.apiUrl, ficha);
@@ -98,5 +79,9 @@ export class FichaInspeccionService {
    */
   copiarModeloATodasLasFichas(inspeccionId: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/inspeccion/${inspeccionId}/copiar-modelo`, {});
+  }
+
+  getByInspeccion(inspeccionId: number): Observable<FichaInspeccion[]> {
+    return this.http.get<FichaInspeccion[]>(`${this.apiUrl}/inspeccion/${inspeccionId}`);
   }
 }

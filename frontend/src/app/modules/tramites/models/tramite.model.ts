@@ -43,8 +43,8 @@ export interface TramiteEnriquecido {
     solicitanteId: number;
     solicitanteNombre: string;
     solicitanteIdentificacion: string;
-   solicitanteEmail?: string;
-   solicitanteTelefono?: string;
+    solicitanteEmail?: string;
+    solicitanteTelefono?: string;
 
    expedienteCodigo?: string;
    expedienteId?: number;
@@ -62,14 +62,17 @@ export interface TramiteEnriquecido {
 
    tramiteOrigenCodigo?: string;
 
-   // Estadísticas de documentos
-   totalDocumentos?: number;
-   documentosAprobados?: number;
-   documentosPendientes?: number;
-   documentosObservados?: number;
-   documentosRechazados?: number;
-   totalSeguimientos?: number;
-   ultimoSeguimientoFecha?: Date;
+    // Estadísticas de documentos
+    totalDocumentos?: number;
+    documentosAprobados?: number;
+    documentosPendientes?: number;
+    documentosObservados?: number;
+    documentosRechazados?: number;
+    totalSeguimientos?: number;
+    ultimoSeguimientoFecha?: Date;
+
+    // Conteo de instancias (expedientes)
+    conteoInstancias?: number;
 
    // Propiedades calculadas para UI
    estadoFormateado?: string;

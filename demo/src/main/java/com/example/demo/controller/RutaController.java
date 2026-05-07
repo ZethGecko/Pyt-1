@@ -185,6 +185,7 @@ public class RutaController {
             Ruta actualizado = rutaService.guardar(ruta);
             return ResponseEntity.ok(toResponseDTO(actualizado));
         } catch (Exception e) {
+            e.printStackTrace(); // Log completo del error
             return ResponseEntity.badRequest().build();
         }
     }

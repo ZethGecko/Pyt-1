@@ -56,57 +56,63 @@
       </div>
       <div class="card-body">
         <div class="filter-grid">
-          <div class="filter-group">
-            <label>Búsqueda General</label>
-            <input type="text" 
-                   [(ngModel)]="filtros.search"
-                   placeholder="Código, solicitante, tipo..."
-                   class="filter-input">
-          </div>
-          
-          <div class="filter-group">
-            <label>Estado</label>
-            <select [(ngModel)]="filtros.estado">
-              <option value="">Todos</option>
-              @for (estado of getEstadosDisponibles(); track estado) {
-                <option [value]="estado">{{ estado | titlecase }}</option>
-              }
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label>Prioridad</label>
-            <select [(ngModel)]="filtros.prioridad">
-              <option value="">Todas</option>
-              @for (prioridad of getPrioridadesDisponibles(); track prioridad) {
-                <option [value]="prioridad">{{ prioridad | titlecase }}</option>
-              }
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label>Tipo de Solicitante</label>
-            <select [(ngModel)]="filtros.tipoSolicitante">
-              <option value="">Todos</option>
-              <option value="Empresa">Empresas</option>
-              <option value="PersonaNatural">Personas Naturales</option>
-              <option value="Vehiculo">Gerentes (Vehículos)</option>
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label>Fecha Desde</label>
-            <input type="date"
-                   [(ngModel)]="filtros.desde"
-                   class="filter-input">
-          </div>
-          
-          <div class="filter-group">
-            <label>Fecha Hasta</label>
-            <input type="date" 
-                   [(ngModel)]="filtros.hasta"
-                   class="filter-input">
-          </div>
+           <div class="filter-group">
+             <label>Búsqueda General</label>
+             <input type="text" 
+                    [(ngModel)]="filtros.search"
+                    (ngModelChange)="aplicarFiltros()"
+                    placeholder="Código, solicitante, tipo..."
+                    class="filter-input">
+           </div>
+           
+           <div class="filter-group">
+             <label>Estado</label>
+             <select [(ngModel)]="filtros.estado"
+                     (ngModelChange)="aplicarFiltros()">
+               <option value="">Todos</option>
+               @for (estado of getEstadosDisponibles(); track estado) {
+                 <option [value]="estado">{{ estado | titlecase }}</option>
+               }
+             </select>
+           </div>
+           
+           <div class="filter-group">
+             <label>Prioridad</label>
+             <select [(ngModel)]="filtros.prioridad"
+                     (ngModelChange)="aplicarFiltros()">
+               <option value="">Todas</option>
+               @for (prioridad of getPrioridadesDisponibles(); track prioridad) {
+                 <option [value]="prioridad">{{ prioridad | titlecase }}</option>
+               }
+             </select>
+           </div>
+           
+           <div class="filter-group">
+             <label>Tipo de Solicitante</label>
+             <select [(ngModel)]="filtros.tipoSolicitante"
+                     (ngModelChange)="aplicarFiltros()">
+               <option value="">Todos</option>
+               <option value="Empresa">Empresas</option>
+               <option value="PersonaNatural">Personas Naturales</option>
+               <option value="Vehiculo">Gerentes (Vehículos)</option>
+             </select>
+           </div>
+           
+           <div class="filter-group">
+             <label>Fecha Desde</label>
+             <input type="date"
+                    [(ngModel)]="filtros.desde"
+                    (ngModelChange)="aplicarFiltros()"
+                    class="filter-input">
+           </div>
+           
+           <div class="filter-group">
+             <label>Fecha Hasta</label>
+             <input type="date" 
+                    [(ngModel)]="filtros.hasta"
+                    (ngModelChange)="aplicarFiltros()"
+                    class="filter-input">
+           </div>
         </div>
         
         <div class="filter-actions">

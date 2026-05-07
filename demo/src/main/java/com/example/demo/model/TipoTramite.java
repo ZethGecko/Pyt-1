@@ -50,10 +50,6 @@ public class TipoTramite {
     @JsonIgnore
     private List<Tramite> tramites;
 
-    @OneToMany(mappedBy = "tipoTramite", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Expediente> expedientes;
-
     // Getters y setters
     public Long getIdTipoTramite() { return idTipoTramite; }
     public void setIdTipoTramite(Long idTipoTramite) { this.idTipoTramite = idTipoTramite; }
@@ -78,7 +74,4 @@ public class TipoTramite {
 
     public List<Tramite> getTramites() { return tramites; }
     public void setTramites(List<Tramite> tramites) { this.tramites = tramites; }
-
-    public List<Expediente> getExpedientes() { return expedientes; }
-    public void setExpedientes(List<Expediente> expedientes) { this.expedientes = expedientes; }
 }

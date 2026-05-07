@@ -1,9 +1,21 @@
 package com.example.demo.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "tuc")
@@ -48,11 +60,6 @@ public class TUC {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa")
     private Empresa empresa;
-
-    // Relación con Expediente
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "expediente")
-    private Expediente expediente;
 
     // Relación con FichaInspeccion (origen del TUC)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -111,9 +118,6 @@ public class TUC {
 
     public Empresa getEmpresa() { return empresa; }
     public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
-
-    public Expediente getExpediente() { return expediente; }
-    public void setExpediente(Expediente expediente) { this.expediente = expediente; }
 
     public FichaInspeccion getFichaInspeccion() { return fichaInspeccion; }
     public void setFichaInspeccion(FichaInspeccion fichaInspeccion) { this.fichaInspeccion = fichaInspeccion; }

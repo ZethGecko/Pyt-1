@@ -1,22 +1,27 @@
 <div class="seguimiento-page">
-  <!-- Header mejorado -->
-  <div class="page-header">
+   <!-- Header mejorado -->
+   <div class="page-header">
     <div class="header-left">
-      <a routerLink="/" class="header-back-btn">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-      </a>
-      <div class="header-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-        </svg>
-      </div>
-      <div>
-        <h1>Seguimiento de Trámites</h1>
-        <p class="page-subtitle">Consulta el estado de tus trámites en línea</p>
-      </div>
-    </div>
+        <a routerLink="/" class="header-back-btn" title="Volver al inicio">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          <span class="back-btn-text">Volver</span>
+        </a>
+       <div class="header-icon">
+         @if (tieneImagen('PAGE_HEADER_SEGUIMIENTO')) {
+           <img [src]="getImagenUrl('PAGE_HEADER_SEGUIMIENTO')" alt="Seguimiento" class="header-img" />
+         } @else {
+           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+           </svg>
+         }
+       </div>
+       <div>
+         <h1>Seguimiento de Trámites</h1>
+         <p class="page-subtitle">Consulta el estado de tus trámites en línea</p>
+       </div>
+     </div>
     <nav class="header-nav">
       <a routerLink="/" class="nav-link">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,36 +229,7 @@
       </div>
     }
 
-    <!-- Información adicional -->
-    <div class="info-section">
-      <div class="info-card">
-        <div class="info-icon-large">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <div class="info-content">
-          <h3>¿No tienes un código de seguimiento?</h3>
-          <p>
-            Para iniciar un nuevo trámite o si eres una empresa registrada, necesitas acceder al sistema privado.
-          </p>
-          <div class="info-actions">
-            <a routerLink="/auth/login" class="btn btn-primary">
-              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-              </svg>
-              Iniciar Sesión
-            </a>
-            <a routerLink="/tramites" class="btn btn-outline">
-              <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-              Ver Trámites
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+    
   </main>
 
   <!-- Modal: Detalle del Trámite -->
@@ -421,21 +397,28 @@
     </div>
   }
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-left">
-        <svg class="footer-logo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-        <p>© 2024 Sistema de Gestión de Transporte</p>
-      </div>
-      <div class="footer-contact">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-        </svg>
-        <span>seguimiento&#64;transporte.gob</span>
-      </div>
-    </div>
-  </footer>
+    <!-- Footer con botón de retroceso -->
+    <footer class="footer">
+      @if (tieneImagen('FOOTER_BANNER')) {
+        <div class="footer-banner">
+          <img [src]="getImagenUrl('FOOTER_BANNER')" alt="Banner" class="footer-banner-img" />
+        </div>
+      }
+      <div class="footer-content">
+        <div class="footer-left">
+          <a routerLink="/" class="footer-back-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Volver al inicio
+          </a>
+        </div>
+        <div class="footer-contact">
+         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+         </svg>
+         <span>seguimiento&#64;transporte.gob</span>
+       </div>
+     </div>
+   </footer>
 </div>

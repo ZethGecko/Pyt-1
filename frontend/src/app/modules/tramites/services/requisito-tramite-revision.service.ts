@@ -26,6 +26,8 @@ export interface RequisitoRevision {
   formatoId?: number | null;
   formatoDescripcion?: string;
   formatoArchivoRuta?: string;
+  // Inscripción para exámenes
+  inscripcionId?: number;
 }
 
 @Injectable({
@@ -53,26 +55,36 @@ export class RequisitoTramiteRevisionService {
      return this.http.get<RequisitoRevision[]>(`${this.apiUrl}/instancia/${instanciaId}/proyecciones`);
    }
 
-   aprobarDocumento(documentoId: number, datos: { notasRevision?: string }): Observable<any> {
-     const params = new HttpParams()
-       .set('usuarioId', this.getCurrentUserId().toString())
-       .set('observaciones', datos.notasRevision || '');
-     return this.http.put(`${this.apiUrl}/${documentoId}/aprobar`, null, { params });
-   }
+    aprobarDocumento(documentoId: number, datos: { notasRevision?: string }, actualizarEstado: boolean = true): Observable<any> {
+      let params = new HttpParams()
+        .set('usuarioId', this.getCurrentUserId().toString())
+        .set('observaciones', datos.notasRevision || '');
+      // Si no se actualiza el estado del trámite, pasar false
+      if (!actualizarEstado) {
+        params = params.set('actualizarEstado', 'false');
+      }
+      return this.http.put(`${this.apiUrl}/${documentoId}/aprobar`, null, { params });
+    }
 
-   reprobarDocumento(documentoId: number, datos: { motivo: string }): Observable<any> {
-     const params = new HttpParams()
-       .set('usuarioId', this.getCurrentUserId().toString())
-       .set('motivo', datos.motivo);
-     return this.http.put(`${this.apiUrl}/${documentoId}/reprobar`, null, { params });
-   }
+    reprobarDocumento(documentoId: number, datos: { motivo: string }, actualizarEstado: boolean = true): Observable<any> {
+      let params = new HttpParams()
+        .set('usuarioId', this.getCurrentUserId().toString())
+        .set('motivo', datos.motivo);
+      if (!actualizarEstado) {
+        params = params.set('actualizarEstado', 'false');
+      }
+      return this.http.put(`${this.apiUrl}/${documentoId}/reprobar`, null, { params });
+    }
 
-   observarDocumento(documentoId: number, datos: { observaciones?: string }): Observable<any> {
-     const params = new HttpParams()
-       .set('usuarioId', this.getCurrentUserId().toString())
-       .set('observaciones', datos.observaciones || '');
-     return this.http.put(`${this.apiUrl}/${documentoId}/observar`, null, { params });
-   }
+    observarDocumento(documentoId: number, datos: { observaciones?: string }, actualizarEstado: boolean = true): Observable<any> {
+      let params = new HttpParams()
+        .set('usuarioId', this.getCurrentUserId().toString())
+        .set('observaciones', datos.observaciones || '');
+      if (!actualizarEstado) {
+        params = params.set('actualizarEstado', 'false');
+      }
+      return this.http.put(`${this.apiUrl}/${documentoId}/observar`, null, { params });
+    }
 
   asignarParaRevision(documentoId: number, usuarioId: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/${documentoId}/asignar-revision`, { usuarioAsignadoId: usuarioId });

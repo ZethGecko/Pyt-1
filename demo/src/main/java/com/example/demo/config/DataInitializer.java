@@ -2,7 +2,7 @@ package com.example.demo.config;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.ArrayList;                 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,20 +15,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.model.CategoriaTransporte;
-import com.example.demo.model.Departamento;
-import com.example.demo.model.Empresa;
-import com.example.demo.model.Formatos;
-import com.example.demo.model.Gerente;
-import com.example.demo.model.PersonaNatural;
-import com.example.demo.model.RequisitoTUPAC;
-import com.example.demo.model.Roles;
-import com.example.demo.model.SubtipoTransporte;
-import com.example.demo.model.TUPAC;
-import com.example.demo.model.TipoTramite;
-import com.example.demo.model.TipoTransporte;
-import com.example.demo.model.Tramite;
-import com.example.demo.model.Users;
+ import com.example.demo.model.CategoriaTransporte;
+ import com.example.demo.model.Departamento;
+ import com.example.demo.model.Empresa;
+ import com.example.demo.model.Formatos;
+ import com.example.demo.model.Gerente;
+ import com.example.demo.model.PersonaNatural;
+ import com.example.demo.model.RequisitoTUPAC;
+ import com.example.demo.model.Roles;
+ import com.example.demo.model.SubtipoTransporte;
+ import com.example.demo.model.TUPAC;
+ import com.example.demo.model.TipoTramite;
+ import com.example.demo.model.TipoTransporte;
+ import com.example.demo.model.Tramite;
+ import com.example.demo.model.Users;
 import com.example.demo.repository.CategoriaTransporteRepository;
 import com.example.demo.repository.DepartamentoRepository;
 import com.example.demo.repository.EmpresaRepository;
@@ -44,16 +44,14 @@ import com.example.demo.repository.TipoTransporteRepository;
 import com.example.demo.repository.TramiteRepository;
 import com.example.demo.repository.UsersRepository;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+ import jakarta.annotation.PostConstruct;
 
 @Component
 public class DataInitializer {
 
       @Autowired private RolesRepository rolesRepository;
        @Autowired private DepartamentoRepository departamentoRepository;
-       @Autowired private UsersRepository usersRepository;
+        @Autowired private UsersRepository usersRepository;
         @Autowired private EmpresaRepository empresaRepository;
         @Autowired private GerenteRepository gerenteRepository;
         @Autowired private PersonaNaturalRepository personaNaturalRepository;
@@ -65,9 +63,8 @@ public class DataInitializer {
        @Autowired private CategoriaTransporteRepository categoriaTransporteRepository;
        @Autowired private TipoTransporteRepository tipoTransporteRepository;
        @Autowired private SubtipoTransporteRepository subtipoTransporteRepository;
-        @Autowired private com.example.demo.service.TramiteService tramiteService;
+  @Autowired private com.example.demo.service.TramiteService tramiteService;
         @Autowired private TramiteRepository tramiteRepository;
-        @PersistenceContext private EntityManager entityManager;
 
 
     @PostConstruct
@@ -250,16 +247,6 @@ public class DataInitializer {
             System.out.println("Subtipos de transporte creados");
         }
 
-        // 2.4. Inicializar datos de Vehículos - skipped for now due to TUC dependency
-
-        // 2.5. Agregar columna kml_content a tabla ruta si no existe
-        try {
-            entityManager.createNativeQuery("ALTER TABLE ruta ADD COLUMN IF NOT EXISTS kml_content TEXT").executeUpdate();
-            System.out.println("Columna kml_content agregada a tabla ruta");
-        } catch (Exception e) {
-            System.out.println("Columna kml_content ya existe o error al agregar: " + e.getMessage());
-        }
-
         // 3. Crear usuarios si no existen
         List<Departamento> deptos = departamentoRepository.findAll();
         if (deptos.size() >= 2) {
@@ -294,64 +281,66 @@ public class DataInitializer {
             System.out.println("ERROR: No hay suficientes departamentos para crear usuarios");
         }
 
-        // 3.1. Crear datos de prueba para solicitantes
-        if (personaNaturalRepository.count() == 0L) {
-            PersonaNatural persona1 = new PersonaNatural();
-            persona1.setNombres("Juan");
-            persona1.setApellidos("Pérez García");
-            persona1.setDni(12345678);
-            persona1.setEmail("juan.perez@email.com");
-            persona1.setTelefono("987654321");
-            persona1.setGenero("M");
-            persona1.setFechaRegistro(LocalDateTime.now());
-            personaNaturalRepository.save(persona1);
+         // 3.1. Crear personas naturales de prueba si no existen
+         if (personaNaturalRepository.count() == 0L) {
+             PersonaNatural persona1 = new PersonaNatural();
+             persona1.setNombres("Juan");
+             persona1.setApellidos("Pérez García");
+             persona1.setDni(12345678);
+             persona1.setEmail("juan.perez@email.com");
+             persona1.setTelefono("987654321");
+             persona1.setGenero("M");
+             persona1.setFechaRegistro(LocalDateTime.now());
+             personaNaturalRepository.save(persona1);
 
-            PersonaNatural persona2 = new PersonaNatural();
-            persona2.setNombres("María");
-            persona2.setApellidos("López Rodríguez");
-            persona2.setDni(87654321);
-            persona2.setEmail("maria.lopez@email.com");
-            persona2.setTelefono("912345678");
-            persona2.setGenero("F");
-            persona2.setFechaRegistro(LocalDateTime.now());
-            personaNaturalRepository.save(persona2);
+             PersonaNatural persona2 = new PersonaNatural();
+             persona2.setNombres("María");
+             persona2.setApellidos("López Rodríguez");
+             persona2.setDni(87654321);
+             persona2.setEmail("maria.lopez@email.com");
+             persona2.setTelefono("912345678");
+             persona2.setGenero("F");
+             persona2.setFechaRegistro(LocalDateTime.now());
+             personaNaturalRepository.save(persona2);
 
-            System.out.println("Personas naturales de prueba creadas");
-        }
+             System.out.println("Personas naturales de prueba creadas");
+         }
 
-        if (empresaRepository.count() == 0L) {
-            Empresa empresa1 = new Empresa();
-            empresa1.setNombre("Transportes del Norte S.A.");
-            empresa1.setCodigo("TRANS-NORTE-001");
-            empresa1.setRuc("20123456789");
-            empresa1.setDireccionLegal("Av. Principal 123, Lima");
-            empresa1.setEmail("contacto@transportesdelnorte.com");
-            empresa1.setContactoTelefono("01-2345678");
-            empresa1.setEstadoOperativo("ACTIVO");
-            empresa1.setInicioVigencia(LocalDate.now().minusYears(2));
-            empresa1.setFinVigencia(LocalDate.now().plusYears(5));
-            empresa1.setActivo(true);
-            empresa1.setFechaRegistro(LocalDateTime.now());
-            empresaRepository.save(empresa1);
+          // 3.2. Crear empresas de prueba si no existen
+          if (empresaRepository.count() == 0L) {
+              Empresa empresa1 = new Empresa();
+              empresa1.setNombre("Transportes del Norte S.A.");
+              empresa1.setCodigo("TRANS-NORTE-001");
+              empresa1.setRuc("20123456789");
+              empresa1.setDireccionLegal("Av. Principal 123, Lima");
+              empresa1.setEmail("contacto@transportesdelnorte.com");
+              empresa1.setContactoTelefono("01-2345678");
+              empresa1.setEstadoOperativo("ACTIVO");
+              empresa1.setInicioVigencia(LocalDate.now().minusYears(2));
+              empresa1.setFinVigencia(LocalDate.now().plusYears(5));
+              empresa1.setActivo(true);
+              empresa1.setFechaRegistro(LocalDateTime.now());
+              empresaRepository.save(empresa1);
 
-            Empresa empresa2 = new Empresa();
-            empresa2.setNombre("Logística Express E.I.R.L.");
-            empresa2.setCodigo("LOG-EXPRESS-002");
-            empresa2.setRuc("20234567890");
-            empresa2.setDireccionLegal("Jr. Comercio 456, Arequipa");
-            empresa2.setEmail("ventas@logisticaexpress.com");
-            empresa2.setContactoTelefono("054-345678");
-            empresa2.setEstadoOperativo("ACTIVO");
-            empresa2.setInicioVigencia(LocalDate.now().minusYears(1));
-            empresa2.setFinVigencia(LocalDate.now().plusYears(4));
-            empresa2.setActivo(true);
-            empresa2.setFechaRegistro(LocalDateTime.now());
-            empresaRepository.save(empresa2);
+              Empresa empresa2 = new Empresa();
+              empresa2.setNombre("Logística Express E.I.R.L.");
+              empresa2.setCodigo("LOG-EXPRESS-002");
+              empresa2.setRuc("20234567890");
+              empresa2.setDireccionLegal("Jr. Comercio 456, Arequipa");
+              empresa2.setEmail("ventas@logisticaexpress.com");
+              empresa2.setContactoTelefono("054-345678");
+              empresa2.setEstadoOperativo("ACTIVO");
+              empresa2.setInicioVigencia(LocalDate.now().minusYears(1));
+              empresa2.setFinVigencia(LocalDate.now().plusYears(4));
+              empresa2.setActivo(true);
+              empresa2.setFechaRegistro(LocalDateTime.now());
+              empresaRepository.save(empresa2);
 
-            System.out.println("Empresas de prueba creadas");
-        }
+              System.out.println("Empresas de prueba creadas");
+          }
 
-        if (gerenteRepository.count() == 0L) {
+          // 3.3. Crear gerentes de prueba si no existen
+          if (gerenteRepository.count() == 0L) {
             Gerente gerente1 = new Gerente();
             gerente1.setNombre("Carlos Mendoza Silva");
             gerente1.setDni(34567890);
@@ -682,7 +671,6 @@ public class DataInitializer {
                 System.out.println("Trámite ejemplo creado con código: " + tramite.getCodigoRut() + " para usuario " + user.getUsername());
             }
         }
-
         System.out.println("Data initialization completada (datos mínimos)");
     }
 

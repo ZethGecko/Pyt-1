@@ -30,14 +30,16 @@ export class DashboardComponent implements OnInit {
     this.initDepartamentoNombreEffect();
   }
 
-  // Signals
-  tokenInfo = signal<any>(null);
-  tokenExpiration = signal<Date | null>(null);
-  lastLogin = signal<string | null>(null);
-  showRawToken = signal(false);
-  tramitesDepartamento = signal<TramiteEnriquecido[]>([]);
-  loadingTramites = signal<boolean>(false);
-  departamentoNombre = signal<string>('');
+   // Signals
+   tokenInfo = signal<any>(null);
+   tokenExpiration = signal<Date | null>(null);
+   lastLogin = signal<string | null>(null);
+   showRawToken = signal(false);
+   tramitesDepartamento = signal<TramiteEnriquecido[]>([]);
+   tramitesFiltrados = signal<TramiteEnriquecido[]>([]);
+   loadingTramites = signal<boolean>(false);
+   departamentoNombre = signal<string>('');
+   filtroEstado = signal<string>(''); // '' = todos
 
     // Modal de revisión
     mostrarModalRequisitos = signal<boolean>(false);
@@ -103,54 +105,76 @@ export class DashboardComponent implements OnInit {
     this.destroy$.complete();
   }
 
-  cargarTramitesDepartamento(): void {
-    const deptId = this.departamentoId();
-    const user = this.authState.currentUser() as any;
-    const tokenInfo = this.tokenService.getTokenInfo();
-    const tokenRole = tokenInfo?.role;
-    
-    console.log('[Dashboard] User:', user);
-    console.log('[Dashboard] Departamento ID:', deptId);
-    console.log('[Dashboard] Role desde user:', user?.role);
-    console.log('[Dashboard] Role desde token:', tokenRole);
-    
-    // SUPER_ADMIN o usuarios con canViewAllData ven todos los trámites
-    const esSuperAdmin = user?.role?.name === 'SUPER_ADMIN' || tokenRole === 'SUPER_ADMIN';
-    const puedeVerTodos = esSuperAdmin || user?.role?.canViewAllData === true;
-    
-    console.log('[Dashboard] esSuperAdmin:', esSuperAdmin, 'puedeVerTodos:', puedeVerTodos);
+   cargarTramitesDepartamento(): void {
+     const deptId = this.departamentoId();
+     const user = this.authState.currentUser() as any;
+     const tokenInfo = this.tokenService.getTokenInfo();
+     const tokenRole = tokenInfo?.role;
+     
+     console.log('[Dashboard] User:', user);
+     console.log('[Dashboard] Departamento ID:', deptId);
+     console.log('[Dashboard] Role desde user:', user?.role);
+     console.log('[Dashboard] Role desde token:', tokenRole);
+     
+     // SUPER_ADMIN o usuarios con canViewAllData ven todos los trámites
+     const esSuperAdmin = user?.role?.name === 'SUPER_ADMIN' || tokenRole === 'SUPER_ADMIN';
+     const puedeVerTodos = esSuperAdmin || user?.role?.canViewAllData === true;
+     
+     console.log('[Dashboard] esSuperAdmin:', esSuperAdmin, 'puedeVerTodos:', puedeVerTodos);
 
-    let observable$: Observable<TramiteEnriquecido[]>;
-    if (!deptId && !puedeVerTodos) {
-      console.log('[Dashboard] Sin departamento y sin permisos -> mostrando vacío');
-      this.tramitesDepartamento.set([]);
-      this.loadingTramites.set(false);
-      return;
-    } else if (puedeVerTodos) {
-      console.log('[Dashboard] Usuario con permisos amplios -> listando todos los trámites');
-      observable$ = this.tramiteService.listarTodosEnriquecidos();
-    } else {
-      console.log('[Dashboard] Usuario con departamento', deptId, '-> listando por departamento');
-      observable$ = this.tramiteService.listarPorDepartamento(deptId);
-    }
+     let observable$: Observable<TramiteEnriquecido[]>;
+     if (!deptId && !puedeVerTodos) {
+       console.log('[Dashboard] Sin departamento y sin permisos -> mostrando vacío');
+       this.tramitesDepartamento.set([]);
+       this.tramitesFiltrados.set([]);
+       this.loadingTramites.set(false);
+       return;
+     } else if (puedeVerTodos) {
+       console.log('[Dashboard] Usuario con permisos amplios -> listando todos los trámites');
+       observable$ = this.tramiteService.listarTodosEnriquecidos();
+     } else {
+       console.log('[Dashboard] Usuario con departamento', deptId, '-> listando por departamento');
+       observable$ = this.tramiteService.listarPorDepartamento(deptId);
+     }
 
-    this.loadingTramites.set(true);
-    observable$.pipe(
-      takeUntil(this.destroy$),
-      catchError((err: any) => {
-        console.error('Error cargando trámites:', err);
-        this.tramitesDepartamento.set([]);
-        this.loadingTramites.set(false);
-        return of([]);
-      })
-    ).subscribe({
-      next: (tramites: TramiteEnriquecido[]) => {
-        this.tramitesDepartamento.set(tramites);
-        this.loadingTramites.set(false);
-        this.cdr.detectChanges();
+     this.loadingTramites.set(true);
+     observable$.pipe(
+       takeUntil(this.destroy$),
+       catchError((err: any) => {
+         console.error('Error cargando trámites:', err);
+         this.tramitesDepartamento.set([]);
+         this.tramitesFiltrados.set([]);
+         this.loadingTramites.set(false);
+         return of([]);
+       })
+     ).subscribe({
+       next: (tramites: TramiteEnriquecido[]) => {
+         this.tramitesDepartamento.set(tramites);
+         this.aplicarFiltroEstado();
+         this.loadingTramites.set(false);
+         this.cdr.detectChanges();
+       }
+     });
+   }
+
+   // Filtrar por estado
+   filtrarPorEstado(estado: string): void {
+     this.filtroEstado.set(estado);
+     this.aplicarFiltroEstado();
+   }
+
+    private aplicarFiltroEstado(): void {
+      const estado = this.filtroEstado();
+      if (!estado) {
+        this.tramitesFiltrados.set(this.tramitesDepartamento());
+      } else {
+        this.tramitesFiltrados.set(
+          this.tramitesDepartamento().filter(t => 
+            t.estado?.toLowerCase() === estado.toLowerCase()
+          )
+        );
       }
-    });
-  }
+    }
 
   toggleTokenView(): void {
     this.showRawToken.set(!this.showRawToken());
@@ -179,16 +203,17 @@ export class DashboardComponent implements OnInit {
            return of(null);
          })
        ).subscribe({
-         next: () => {
-           this.notificationService.showSuccess('Trámite en revisión');
-           const tramiteActualizado = { ...tramite, estado: 'en_revision' as const };
+          next: () => {
+            this.notificationService.showSuccess('Trámite en revisión');
+            const tramiteActualizado = { ...tramite, estado: 'en_revision' as const };
             const listaActual = this.tramitesDepartamento();
             const nuevaLista = listaActual.map(t => t.id === tramite.id ? tramiteActualizado : t);
             this.tramitesDepartamento.set(nuevaLista);
+            this.aplicarFiltroEstado(); // Aplicar filtro a la lista actualizada
             this.tramiteParaRevisar.set(tramiteActualizado);
             this.mostrarModalRequisitos.set(true);
             this.cdr.detectChanges();
-         }
+          }
        });
       } else {
         // Ya está en revisión o observado, abrir modal directamente
@@ -198,9 +223,25 @@ export class DashboardComponent implements OnInit {
       }
     }
 
-    cerrarModalRevisar(): void {
-      this.mostrarModalRequisitos.set(false);
-      this.tramiteParaRevisar.set(null);
-      this.cargarTramitesDepartamento();
+     cerrarModalRevisar(): void {
+       this.mostrarModalRequisitos.set(false);
+       this.tramiteParaRevisar.set(null);
+       this.cargarTramitesDepartamento();
+     }
+
+    // ========== FILTROS ==========
+    getEstadosDisponibles(): string[] {
+      return ['registrado', 'en_revision', 'derivado', 'aprobado', 'rechazado', 'observado', 'finalizado', 'cancelado'];
+    }
+
+    // ========== UTILIDADES ==========
+    getColorEstado(estado: string): string {
+      const estadoLower = (estado || '').toLowerCase();
+      if (['aprobado', 'finalizado'].includes(estadoLower)) return 'success';
+      if (['rechazado', 'cancelado'].includes(estadoLower)) return 'danger';
+      if (['observado', 'pendiente'].includes(estadoLower)) return 'warning';
+      if (['en_revision', 'derivado'].includes(estadoLower)) return 'info';
+      if (estadoLower === 'registrado') return 'primary';
+      return 'secondary';
     }
 }

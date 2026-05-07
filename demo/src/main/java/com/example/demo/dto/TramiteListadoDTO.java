@@ -23,8 +23,14 @@ public class TramiteListadoDTO {
     private Long documentosPendientes;
     private Long documentosObservados;
     private Long documentosRechazados;
+    // Conteo de instancias (expedientes)
+    private Long conteoInstancias;
 
     // Constructors
+    public TramiteListadoDTO() {
+        // Constructor vacío para mapeo flexible
+    }
+
     public TramiteListadoDTO(Long id, String codigoRUT, String estado, String prioridad,
                             LocalDateTime fechaRegistro, LocalDateTime fechaActualizacion,
                             String departamentoActualNombre, String usuarioRegistraNombre) {
@@ -173,4 +179,7 @@ public class TramiteListadoDTO {
 
     public Long getDocumentosRechazados() { return documentosRechazados; }
     public void setDocumentosRechazados(Long documentosRechazados) { this.documentosRechazados = documentosRechazados; }
+
+    public Long getConteoInstancias() { return conteoInstancias; }
+    public void setConteoInstancias(Long conteoInstancias) { this.conteoInstancias = conteoInstancias; }
 }

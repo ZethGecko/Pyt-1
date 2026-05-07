@@ -1,19 +1,23 @@
 package com.example.demo.service;
 
-import com.example.demo.model.*;
-import com.example.demo.repository.DocumentoTramiteRepository;
-import com.example.demo.repository.InstanciaTramiteRepository;
-import com.example.demo.repository.RequisitoTUPACRepository;
-import com.example.demo.repository.TipoTramiteRepository;
-import com.example.demo.repository.TramiteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.demo.model.DocumentoTramite;
+import com.example.demo.model.InstanciaTramite;
+import com.example.demo.model.RequisitoTUPAC;
+import com.example.demo.model.TipoTramite;
+import com.example.demo.model.Tramite;
+import com.example.demo.repository.DocumentoTramiteRepository;
+import com.example.demo.repository.InstanciaTramiteRepository;
+import com.example.demo.repository.RequisitoTUPACRepository;
+import com.example.demo.repository.TramiteRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -27,9 +31,6 @@ public class InstanciaTramiteService {
 
     @Autowired
     private TramiteRepository tramiteRepository;
-
-    @Autowired
-    private TipoTramiteRepository tipoTramiteRepository;
 
     @Autowired
     private RequisitoTUPACRepository requisitoRepository;
@@ -50,17 +51,27 @@ public class InstanciaTramiteService {
         return instanciaRepository.findAllWithTramiteAndTipoTramite();
     }
 
+    public List<InstanciaTramite> listarPorEmpresaRuc(String ruc) {
+        return instanciaRepository.findByEmpresaRuc(ruc);
+    }
+
+    public List<InstanciaTramite> listarPorEmpresa(Long empresaId) {
+        return instanciaRepository.findByEmpresaId(empresaId);
+    }
+
     @Transactional
     public InstanciaTramite crear(Long tramiteId, InstanciaTramite instancia) {
         // Validar que el trámite existe y cargarlo completo
         Tramite tramite = tramiteRepository.findById(tramiteId)
             .orElseThrow(() -> new RuntimeException("Trámite no encontrado con id: " + tramiteId));
-        
+
         instancia.setTramite(tramite);
         instancia.setFechaCreacion(LocalDateTime.now());
-        instancia.setFechaActualizacion(LocalDateTime.now()); // <-- Agregar
-        instancia.setEstado("ACTIVO");
-
+        instancia.setFechaActualizacion(LocalDateTime.now());
+        // Si no se especifica estado, se asigna PENDIENTE por defecto
+        if (instancia.getEstado() == null || instancia.getEstado().isBlank()) {
+            instancia.setEstado("PENDIENTE");
+        }
         InstanciaTramite guardada = instanciaRepository.save(instancia);
 
         // Crear documentos pendientes para cada requisito del tipo-tramite
@@ -68,6 +79,7 @@ public class InstanciaTramiteService {
 
         return guardada;
     }
+    
 
     @Transactional
     public InstanciaTramite actualizar(Long id, InstanciaTramite datos) {
@@ -133,4 +145,6 @@ public class InstanciaTramiteService {
     public List<DocumentoTramite> obtenerDocumentosDeInstancia(Long instanciaId) {
         return documentoRepository.findByInstanciaTramiteIdInstancia(instanciaId);
     }
+
 }
+

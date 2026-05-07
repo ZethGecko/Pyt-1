@@ -16,11 +16,15 @@
         accept=".kml,.kmz"
         (change)="onFileSelected($event)"
         style="display: none;">
-      <button class="btn btn-primary" (click)="fileInput.click()">
-        <app-icon name="upload" size="md"></app-icon>
-        Subir KML
-      </button>
-      @if (currentLocation) {
+       <button class="btn btn-primary" (click)="cancelarDibujo(); fileInput.click()">
+         <app-icon name="upload" size="md"></app-icon>
+         Subir KML
+       </button>
+       <button class="btn btn-secondary" (click)="activarModoDibujo()" [title]="drawingMode ? 'Cancelar dibujo' : 'Dibujar ruta manualmente'">
+         <app-icon name="edit" size="md"></app-icon>
+         {{ drawingMode ? 'Cancelar Dibujo' : 'Dibujar Ruta' }}
+       </button>
+       @if (currentLocation) {
         <div class="location-card">
           <div class="flex items-center gap-2">
             <div class="location-icon">
@@ -53,8 +57,69 @@
           </button>
         </div>
       </div>
-    }
-  </div>
+     }
+
+     @if (mostrarModalDibujar) {
+       <!-- Modal para Guardar Ruta Dibujada -->
+       <div class="modal-overlay" (click)="cancelarDibujo()"></div>
+
+       <div class="modal-content" (click)="$event.stopPropagation()">
+         <div class="modal-header">
+           <div class="flex items-center gap-3">
+             <div class="stat-icon green">
+               <app-icon name="edit" size="lg" customClass="text-white"></app-icon>
+             </div>
+             <div>
+               <h2>Guardar Ruta Dibujada</h2>
+               <p class="text-sm text-slate-500">Completa los datos para guardar la ruta</p>
+             </div>
+           </div>
+           <button class="modal-close" (click)="cancelarDibujo()">
+             <app-icon name="x" size="lg"></app-icon>
+           </button>
+         </div>
+
+         <div class="modal-body">
+           <div class="form-group">
+             <label>Nombre de la Ruta</label>
+             <input type="text" [(ngModel)]="drawnRouteForm.nombre" class="form-input" placeholder="Ingrese nombre de la ruta" required>
+           </div>
+           <div class="form-group">
+             <label>Descripción (opcional)</label>
+             <textarea [(ngModel)]="drawnRouteForm.descripcion" class="form-textarea" rows="3" placeholder="Descripción de la ruta"></textarea>
+           </div>
+           <div class="form-group">
+             <label>Seleccionar Empresa (opcional)</label>
+             <select [(ngModel)]="drawnRouteForm.empresaId" class="form-select">
+               <option [ngValue]="null">Ninguna</option>
+               @for (empresa of empresas; track empresa.id) {
+                 <option [ngValue]="empresa.id">{{ empresa.nombre }}</option>
+               }
+               @if (empresas.length === 0) {
+                 <option disabled>No hay empresas disponibles</option>
+               }
+             </select>
+             @if (empresas.length === 0) {
+               <p class="text-sm text-slate-500 mt-1">
+                 <a routerLink="/empresas/crear" class="text-blue-600 hover:underline">Crear una empresa primero</a>
+               </p>
+             }
+           </div>
+         </div>
+
+         <div class="modal-footer">
+           <button class="btn btn-secondary" (click)="cancelarDibujo()">
+             <app-icon name="x" size="md"></app-icon>
+             Cancelar
+           </button>
+           <button class="btn btn-primary" (click)="guardarRutaDibujada()" [disabled]="!drawnRouteForm.nombre">
+             <app-icon name="save" size="md"></app-icon>
+             Guardar Ruta
+           </button>
+         </div>
+       </div>
+     }
+</div>
 </div>
 
      <!-- Mensajes de error/éxito (ocultar éxito si hay modal de éxito) -->
@@ -199,10 +264,32 @@
             </div>
           </div>
 
-         <!-- Contenedor del mapa (derecha) -->
-         <div class="map-viewport">
-           <div #mapContainer id="map" class="map"></div>
-         </div>
+          <!-- Contenedor del mapa (derecha) -->
+          <div class="map-viewport">
+            <div #mapContainer id="map" class="map"></div>
+
+            <!-- Drawing Toolbar Overlay -->
+            <div class="drawing-toolbar" *ngIf="drawingMode">
+              <div class="drawing-instructions">
+                <app-icon name="edit" size="md"></app-icon>
+                Haz clic en el mapa para agregar puntos
+              </div>
+              <div class="drawing-actions">
+                <button class="btn btn-sm btn-secondary" (click)="deshacerPunto()" [disabled]="drawnPoints.length === 0">
+                  <app-icon name="refresh" size="sm"></app-icon>
+                  Deshacer
+                </button>
+                <button class="btn btn-sm btn-primary" (click)="finalizarDibujo()" [disabled]="drawnPoints.length < 2">
+                  <app-icon name="check-circle" size="sm"></app-icon>
+                  Finalizar Ruta ({{ drawnPoints.length }} puntos)
+                </button>
+                <button class="btn btn-sm btn-secondary" (click)="cancelarDibujo()">
+                  <app-icon name="x" size="sm"></app-icon>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
        </div>
      </div>
 
@@ -584,19 +671,27 @@
               </div>
             </div>
           }
-          <div class="form-group">
-            <label>Seleccionar Empresa (opcional):</label>
-            <select
-              [(ngModel)]="uploadForm.empresaId"
-              name="empresaId"
-              class="form-select"
-            >
-              <option [ngValue]="null">Seleccionar empresa...</option>
-              @for (empresa of empresas; track empresa.id) {
-                <option [ngValue]="empresa.id">{{ empresa.nombre }}</option>
-              }
-            </select>
-          </div>
+           <div class="form-group">
+             <label>Seleccionar Empresa (opcional):</label>
+             <select
+               [(ngModel)]="uploadForm.empresaId"
+               name="empresaId"
+               class="form-select"
+             >
+               <option [ngValue]="null">Seleccionar empresa...</option>
+               @for (empresa of empresas; track empresa.id) {
+                 <option [ngValue]="empresa.id">{{ empresa.nombre }}</option>
+               }
+               @if (empresas.length === 0) {
+                 <option disabled>No hay empresas disponibles</option>
+               }
+             </select>
+             @if (empresas.length === 0) {
+               <p class="text-sm text-slate-500 mt-1">
+                 <a routerLink="/empresas/crear" class="text-blue-600 hover:underline">Crear una empresa primero</a>
+               </p>
+             }
+           </div>
         </div>
 
          <!-- Footer -->

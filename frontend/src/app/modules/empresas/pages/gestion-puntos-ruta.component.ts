@@ -80,6 +80,22 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
 
   constructor(private rutaService: RutaService, private empresaService: EmpresaService) {}
 
+  // ============================================
+  // DRAWING MODE PROPERTIES
+  // ============================================
+  drawingMode = false;
+  drawingInProgress = false;
+  drawnPoints: [number, number][] = [];
+  drawnPolyline: L.Polyline | null = null;
+  drawnPointMarkers: L.CircleMarker[] = [];
+  drawnPreviewGroup: L.FeatureGroup | null = null;
+  mostrarModalDibujar = false;
+  drawnRouteForm = {
+    nombre: '',
+    descripcion: '',
+    empresaId: null as number | null
+  };
+
   ngOnInit(): void {
     this.cargarRutas();
     this.cargarEmpresas();
@@ -228,11 +244,18 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
 
   cargarEmpresas(): void {
     this.empresaService.listarTodos().subscribe({
-      next: (empresas: EmpresaResponse[]) => {
-        this.empresas = empresas;
+      next: (empresas: any[]) => {
+        console.log('Empresas cargadas (raw):', empresas);
+        // Ensure each empresa has an `id` property (idEmpresa or id)
+        this.empresas = empresas.map(e => ({
+          ...e,
+          id: e.id ?? e.idEmpresa ?? e.id_empresa
+        }));
+        console.log('Empresas procesadas:', this.empresas);
       },
       error: (err) => {
         console.error('Error cargando empresas:', err);
+        this.error = 'Error al cargar empresas';
       }
     });
   }
@@ -409,6 +432,9 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);
 
+    // Map click handler for drawing mode
+    this.map.on('click', (e: L.LeafletMouseEvent) => this.onMapClick(e));
+
     this.updateMap();
   }
 
@@ -526,6 +552,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
   private parseKmlFile(file: File): void {
     this.cargando = true;
     this.error = null;
+    this.cancelarDibujo(); // Ensure drawing mode is off when uploading KML
 
     this.rutaService.parseKml(file).subscribe({
       next: (response) => {
@@ -604,6 +631,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
 
   // Modales
   abrirModalAsignarEmpresa(): void {
+    this.cancelarDibujo();
     this.mostrarModalSeleccionRuta = false;
 
     if (this.selectedRouteIndex === null) return;
@@ -636,8 +664,12 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
       }))
     } as Ruta;
 
-    this.mostrarModalAsignarEmpresa = true;
     this.asignacionModo = 'nueva';
+    // Asegurar empresas cargadas
+    if (this.empresas.length === 0) {
+      this.cargarEmpresas();
+    }
+    this.mostrarModalAsignarEmpresa = true;
   }
 
   toggleMinimizarModalSeleccion(): void {
@@ -693,12 +725,16 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
   abrirModalAsignar(ruta: Ruta): void {
     this.rutaSeleccionada = ruta;
     this.uploadForm.empresaId = ruta.empresaId ?? null;
-    this.mostrarModalAsignarEmpresa = true;
     this.asignacionModo = 'existente';
+    // Asegurar que las empresas estén cargadas
+    if (this.empresas.length === 0) {
+      this.cargarEmpresas();
+    }
+    this.mostrarModalAsignarEmpresa = true;
   }
 
   // Guardado
-  guardarNuevaRuta(): void {
+   guardarNuevaRuta(): void {
     if (this.guardando) return;
     if (this.selectedRouteIndex === null) return;
     const idx = this.selectedRouteIndex;
@@ -709,7 +745,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
 
     this.guardando = true;
 
-    const rutaData: Partial<Ruta> = {
+    const rutaData: any = {
       nombre: this.uploadForm.nombre,
       descripcion: this.uploadForm.descripcion,
       estado: 'ACTIVO',
@@ -725,7 +761,7 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     };
 
     if (this.uploadForm.empresaId !== null) {
-      rutaData.empresaId = this.uploadForm.empresaId;
+      rutaData.empresa = { idEmpresa: this.uploadForm.empresaId };
     }
 
     this.rutaService.create(rutaData).subscribe({
@@ -800,23 +836,85 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
-  actualizarEmpresa(): void {
+   actualizarEmpresa(): void {
     if (!this.rutaSeleccionada) return;
 
-    const updateData: Partial<Ruta> = {};
-    if (this.uploadForm.empresaId !== null) {
-      updateData.empresaId = this.uploadForm.empresaId;
-    }
+    const idRuta = this.rutaSeleccionada.idRuta!; // Non-null assertion
 
-    this.rutaService.update(this.rutaSeleccionada.idRuta, updateData).subscribe({
-      next: () => {
-        this.success = 'Empresa asignada correctamente';
-        this.cerrarModalAsignarEmpresa();
-        this.cargarRutas();
-        this.cargarConteos();
+    // Primero, obtener la ruta completa desde el backend
+    this.rutaService.getById(idRuta).subscribe({
+      next: (rutaCompleta: Ruta) => {
+        const updateData: any = {
+          nombre: rutaCompleta.nombre,
+          descripcion: rutaCompleta.descripcion,
+          estado: rutaCompleta.estado,
+          codigo: rutaCompleta.codigo,
+          tipo: rutaCompleta.tipo,
+          kmlContent: rutaCompleta.kmlContent,
+          distanciaKm: rutaCompleta.distanciaKm,
+          tiempoEstimadoMinutos: rutaCompleta.tiempoEstimadoMinutos,
+          observaciones: rutaCompleta.observaciones,
+          fechaRegistro: rutaCompleta.fechaRegistro,
+          puntosRuta: rutaCompleta.puntosRuta?.map(p => ({
+            idPuntoRuta: p.idPuntoRuta,
+            nombre: p.nombre,
+            descripcion: p.descripcion,
+            latitud: p.latitud,
+            longitud: p.longitud,
+            orden: p.orden,
+            tipo: p.tipo,
+            estado: p.estado,
+            fechaRegistro: p.fechaRegistro,
+            usuarioRegistra: p.usuarioRegistraId ? { idUsuarios: p.usuarioRegistraId } : null
+          })) || []
+        };
+
+        // Gerente responsable (opcional)
+        if (rutaCompleta.gerenteResponsableId) {
+          updateData.gerenteResponsable = { idGerente: rutaCompleta.gerenteResponsableId };
+        } else {
+          updateData.gerenteResponsable = null;
+        }
+
+        // Asignar empresa (objeto anidado con idEmpresa o null)
+        if (this.uploadForm.empresaId !== null) {
+          updateData.empresa = { idEmpresa: this.uploadForm.empresaId };
+        } else {
+          updateData.empresa = null;
+        }
+
+        // Usuario registra (objeto con idUsuarios) - NOT NULL
+        if (rutaCompleta.usuarioRegistraId) {
+          updateData.usuarioRegistra = { idUsuarios: rutaCompleta.usuarioRegistraId };
+        } else {
+          this.error = 'No se pudo determinar el usuario registrante de la ruta';
+          this.guardando = false;
+          return;
+        }
+
+        console.log('Actualizando ruta', idRuta, 'con datos:', JSON.stringify(updateData, null, 2));
+
+        this.rutaService.update(idRuta, updateData).subscribe({
+          next: (response) => {
+            console.log('Respuesta update:', response);
+            this.success = 'Empresa asignada correctamente';
+            this.cerrarModalAsignarEmpresa();
+            this.cargarRutas();
+            this.cargarConteos();
+            this.guardando = false;
+          },
+          error: (err: any) => {
+            console.error('Error asignando empresa:', err);
+            const backendMsg = err.error?.message || err.statusText || 'Error desconocido';
+            this.error = `Error ${err.status}: ${backendMsg}`;
+            this.guardando = false;
+          }
+        });
       },
       error: (err) => {
-        this.error = 'Error al asignar empresa: ' + (err.message || 'Error desconocido');
+        console.error('Error cargando ruta completa:', err);
+        this.error = 'Error al cargar datos de la ruta';
+        this.guardando = false;
       }
     });
   }
@@ -897,4 +995,170 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
   onFiltroModalChange(): void {
     // El getter parsedRoutesFiltradas se actualiza automáticamente
   }
+
+  // ============================================
+  // DRAWING MODE METHODS
+  // ============================================
+
+  private onMapClick(event: L.LeafletMouseEvent): void {
+    if (!this.drawingMode) return;
+
+    // Clear any previous errors (e.g., insufficient points)
+    this.error = null;
+
+    const lat = event.latlng.lat;
+    const lng = event.latlng.lng;
+    this.drawnPoints.push([lat, lng]);
+    this.drawingInProgress = true;
+    this.updateDrawingPreview();
+  }
+
+  activarModoDibujo(): void {
+    if (this.drawingMode) {
+      this.cancelarDibujo();
+      return;
+    }
+    this.drawingMode = true;
+    this.drawingInProgress = false;
+    this.drawnPoints = [];
+    this.clearDrawingLayers();
+    this.error = null; // Clear any previous errors
+    if (this.mapContainer?.nativeElement) {
+      this.mapContainer.nativeElement.style.cursor = 'crosshair';
+    }
+  }
+
+  cancelarDibujo(): void {
+    this.drawingMode = false;
+    this.drawingInProgress = false;
+    this.drawnPoints = [];
+    this.clearDrawingLayers();
+    if (this.mapContainer?.nativeElement) {
+      this.mapContainer.nativeElement.style.cursor = 'default';
+    }
+    this.mostrarModalDibujar = false;
+    this.drawnRouteForm = { nombre: '', descripcion: '', empresaId: null };
+  }
+
+  private clearDrawingLayers(): void {
+    if (this.drawnPreviewGroup) {
+      this.map?.removeLayer(this.drawnPreviewGroup);
+      this.drawnPreviewGroup = null;
+    }
+    this.drawnPolyline = null;
+    this.drawnPointMarkers = [];
+  }
+
+  private updateDrawingPreview(): void {
+    // Clear existing preview
+    if (this.drawnPreviewGroup) {
+      this.map?.removeLayer(this.drawnPreviewGroup);
+      this.drawnPreviewGroup = null;
+    }
+    this.drawnPointMarkers = [];
+
+    if (this.drawnPoints.length === 0) {
+      return;
+    }
+
+    this.drawnPreviewGroup = L.featureGroup();
+
+    // Draw polyline
+    this.drawnPolyline = L.polyline(this.drawnPoints, {
+      color: '#EF4444',
+      weight: 4,
+      opacity: 0.8,
+      lineJoin: 'round',
+      lineCap: 'round'
+    });
+    this.drawnPreviewGroup.addLayer(this.drawnPolyline);
+
+    // Add point markers
+    this.drawnPoints.forEach((point, idx) => {
+      const marker = L.circleMarker(point, {
+        radius: 6,
+        color: '#EF4444',
+        fillColor: '#FFFFFF',
+        fillOpacity: 1,
+        weight: 2
+      });
+      marker.bindTooltip(`Punto ${idx + 1}`, { permanent: false, direction: 'right' });
+      this.drawnPreviewGroup!.addLayer(marker);
+      this.drawnPointMarkers.push(marker);
+    });
+
+    if (this.map) {
+      this.drawnPreviewGroup.addTo(this.map);
+    }
+
+    // Fit bounds if multiple points
+    if (this.drawnPoints.length > 1) {
+      const bounds = L.latLngBounds(this.drawnPoints);
+      this.map?.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    }
+  }
+
+  deshacerPunto(): void {
+    if (this.drawnPoints.length === 0) return;
+    this.drawnPoints.pop();
+    if (this.drawnPoints.length === 0) {
+      this.drawingInProgress = false;
+    }
+    this.updateDrawingPreview();
+  }
+
+  finalizarDibujo(): void {
+    if (this.drawnPoints.length < 2) {
+      this.error = 'Se necesitan al menos 2 puntos para crear una ruta';
+      return;
+    }
+    this.drawingMode = false;
+    this.drawingInProgress = false;
+    this.clearDrawingLayers();
+    if (this.mapContainer?.nativeElement) {
+      this.mapContainer.nativeElement.style.cursor = 'default';
+    }
+    this.mostrarModalDibujar = true;
+  }
+
+  guardarRutaDibujada(): void {
+    if (this.guardando || !this.drawnRouteForm.nombre) return;
+    this.guardando = true;
+
+    const rutaData: any = {
+      nombre: this.drawnRouteForm.nombre,
+      descripcion: this.drawnRouteForm.descripcion,
+      estado: 'ACTIVO',
+      puntosRuta: this.drawnPoints.map((p, i) => ({
+        nombre: `Punto ${i + 1}`,
+        descripcion: '',
+        latitud: p[0],
+        longitud: p[1],
+        orden: i + 1,
+        tipo: 'PARADA',
+        estado: 'ACTIVO'
+      }))
+    };
+
+    if (this.drawnRouteForm.empresaId !== null) {
+      rutaData.empresa = { idEmpresa: this.drawnRouteForm.empresaId } as any;
+    }
+
+    this.rutaService.create(rutaData).subscribe({
+      next: (savedRuta) => {
+        this.success = 'Ruta dibujada guardada exitosamente';
+        this.mensajeExito = 'Ruta dibujada guardada exitosamente';
+        this.cancelarDibujo();
+        this.cargarRutas();
+        this.cargarConteos();
+        this.mostrarModalExito = true;
+        this.guardando = false;
+      },
+      error: (err) => {
+        this.error = 'Error al guardar ruta dibujada: ' + (err.message || 'Error desconocido');
+        this.guardando = false;
+      }
+    });
+  }
+
 }

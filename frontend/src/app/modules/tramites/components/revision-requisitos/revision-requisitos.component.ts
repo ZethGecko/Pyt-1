@@ -6,15 +6,16 @@ import { catchError, map, switchMap, takeUntil, concatMap, toArray } from 'rxjs/
 import { RequisitoTramiteRevisionService, RequisitoRevision } from '../../services/requisito-tramite-revision.service';
 import { TramiteService } from '../../services/tramite.service';
 import { HistorialTramiteService, HistorialTramite } from '../../services/historial-tramite.service';
-import { NotificationService } from '../../../../shared/services/notification.service';
+import { NotificationService } from '@app/shared/services/notification.service';
 import { DocumentoTramiteService } from '../../services/documento-tramite.service';
-import { TipoTramiteService } from '../../../configuracion/services/tipo-tramite.service';
-import { RequisitoTUPACService } from '../../../configuracion/services/requisito-tupac.service';
-import { FormatoService } from '../../../configuracion/services/formato.service';
+import { TipoTramiteService } from '@app/modules/configuracion/services/tipo-tramite.service';
+import { RequisitoTUPACService } from '@app/modules/configuracion/services/requisito-tupac.service';
 import { RequisitoTUPACEnriquecido } from '../../models/requisito-tupac.model';
-import { TipoTramiteEnriquecido } from '../../../configuracion/models/tipo-tramite.model';
-import { InstanciaTramiteService } from '../../../configuracion/services/instancia-tramite.service';
-import { InstanciaTramite } from '../../../configuracion/models/instancia-tramite.model';
+import { TipoTramiteEnriquecido } from '@app/modules/configuracion/models/tipo-tramite.model';
+import { InstanciaTramiteService } from '@app/modules/configuracion/services/instancia-tramite.service';
+import { InstanciaTramite } from '@app/modules/configuracion/models/instancia-tramite.model';
+
+import { FormatoService } from '@app/modules/configuracion/services/formato.service';
 
 interface HistorialItem {
   accion: string;
@@ -61,10 +62,16 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
   mostrarPromptIdentificador = signal<boolean>(false);
   nuevoIdentificador = signal<string>('');
 
-  // Tipo de trámite actual (para controlar botón Convertir)
-  tipoTramiteActual: TipoTramiteEnriquecido | null = null;
-   
-  // Getters computados
+   // Tipo de trámite actual (para controlar botón Convertir)
+   tipoTramiteActual: TipoTramiteEnriquecido | null = null;
+
+   // Estado de la instancia (editable)
+   estadoInstancia: string = 'PENDIENTE';
+
+   // Modo edición de instancia única
+   esModoEdicion = false;
+
+   // Getters computados
   get hayInstanciaEnEdicion(): boolean {
     return this.instanciaEnEdicion() !== null;
   }
@@ -73,10 +80,23 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     return this.instanciasCreadas.length > 0;
   }
   
-  get puedeFinalizar(): boolean {
-    // Puede finalizar solo si hay al menos una instancia guardada
-    return this.hayInstanciasGuardadas;
-  }
+    get puedeObservar(): boolean {
+      // Para observar el trámite, todos los requisitos deben estar calificados (no pendientes)
+      return this.todosCalificados;
+    }
+
+    get puedeFinalizar(): boolean {
+      // Para finalizar, todos deben estar aprobados y cumplir condiciones de instancia
+      if (!this.todosAprobados) return false;
+
+      // Si es tipo INSP (inspección), requiere al menos una instancia guardada
+      const esInspeccion = this.tipoTramiteActual?.codigo?.toUpperCase() === 'INSP' || this.tipoTramiteId === 7;
+      if (esInspeccion && !this.hayInstanciasGuardadas) {
+        return false;
+      }
+
+      return true;
+    }
 
   get permiteConvertir(): boolean {
     // Solo permits crear expedientes (instancias) para trámites de inspección.
@@ -97,24 +117,28 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     private instanciaTramiteService: InstanciaTramiteService
   ) {}
 
-   ngOnInit(): void {
-     if (this.tramiteId) {
-       // Si hay instanciaId (viene de fuera), cargarla y agregarla a instancias guardadas
-       if (this.instanciaId) {
-         this.instanciaTramiteService.obtener(this.instanciaId!).pipe(
-           takeUntil(this.destroy$)
-         ).subscribe({
-           next: (inst: InstanciaTramite) => {
-             this.instanciaEnEdicion.set(inst);
-             this.instanciasCreadas.push(inst);
-           },
-           error: (err: any) => console.error('Error cargando instancia:', err)
-         });
-       }
-       this.cargarRequisitos();
-       this.cargarHistorial();
-     }
-   }
+    ngOnInit(): void {
+      if (this.tramiteId) {
+        // Determinar modo edición (si hay instanciaId, es edición de instancia única)
+        this.esModoEdicion = this.instanciaId !== undefined;
+
+        // Si hay instanciaId (viene de fuera), cargarla y agregarla a instancias guardadas
+        if (this.instanciaId) {
+          this.instanciaTramiteService.obtener(this.instanciaId!).pipe(
+            takeUntil(this.destroy$)
+          ).subscribe({
+            next: (inst: InstanciaTramite) => {
+              this.instanciaEnEdicion.set(inst);
+              this.estadoInstancia = inst.estado || 'PENDIENTE';
+              this.instanciasCreadas.push(inst);
+            },
+            error: (err: any) => console.error('Error cargando instancia:', err)
+          });
+        }
+        this.cargarRequisitos();
+        this.cargarHistorial();
+      }
+    }
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -268,10 +292,11 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
               };
             });
 
-            return combinados.sort((a, b) => {
-              const orden = ['PENDIENTE', 'OBSERVADO', 'APROBADO', 'REPROBADO'];
-              return orden.indexOf(a.estado) - orden.indexOf(b.estado);
-            });
+             const combinadosFiltrados = combinados.filter(r => !r.esExamen);
+             return combinadosFiltrados.sort((a, b) => {
+               const orden = ['PENDIENTE', 'OBSERVADO', 'APROBADO', 'REPROBADO'];
+               return orden.indexOf(a.estado) - orden.indexOf(b.estado);
+             });
           }),
           catchError(err => {
             console.error('Error cargando datos combinados:', err);
@@ -291,8 +316,7 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
       if (this.filtroEstado && r.estado !== this.filtroEstado) return false;
       return true;
     });
-    // Filtrar: solo mostrar requisitos que NO sean exámenes
-    resultado = resultado.filter(r => !r.esExamen);
+    // NOTA: Los exámenes ya han sido excluidos de this.requisitos (se gestionan por separado)
     return resultado;
   }
 
@@ -343,12 +367,17 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     return 'timeline-marker-default';
   }
 
-  get todosAprobados(): boolean {
-    // Solo considerar requisitos que NO sean exámenes
-    const requisitosNoExamenes = this.requisitos.filter(r => !r.esExamen);
-    if (requisitosNoExamenes.length === 0) return false;
-    return requisitosNoExamenes.every(r => r.estado === 'APROBADO');
-  }
+   get todosAprobados(): boolean {
+     // Todos los requisitos deben estar APROBADOS para finalizar
+     if (this.requisitos.length === 0) return false;
+     return this.requisitos.every(r => r.estado === 'APROBADO');
+   }
+
+   get todosCalificados(): boolean {
+     // Todos los requisitos deben tener un estado (no PENDIENTE) para poder observar o finalizar
+     if (this.requisitos.length === 0) return false;
+     return this.requisitos.every(r => r.estado !== 'PENDIENTE');
+   }
 
   get hayRechazados(): boolean {
     return this.requisitos.some(r => r.estado === 'REPROBADO');
@@ -379,42 +408,41 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
     return this.requisitos.filter(r => r.estado === 'PENDIENTE').length;
   }
 
-  get progresoPorcentaje(): number {
-    if (this.requisitos.length === 0) return 0;
-    const conDocumento = this.requisitos.filter(r => r.id > 0);
-    if (conDocumento.length === 0) return 0;
-    const aprobados = this.aprobadosCount;
-    return Math.round((aprobados / conDocumento.length) * 100);
-  }
+   get progresoPorcentaje(): number {
+     if (this.requisitos.length === 0) return 0;
+     const aprobados = this.aprobadosCount;
+     return Math.round((aprobados / this.requisitos.length) * 100);
+   }
 
    private aplicarCambiosDocumentos(): Observable<any>[] {
      const operaciones: Observable<any>[] = [];
-     
+
      // Si hay una instancia en edición, incluirla en los documentos nuevos
-     const instanciaParaAsociar = this.instanciaEnEdicion() ? 
+     const instanciaParaAsociar = this.instanciaEnEdicion() ?
        { idInstancia: this.instanciaEnEdicion()!.idInstancia } : undefined;
 
      for (const req of this.requisitos) {
        const original = this.originalRequisitos.find(r => r.id === req.id);
-
-       // Detectar cambios en estado u observaciones
        const cambiosEnEstado = !original || req.estado !== original.estado;
        const cambiosEnObservaciones = !original || req.observaciones !== original.observaciones;
 
        if (!cambiosEnEstado && !cambiosEnObservaciones) continue;
 
+
+
+       // CASO DOCUMENTO (lógica original)
        if (req.id && req.id > 0) {
-         // Documento existente: actualizar según el estado
-         if (req.estado === 'APROBADO') {
-           operaciones.push(this.revisionService.aprobarDocumento(req.id, { notasRevision: req.observaciones || undefined }));
-         } else if (req.estado === 'OBSERVADO') {
-           operaciones.push(this.revisionService.observarDocumento(req.id, { observaciones: req.observaciones || '' }));
-         } else if (req.estado === 'REPROBADO') {
-           operaciones.push(this.revisionService.reprobarDocumento(req.id, { motivo: req.observaciones || '' }));
-         } else {
+          // Documento existente: actualizar según el estado
+          if (req.estado === 'APROBADO') {
+            operaciones.push(this.revisionService.aprobarDocumento(req.id, { notasRevision: req.observaciones || undefined }, false));
+          } else if (req.estado === 'OBSERVADO') {
+            operaciones.push(this.revisionService.observarDocumento(req.id, { observaciones: req.observaciones || '' }, false));
+          } else if (req.estado === 'REPROBADO') {
+            operaciones.push(this.revisionService.reprobarDocumento(req.id, { motivo: req.observaciones || '' }, false));
+          } else {
            // Para otros estados (ej. PENDIENTE), actualizar observaciones si hay cambios
            if (cambiosEnObservaciones) {
-             operaciones.push(this.documentoTramiteService.update(req.id, { 
+             operaciones.push(this.documentoTramiteService.update(req.id, {
                observaciones: req.observaciones,
                // Si hay instancia, asegurar asociación
                ...(instanciaParaAsociar && { instanciaTramite: instanciaParaAsociar })
@@ -435,14 +463,14 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
              if (!nuevoId) {
                throw new Error('No se recibió ID del documento creado');
              }
-             // Aplicar estado según corresponda
-             if (req.estado === 'APROBADO') {
-               return this.revisionService.aprobarDocumento(nuevoId, { notasRevision: req.observaciones || undefined });
-             } else if (req.estado === 'OBSERVADO') {
-               return this.revisionService.observarDocumento(nuevoId, { observaciones: req.observaciones || '' });
-             } else if (req.estado === 'REPROBADO') {
-               return this.revisionService.reprobarDocumento(nuevoId, { motivo: req.observaciones || '' });
-             } else {
+              // Aplicar estado según corresponda
+              if (req.estado === 'APROBADO') {
+                return this.revisionService.aprobarDocumento(nuevoId, { notasRevision: req.observaciones || undefined }, false);
+              } else if (req.estado === 'OBSERVADO') {
+                return this.revisionService.observarDocumento(nuevoId, { observaciones: req.observaciones || '' }, false);
+              } else if (req.estado === 'REPROBADO') {
+                return this.revisionService.reprobarDocumento(nuevoId, { motivo: req.observaciones || '' }, false);
+              } else {
                // Solo crear el documento sin cambiar estado
                return of({ id: nuevoId });
              }
@@ -482,16 +510,28 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
      }
    }
    
-   private finalizarObservacion(): void {
-     // Si hay instancia en edición, guardarla en la lista
-     if (this.instanciaEnEdicion()) {
-       this.instanciasCreadas.push(this.instanciaEnEdicion()!);
-       this.instanciaEnEdicion.set(null);
-     }
-     this.notificationService.showSuccess('Trámite observado exitosamente');
-     this.tramiteObservado.emit();
-     this.cerrar();
-   }
+    private finalizarObservacion(): void {
+      // Si hay instancia en edición, guardarla en la lista
+      if (this.instanciaEnEdicion()) {
+        this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+        this.instanciaEnEdicion.set(null);
+      }
+      this.notificationService.showSuccess('Trámite observado exitosamente');
+      // Cambiar estado del trámite a OBSERVADO
+      this.tramiteService.observar(this.tramiteId, 'Trámite observado durante revisión').subscribe({
+        next: () => {
+          this.tramiteObservado.emit();
+          this.cerrar();
+        },
+        error: (err) => {
+          console.error('Error observando trámite:', err);
+          this.notificationService.showError('Error al observar trámite: ' + (err.message || 'Error'));
+          // Aun así emitir para no bloquear
+          this.tramiteObservado.emit();
+          this.cerrar();
+        }
+      });
+    }
 
    guardarYFinalizar(): void {
      // Si hay requisitos en edición, aplicar cambios
@@ -520,62 +560,137 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
      }
    }
    
-   private finalizarRevision(): void {
-     // Si hay instancia en edición, guardarla en la lista
-     if (this.instanciaEnEdicion()) {
-       this.instanciasCreadas.push(this.instanciaEnEdicion()!);
-       this.instanciaEnEdicion.set(null);
-     }
-     this.notificationService.showSuccess('Trámite revisado completamente exitosamente');
-     this.tramiteFinalizado.emit();
-     this.cerrar();
-   }
+    private finalizarRevision(): void {
+      // Si hay instancia en edición, guardarla en la lista
+      if (this.instanciaEnEdicion()) {
+        this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+        this.instanciaEnEdicion.set(null);
+      }
+      this.notificationService.showSuccess('Trámite revisado completamente exitosamente');
+      // Cambiar estado del trámite a FINALIZADO
+      this.tramiteService.finalizar(this.tramiteId, 'Trámite finalizado después de revisión completa').subscribe({
+        next: () => {
+          this.tramiteFinalizado.emit();
+          this.cerrar();
+        },
+        error: (err) => {
+          console.error('Error finalizando trámite:', err);
+          this.notificationService.showError('Error al finalizar trámite: ' + (err.message || 'Error'));
+          // No emitir para que el usuario pueda reintentar? o igual emitir?
+          // Por segurida, emitimos para actualizar lista y cerrar
+          this.tramiteFinalizado.emit();
+          this.cerrar();
+        }
+      });
+    }
    
-   /**
-    * Guarda la instancia actual y automáticamente prepara la siguiente
-    */
-   guardarInstanciaActual(): void {
-     if (this.requisitos.length === 0) {
-       this.notificationService.showWarning('No hay requisitos para guardar');
-       return;
+    /**
+     * Guarda la instancia actual y automáticamente prepara la siguiente
+     */
+    guardarInstanciaActual(): void {
+      if (this.requisitos.length === 0) {
+        this.notificationService.showWarning('No hay requisitos para guardar');
+        return;
+      }
+
+      if (!this.instanciaEnEdicion()) {
+        this.notificationService.showWarning('No hay instancia en edición. Cree una primero.');
+        return;
+      }
+
+      const operaciones = this.aplicarCambiosDocumentos();
+
+      if (operaciones.length === 0) {
+        // No hay cambios en documentos, actualizar solo estado
+        this.actualizarEstadoInstancia(() => {
+          this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+          this.notificationService.showSuccess('Instancia guardada. Ingrese datos de la siguiente.');
+          this.avanzarASiguienteInstancia();
+        });
+        return;
+      }
+
+      from(operaciones).pipe(
+        concatMap(op => op),
+        toArray(),
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          // Después de guardar documentos, actualizar estado
+          this.actualizarEstadoInstancia(() => {
+            this.instanciasCreadas.push(this.instanciaEnEdicion()!);
+            this.notificationService.showSuccess('Instancia guardada. Ingrese datos de la siguiente.');
+            this.avanzarASiguienteInstancia();
+          });
+        },
+        error: (err: any) => {
+          console.error('Error guardando instancia:', err);
+          this.notificationService.showError('Error al guardar instancia: ' + (err.message || 'Error desconocido'));
+        }
+      });
+    }
+
+    /**
+     * Guarda la calificación de la instancia actual (modo edición única)
+     */
+    guardarCalificacion(): void {
+      if (this.requisitos.length === 0) {
+        this.notificationService.showWarning('No hay requisitos para guardar');
+        return;
+      }
+      if (!this.instanciaEnEdicion()) {
+        this.notificationService.showWarning('No hay instancia en edición');
+        return;
+      }
+
+      const operaciones = this.aplicarCambiosDocumentos();
+
+      if (operaciones.length === 0) {
+        // Solo actualizar estado y cerrar
+        this.actualizarEstadoInstancia(() => {
+          this.notificationService.showSuccess('Calificación guardada correctamente');
+          this.cerrar();
+        });
+        return;
+      }
+
+      from(operaciones).pipe(
+        concatMap(op => op),
+        toArray(),
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          this.actualizarEstadoInstancia(() => {
+            this.notificationService.showSuccess('Calificación guardada correctamente');
+            this.cerrar();
+          });
+        },
+        error: (err: any) => {
+          console.error('Error al guardar calificación:', err);
+          this.notificationService.showError('Error al guardar: ' + (err.message || 'Error desconocido'));
+        }
+      });
+    }
+
+     private actualizarEstadoInstancia(callback: () => void): void {
+       const instancia = this.instanciaEnEdicion()!;
+       const nuevoEstado = this.estadoInstancia;
+
+       this.instanciaTramiteService.actualizar(instancia.idInstancia, {
+         estado: nuevoEstado
+       } as any).subscribe({
+         next: () => callback(),
+         error: (err) => {
+           // No bloqueamos el flujo si falla, solo notificamos
+           this.notificationService.showError('Error al actualizar estado de instancia: ' + (err.message || 'Error'));
+           callback();
+         }
+       });
      }
-
-     if (!this.instanciaEnEdicion()) {
-       this.notificationService.showWarning('No hay instancia en edición. Cree una primero.');
-       return;
-     }
-
-     const operaciones = this.aplicarCambiosDocumentos();
-
-     if (operaciones.length === 0) {
-       this.notificationService.showInfo('No hay cambios en los documentos para guardar');
-       // Aún así avanzar a siguiente
-       this.avanzarASiguienteInstancia();
-       return;
-     }
-
-     from(operaciones).pipe(
-       concatMap(op => op),
-       toArray(),
-       takeUntil(this.destroy$)
-     ).subscribe({
-       next: () => {
-         // Guardar la instancia actual en la lista
-         this.instanciasCreadas.push(this.instanciaEnEdicion()!);
-         this.notificationService.showSuccess('Instancia guardada. Ingrese datos de la siguiente.');
-         // Avanzar automáticamente a siguiente instancia
-         this.avanzarASiguienteInstancia();
-       },
-       error: (err: any) => {
-         console.error('Error guardando instancia:', err);
-         this.notificationService.showError('Error al guardar instancia: ' + (err.message || 'Error desconocido'));
-       }
-     });
-   }
-   
-   /**
-    * Limpia la instancia actual y solicita el siguiente identificador
-    */
+    
+    /**
+     * Limpia la instancia actual y solicita el siguiente identificador
+     */
    private avanzarASiguienteInstancia(): void {
      // Limpiar estado
      this.instanciaEnEdicion.set(null);

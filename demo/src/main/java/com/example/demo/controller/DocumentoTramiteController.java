@@ -137,27 +137,38 @@ public class DocumentoTramiteController {
         return service.asignarParaRevision(id, usuarioId);
     }
 
-    @PutMapping("/{id}/aprobar")
-    public DocumentoTramite aprobar(@PathVariable Long id,
-                                    @RequestParam Long usuarioId,
-                                    @RequestParam(required = false) String observaciones) {
-        return service.aprobarDocumento(id, usuarioId, observaciones);
-    }
-
-    @PutMapping("/{id}/rechazar")
-    public DocumentoTramite rechazar(@PathVariable Long id,
+     @PutMapping("/{id}/aprobar")
+     public DocumentoTramite aprobar(@PathVariable Long id,
                                      @RequestParam Long usuarioId,
-                                     @RequestParam String observaciones,
-                                     @RequestParam(required = false) String motivo) {
-        return service.rechazarDocumento(id, usuarioId, observaciones, motivo);
-    }
+                                     @RequestParam(required = false) String observaciones,
+                                     @RequestParam(required = false) Boolean actualizarEstado) {
+         return service.aprobarDocumento(id, usuarioId, observaciones, actualizarEstado);
+     }
 
-    @PutMapping("/{id}/observar")
-    public DocumentoTramite observar(@PathVariable Long id,
-                                     @RequestParam Long usuarioId,
-                                     @RequestParam String observaciones) {
-        return service.observarDocumento(id, usuarioId, observaciones);
-    }
+     @PutMapping("/{id}/rechazar")
+     public DocumentoTramite rechazar(@PathVariable Long id,
+                                      @RequestParam Long usuarioId,
+                                      @RequestParam String observaciones,
+                                      @RequestParam(required = false) String motivo,
+                                      @RequestParam(required = false) Boolean actualizarEstado) {
+         return service.rechazarDocumento(id, usuarioId, observaciones, motivo, actualizarEstado);
+     }
+
+     @PutMapping("/{id}/reprobar")
+     public DocumentoTramite reprobar(@PathVariable Long id,
+                                       @RequestParam Long usuarioId,
+                                       @RequestParam String motivo,
+                                       @RequestParam(required = false) Boolean actualizarEstado) {
+         return service.rechazarDocumento(id, usuarioId, null, motivo, actualizarEstado);
+     }
+
+     @PutMapping("/{id}/observar")
+     public DocumentoTramite observar(@PathVariable Long id,
+                                      @RequestParam Long usuarioId,
+                                      @RequestParam String observaciones,
+                                      @RequestParam(required = false) Boolean actualizarEstado) {
+         return service.observarDocumento(id, usuarioId, observaciones, actualizarEstado);
+     }
 
     @PutMapping("/{id}/re-presentar")
     public DocumentoTramite rePresentar(@PathVariable Long id,

@@ -11,10 +11,10 @@ export interface Ruta {
   distanciaKm?: number;
   tiempoEstimadoMinutos?: number;
   estado?: string;
-  tipo?: string;
+ tipo?: string;
   observaciones?: string;
-  fechaRegistro?: string;
-  fechaActualizacion?: string;
+  fechaRegistro?: string | Date;
+  fechaActualizacion?: string | Date;
   empresaId?: number;
   empresaNombre?: string;
   empresaRuc?: string;
@@ -31,11 +31,12 @@ export interface Ruta {
     orden: number;
     tipo?: string;
     estado?: string;
-    fechaRegistro?: string;
-    fechaActualizacion?: string;
-    rutaId?: number;
+    fechaRegistro?: string | Date;
     usuarioRegistraId?: number;
     usuarioRegistraNombre?: string;
+    rutaId?: number;
+    empresaId?: number;
+    empresaNombre?: string;
   }>;
   kmlContent?: string;
 }
@@ -96,9 +97,14 @@ export class RutaService {
      return this.http.get<{total: number, activos: number, asignadas: number, sinAsignar: number}>(`${this.apiUrl}/conteos`);
    }
 
-  getById(id: number): Observable<Ruta> {
-    return this.http.get<Ruta>(`${this.apiUrl}/${id}`);
-  }
+   getById(id: number): Observable<Ruta> {
+     return this.http.get<Ruta>(`${this.apiUrl}/${id}`);
+   }
+
+   // Método auxiliar para obtener ruta por ID (alias)
+   getRutaById(id: number): Observable<Ruta> {
+     return this.getById(id);
+   }
 
   getByEmpresa(empresaId: number): Observable<Ruta[]> {
     return this.http.get<Ruta[]>(`${this.apiUrl}/empresa/${empresaId}`);

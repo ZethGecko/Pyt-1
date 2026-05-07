@@ -60,11 +60,18 @@ export const TRAMITES_ROUTES: Routes = [
     loadComponent: () => import('./pages/estadisticas-documentos.component')
       .then(m => m.EstadisticasDocumentosComponent)
   },
-  // Dashboard (privado)
-  {
-    path: 'dashboard',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/dashboard/dashboard.component')
-      .then(m => m.DashboardComponent)
-  }
-];
+   // Dashboard (privado)
+   {
+     path: 'dashboard',
+     canActivate: [authGuard],
+     loadComponent: () => import('./pages/dashboard/dashboard.component')
+         .then(m => m.DashboardComponent)
+   },
+   // Expedientes (listado de instancias de trámite)
+   {
+     path: 'expedientes',
+     canActivate: [authGuard],
+     loadComponent: () => import('./pages/gestion-expedientes.component').then(m => m.GestionExpedientesComponent),
+     data: { title: 'Expedientes' }
+   }
+ ];

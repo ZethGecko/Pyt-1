@@ -324,8 +324,8 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
   // 🎯 FILTRADO AVANZADO
    aplicarFiltros(): void {
      this.tramitesFiltrados = this.tramites.filter(tramite => {
-       // Filtro por estado
-       if (this.filtros.estado && tramite.estado !== this.filtros.estado) {
+       // Filtro por estado (case-insensitive)
+       if (this.filtros.estado && tramite.estado?.toLowerCase() !== this.filtros.estado.toLowerCase()) {
          return false;
        }
 

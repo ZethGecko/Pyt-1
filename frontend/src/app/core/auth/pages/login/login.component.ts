@@ -25,45 +25,47 @@ export class LoginComponent {
   isLoading = false;
   errorMessage = '';
 
-  onSubmit(): void {
-    console.log('[LoginComponent] onSubmit() - isLoading:', this.isLoading, 'errorMessage:', this.errorMessage);
-    if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
-      return;
-    }
+   onSubmit(): void {
+     console.log('[LoginComponent] onSubmit() - isLoading:', this.isLoading, 'errorMessage:', this.errorMessage);
+     if (this.loginForm.invalid) {
+       this.loginForm.markAllAsTouched();
+       return;
+     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+     this.isLoading = true;
+     this.errorMessage = '';
 
-    const credentials = {
-      username: this.loginForm.value.username!,
-      password: this.loginForm.value.password!
-    };
+     const credentials = {
+       username: this.loginForm.value.username!,
+       password: this.loginForm.value.password!
+     };
 
-    console.log('[LoginComponent] Enviando credenciales para:', credentials.username);
+     console.log('[LoginComponent] Enviando credenciales para:', credentials.username);
 
-    this.authService.login(credentials).subscribe({
-      next: (response) => {
-        console.log('[LoginComponent] Respuesta recibida:', response);
-        this.isLoading = false;
-        this.cdr.detectChanges(); // Forzar detección de cambios
-        if (response.success) {
-          this.router.navigate(['/dashboard']);
-        } else {
-          this.errorMessage = response.message || 'Error en la respuesta';
-          this.cdr.detectChanges(); // Forzar detección de cambios
-          console.log('[LoginComponent] Error en respuesta:', this.errorMessage);
-        }
-      },
-      error: (error) => {
-        console.log('[LoginComponent] Error en petición:', error);
-        this.isLoading = false;
-        this.cdr.detectChanges(); // Forzar detección de cambios
-        const msg = error?.error?.message || error?.message || 'Error al iniciar sesión';
-        this.errorMessage = msg;
-        this.cdr.detectChanges(); // Forzar detección de cambios
-        console.log('[LoginComponent] Mensaje de error asignado:', this.errorMessage);
-      }
-    });
-  }
+     this.authService.login(credentials).subscribe({
+       next: (response) => {
+         console.log('[LoginComponent] Respuesta recibida:', response);
+         this.isLoading = false;
+         this.cdr.detectChanges(); // Forzar detección de cambios
+         if (response.success) {
+           // Obtener returnUrl de los query params, o usar /dashboard por defecto
+           const returnUrl = this.router.getCurrentNavigation()?.extras?.queryParams?.['returnUrl'] || '/dashboard';
+           this.router.navigate([returnUrl]);
+         } else {
+           this.errorMessage = response.message || 'Error en la respuesta';
+           this.cdr.detectChanges(); // Forzar detección de cambios
+           console.log('[LoginComponent] Error en respuesta:', this.errorMessage);
+         }
+       },
+       error: (error) => {
+         console.log('[LoginComponent] Error en petición:', error);
+         this.isLoading = false;
+         this.cdr.detectChanges(); // Forzar detección de cambios
+         const msg = error?.error?.message || error?.message || 'Error al iniciar sesión';
+         this.errorMessage = msg;
+         this.cdr.detectChanges(); // Forzar detección de cambios
+         console.log('[LoginComponent] Mensaje de error asignado:', this.errorMessage);
+       }
+     });
+   }
 }

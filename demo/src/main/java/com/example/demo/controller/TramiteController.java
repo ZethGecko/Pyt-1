@@ -70,11 +70,11 @@ public class TramiteController {
         return service.actualizarDesdeRequest(id, request);
     }
 
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @DeleteMapping("/{id}")
-    public void eliminar(@PathVariable Long id) {
-        service.eliminar(id);
-    }
+     @PreAuthorize("hasRole('SUPER_ADMIN')")
+     @DeleteMapping("/{id}")
+     public void eliminar(@PathVariable Long id, @RequestParam(required = false) String motivo) {
+         service.eliminar(id, motivo);
+     }
 
     @GetMapping("/{id}/enriquecido")
     public Tramite obtenerEnriquecido(@PathVariable Long id) {
@@ -199,5 +199,10 @@ public class TramiteController {
         response.put("size", tramites.size());
         response.put("number", 0);
         return response;
+    }
+
+    @GetMapping("/con-instancias")
+    public List<TramiteListadoDTO> listarConInstancias() {
+        return service.listarConInstancias();
     }
 }

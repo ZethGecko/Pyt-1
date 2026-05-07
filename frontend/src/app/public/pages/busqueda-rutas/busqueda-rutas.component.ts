@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import * as L from 'leaflet';
 import { BusquedaRutasService, RutaBusqueda, BusquedaRutasRequest } from '../../../shared/services/busqueda-rutas.service';
+import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 
 @Component({
   selector: 'app-busqueda-rutas',
@@ -14,29 +15,54 @@ import { BusquedaRutasService, RutaBusqueda, BusquedaRutasRequest } from '../../
 export class BusquedaRutasComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer!: ElementRef;
 
-   map: L.Map | null = null;
-   isLoading = false;
-   error: string | null = null;
-   rutas: RutaBusqueda[] = [];
-   empresas: any[] = [];
-   puntosGeograficos: any[] = [];
+  map: L.Map | null = null;
+  isLoading = false;
+  error: string | null = null;
+  rutas: RutaBusqueda[] = [];
+  empresas: any[] = [];
+  puntosGeograficos: any[] = [];
 
-   busquedaRequest: BusquedaRutasRequest = {};
+  busquedaRequest: BusquedaRutasRequest = {};
 
-   private routeLayers: L.Polyline[] = [];
-   private originMarker: L.CircleMarker | null = null;
-   private destMarker: L.Marker | null = null;
-   isSettingOrigin = false; // toggle para modo selección de origen
+  private routeLayers: L.Polyline[] = [];
+  private originMarker: L.CircleMarker | null = null;
+  private destMarker: L.Marker | null = null;
+  isSettingOrigin = false;
+
+  imagenes: Map<string, ImagenSitio> = new Map();
 
   constructor(
     private busquedaRutasService: BusquedaRutasService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private imagenSitioService: ImagenSitioService
   ) {}
 
-   ngAfterViewInit(): void {
-     this.initMap();
-     this.loadInitialData();
-   }
+  ngAfterViewInit(): void {
+    this.initMap();
+    this.loadInitialData();
+    this.cargarImagenes();
+  }
+  
+  cargarImagenes(): void {
+    this.imagenSitioService.listarTodas().subscribe({
+      next: (data) => {
+        this.imagenes.clear();
+        data.forEach(img => {
+          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
+        });
+      },
+      error: (err) => console.error('Error cargando imágenes:', err)
+    });
+  }
+  
+  getImagenUrl(ubicacion: string): string | null {
+    return this.imagenes.get(ubicacion)?.url || null;
+  }
+  
+  tieneImagen(ubicacion: string): boolean {
+    return !!this.imagenes.get(ubicacion);
+  }
 
    ngOnDestroy(): void {
      if (this.map) {

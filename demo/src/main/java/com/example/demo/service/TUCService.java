@@ -1,24 +1,23 @@
 package com.example.demo.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.dto.EmisionTUCRequestDTO;
 import com.example.demo.dto.EmpresaHabilitadaDTO;
 import com.example.demo.dto.TUCDTO;
 import com.example.demo.dto.VehiculoTucDTO;
 import com.example.demo.model.FichaInspeccion;
-import com.example.demo.model.Inspeccion;
 import com.example.demo.model.TUC;
 import com.example.demo.model.Vehiculo;
 import com.example.demo.repository.FichaInspeccionRepository;
 import com.example.demo.repository.InspeccionRepository;
 import com.example.demo.repository.TUCRepository;
 import com.example.demo.repository.VehiculoRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class TUCService {
@@ -69,79 +68,82 @@ public class TUCService {
         FichaInspeccion ficha = fichaRepository.findById(request.getFichaId())
                 .orElseThrow(() -> new IllegalArgumentException("Ficha de inspección no encontrada"));
 
-        // 2) Validar que la ficha esté aprobada
-        Boolean estadoFicha = ficha.getEstado();
-        String resultadoFicha = ficha.getResultado();
-        if (estadoFicha == null || !estadoFicha || !"APROBADO".equals(resultadoFicha)) {
-            throw new IllegalStateException("La ficha de inspección debe estar APROBADA para emitir TUC");
-        }
+     return crearTUCDesdeFicha(ficha, request.getTipo());
+     }
 
-        // 3) Obtener vehículo
-        Long vehiculoId = ficha.getVehiculo();
-        if (vehiculoId == null) {
-            throw new IllegalStateException("La ficha no tiene asociado un vehículo");
-        }
-        Vehiculo vehiculo = vehiculoRepository.findById(vehiculoId)
-                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+     /**
+      * Emite un TUC para un vehículo a partir de su ficha aprobada más reciente.
+      * Útil para la vista de empresas donde se selecciona directamente el vehículo.
+      */
+     @Transactional
+     public TUCDTO emitirTUCDesdeVehiculo(Long vehiculoId, String tipo) {
+         if (tipo == null || (!tipo.equals("12_MESES") && !tipo.equals("HASTA_FIN_ANIO"))) {
+             throw new IllegalArgumentException("Tipo de TUC inválido. Use '12_MESES' o 'HASTA_FIN_ANIO'");
+         }
 
-        // 4) Validar que el vehículo no tenga un TUC activo
-        LocalDateTime now = LocalDateTime.now();
-        List<TUC> tucsActivos = tucRepository.findByVehiculosIdVehiculoAndFechaVencimientoAfter(vehiculoId, now);
-        if (tucsActivos != null && !tucsActivos.isEmpty()) {
-            TUC existente = tucsActivos.get(0);
-            throw new IllegalStateException("El vehículo ya tiene un TUC activo (Código: " + existente.getCodigo() + ", vence: " + existente.getFechaVencimiento() + ")");
-        }
+         // Obtener la ficha aprobada más reciente del vehículo
+         List<FichaInspeccion> fichas = fichaRepository.findApprovedByVehiculoOrderByFechaCreacionDesc(vehiculoId);
+         if (fichas == null || fichas.isEmpty()) {
+             throw new IllegalStateException("El vehículo no tiene una ficha de inspección aprobada");
+         }
+         FichaInspeccion ficha = fichas.get(0);
 
-        // 5) Calcular fechas
-        LocalDateTime fechaEmision = now;
-        LocalDateTime fechaVencimiento;
-        Integer duracionMeses;
+         return crearTUCDesdeFicha(ficha, tipo);
+     }
 
-        if ("12_MESES".equals(request.getTipo())) {
-            duracionMeses = 12;
-            fechaVencimiento = fechaEmision.plusMonths(12);
-        } else { // HASTA_FIN_ANIO
-            duracionMeses = 0;
-            LocalDate finAnio = LocalDate.of(fechaEmision.getYear(), 12, 31);
-            fechaVencimiento = finAnio.atTime(23, 59, 59);
-        }
+     /**
+      * Lógica compartida para crear el TUC a partir de una ficha aprobada.
+      * Asume que la ficha ya ha sido validada (aprobada, existe, vehículo tiene TUC activo, etc.)
+      */
+     private TUCDTO crearTUCDesdeFicha(FichaInspeccion ficha, String tipo) {
+         // 1) Obtener vehículo
+         Long vehiculoId = ficha.getVehiculo();
+         if (vehiculoId == null) {
+             throw new IllegalStateException("La ficha no tiene asociado un vehículo");
+         }
+         Vehiculo vehiculo = vehiculoRepository.findById(vehiculoId)
+                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado con id: " + vehiculoId));
 
-        // 6) Crear TUC
-        TUC tuc = new TUC();
-        tuc.setCodigo(generarCodigoTUC());
-        tuc.setEstado("ACTIVO");
-        tuc.setFechaEmision(fechaEmision);
-        tuc.setFechaVencimiento(fechaVencimiento);
-        tuc.setDuracionMeses(duracionMeses);
-        tuc.setTipo(request.getTipo());
-        tuc.setObservaciones("Emitido desde inspección (ficha_id=" + ficha.getIdFichaInspeccion() + ")");
+         // 2) Validar que el vehículo no tenga un TUC activo
+         LocalDateTime now = LocalDateTime.now();
+         List<TUC> tucsActivos = tucRepository.findByVehiculosIdVehiculoAndFechaVencimientoAfter(vehiculoId, now);
+         if (tucsActivos != null && !tucsActivos.isEmpty()) {
+             throw new IllegalStateException("El vehículo ya tiene un TUC activo");
+         }
 
-        // Asignar empresa: primero desde la inspección (si existe), luego desde el vehículo
-        if (ficha.getInspeccion() != null) {
-            Inspeccion inspeccion = inspeccionRepository.findById(ficha.getInspeccion()).orElse(null);
-            if (inspeccion != null && inspeccion.getEmpresa() != null) {
-                tuc.setEmpresa(inspeccion.getEmpresa());
-            }
-        }
-        if (tuc.getEmpresa() == null && vehiculo.getEmpresa() != null) {
-            tuc.setEmpresa(vehiculo.getEmpresa());
-        }
-        if (tuc.getEmpresa() == null) {
-            throw new IllegalStateException("No se pudo determinar la empresa para el TUC (ni de inspección ni de vehículo)");
-        }
+         // 3) Calcular fecha de vencimiento según tipo
+         LocalDateTime fechaEmision = LocalDateTime.now();
+         LocalDateTime fechaVencimiento;
+         if ("HASTA_FIN_ANIO".equals(tipo)) {
+             fechaVencimiento = fechaEmision.withDayOfYear(31).withMonth(12);
+         } else { // 12_MESES
+             fechaVencimiento = fechaEmision.plusMonths(12);
+         }
 
-        tuc = tucRepository.save(tuc);
+         // 4) Generar código único
+         String codigo = generarCodigoTUC();
 
-        // 7) Asociar TUC al vehículo
-        vehiculo.setTuc(tuc);
-        vehiculoRepository.save(vehiculo);
+         // 5) Crear y guardar TUC
+         TUC tuc = new TUC();
+         tuc.setCodigo(codigo);
+         tuc.setEstado("ACTIVO");
+         tuc.setFechaEmision(fechaEmision);
+         tuc.setFechaVencimiento(fechaVencimiento);
+         tuc.setDuracionMeses("12_MESES".equals(tipo) ? 12 : 12);
+         tuc.setTipo(tipo);
+          tuc.setObservaciones("TUC emitido desde ficha de inspección ID: " + ficha.getIdFichaInspeccion());
 
-        // 8) Devolver DTO
-        return convertirATUCDTO(tuc, vehiculo);
-    }
+         // Asociar vehículo
+         tuc.getVehiculos().add(vehiculo);
 
-    @Transactional(readOnly = true)
-    public List<EmpresaHabilitadaDTO> listarEmpresasHabilitadas() {
+         TUC guardado = tucRepository.save(tuc);
+
+         // 6) Devolver DTO
+          return convertirATUCDTO(guardado, vehiculo);
+      }
+
+      @Transactional(readOnly = true)
+     public List<EmpresaHabilitadaDTO> listarEmpresasHabilitadas() {
         LocalDateTime now = LocalDateTime.now();
         List<TUC> tucsActivos = tucRepository.findByFechaVencimientoAfterOrderByFechaEmisionDesc(now);
         List<TUC> tucsActivosYActivos = tucsActivos.stream()

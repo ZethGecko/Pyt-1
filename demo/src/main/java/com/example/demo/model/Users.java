@@ -1,13 +1,25 @@
 package com.example.demo.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
@@ -65,10 +77,6 @@ public class Users {
     @JsonIgnore
     private List<GrupoPresentacion> gruposPresentacion;
 
-    @OneToMany(mappedBy = "usuarioReceptor", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Expediente> expedientes;
-
     @OneToMany(mappedBy = "usuarioInspector", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Inspeccion> inspecciones;
@@ -93,11 +101,11 @@ public class Users {
      @JsonIgnore
      private List<Publicacion> publicacionesActualizadas;
 
-     @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
-     @JsonIgnore
-     private List<Publicacion> publicacionesCreadas;
+    @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Publicacion> publicacionesCreadas;
 
-     // Constructors
+    // Constructors
     public Users() {
     }
 
@@ -206,14 +214,6 @@ public class Users {
         this.gruposPresentacion = gruposPresentacion;
     }
 
-    public List<Expediente> getExpedientes() {
-        return expedientes;
-    }
-
-    public void setExpedientes(List<Expediente> expedientes) {
-        this.expedientes = expedientes;
-    }
-
     public List<Inspeccion> getInspecciones() {
         return inspecciones;
     }
@@ -274,7 +274,7 @@ public class Users {
         return tokenVersion;
     }
 
-    public void setTokenVersion(Integer tokenVersion) {
+    public void setTokenVersion(int tokenVersion) {
         this.tokenVersion = tokenVersion;
     }
 

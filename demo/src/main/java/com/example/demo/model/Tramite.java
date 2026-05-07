@@ -55,11 +55,6 @@ public class Tramite {
     private TipoTramite tipoTramite;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "expediente")
-    @JsonIgnore
-    private Expediente expediente;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa")
     @JsonIgnore
     private Empresa empresa;
@@ -202,9 +197,6 @@ public class Tramite {
 
     public TipoTramite getTipoTramite() { return tipoTramite; }
     public void setTipoTramite(TipoTramite tipoTramite) { this.tipoTramite = tipoTramite; }
-
-    public Expediente getExpediente() { return expediente; }
-    public void setExpediente(Expediente expediente) { this.expediente = expediente; }
 
     public Empresa getEmpresa() { return empresa; }
     public void setEmpresa(Empresa empresa) { this.empresa = empresa; }

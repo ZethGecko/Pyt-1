@@ -1,13 +1,15 @@
 import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { SeguimientoService, TramiteListado, SeguimientoCompleto } from '../../services/seguimiento.service';
 import { Subject } from 'rxjs';
+import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 
 @Component({
   selector: 'app-seguimiento',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './seguimiento.component.html',
   styleUrls: ['./seguimiento.component.scss']
 })
@@ -25,11 +27,15 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
 
   // Destroy subject para limpiar subscriptions
   private destroy$ = new Subject<void>();
+  
+  // Imágenes del sitio
+  imagenes: Map<string, ImagenSitio> = new Map();
 
   constructor(
     private fb: FormBuilder,
     private seguimientoService: SeguimientoService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    private imagenSitioService: ImagenSitioService
   ) {
     this.seguimientoForm = this.fb.group({
       codigo: ['', [Validators.required, Validators.minLength(2)]]
@@ -37,8 +43,17 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Cargar todos los trámites al iniciar (opcional, se puede comentar si hay muchos)
-    // this.cargarTodos();
+    // Cargar imágenes del sitio
+    this.imagenSitioService.listarTodas().subscribe({
+      next: (data) => {
+        this.imagenes.clear();
+        data.forEach(img => {
+          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
+        });
+      },
+      error: (err) => console.error('Error cargando imágenes:', err)
+    });
   }
 
   ngOnDestroy(): void {
@@ -261,11 +276,21 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   /**
    * Gets inscription by exam code
    */
-  getInscripcionPorCodigo(codigo: string): any {
-    if (!this.tramiteDetalle?.inscripciones) return null;
-    return this.tramiteDetalle.inscripciones.find((ins: any) => {
-      const codigoExamen = ins.grupoPresentacion?.requisitoExamen?.codigo || '';
-      return codigoExamen?.toUpperCase() === codigo?.toUpperCase();
-    }) || null;
-  }
-}
+   getInscripcionPorCodigo(codigo: string): any {
+     if (!this.tramiteDetalle?.inscripciones) return null;
+     return this.tramiteDetalle.inscripciones.find((ins: any) => {
+       const codigoExamen = ins.grupoPresentacion?.requisitoExamen?.codigo || '';
+       return codigoExamen?.toUpperCase() === codigo?.toUpperCase();
+     }) || null;
+   }
+   
+   // ========== IMÁGENES DEL SITIO ==========
+   
+   getImagenUrl(ubicacion: string): string | null {
+     return this.imagenes.get(ubicacion)?.url || null;
+   }
+   
+   tieneImagen(ubicacion: string): boolean {
+     return !!this.imagenes.get(ubicacion);
+   }
+ }

@@ -75,20 +75,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
     else if (url.startsWith('/tramites') || 
         url.startsWith('/empresas') || 
         url.startsWith('/vehiculos') || 
-        url.startsWith('/expedientes') || 
         url.startsWith('/inspecciones') || 
         url.startsWith('/examenes')) {
       gestion = true;
     }
     // Rutas de Configuración
-    else if (url.startsWith('/configuracion') || 
-             url.startsWith('/tipos-transporte') || 
-             url.startsWith('/tipos-tramite') || 
-             url.startsWith('/tupac') || 
-             url.startsWith('/departamentos') || 
-             url.startsWith('/admin/users') || 
-             url.startsWith('/admin/roles') || 
-             url.startsWith('/tipo-tramite-solicitante') ||
+    else if (url.startsWith('/configuracion') ||
+             url.startsWith('/tipos-transporte') ||
+             url.startsWith('/tipos-tramite') ||
+             url.startsWith('/tupac') ||
+             url.startsWith('/departamentos') ||
+             url.startsWith('/admin/users') ||
+             url.startsWith('/admin/roles') ||
              url.startsWith('/requisitos-tupac')) {
       configuracion = true;
     }

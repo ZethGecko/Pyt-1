@@ -3,22 +3,16 @@
   <div class="page-header">
     <div>
       <h1>Gestión de Inspecciones</h1>
-      <p class="page-subtitle">Administra las inspecciones programadas del sistema</p>
+      <p class="page-subtitle">Administra las inspecciones programadas del sistema por bloque/expediente</p>
     </div>
-    <div class="header-actions">
-      <button class="btn btn-secondary" (click)="irACanvas()">
-        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-        Ficha de Inspección
-      </button>
-      <button class="btn btn-primary" (click)="abrirModalInspeccion()">
-        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Nueva Inspección
-      </button>
-    </div>
+      <div class="header-actions">
+        <button class="btn btn-outline" (click)="abrirModalCreacion()">
+          <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Nueva Inspección
+        </button>
+      </div>
   </div>
 
   <!-- Estadísticas -->
@@ -34,7 +28,7 @@
         <span class="stat-label">Total Inspecciones</span>
       </div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-icon" style="background-color: #dbeafe; color: #2563eb;">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +40,7 @@
         <span class="stat-label">Programadas</span>
       </div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-icon success">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +52,7 @@
         <span class="stat-label">Realizadas</span>
       </div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-icon" style="background-color: #fee2e2; color: #dc2626;">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,10 +86,20 @@
   <div class="filters-section">
     <div class="filter-group">
       <label>Empresa:</label>
-      <input 
-        type="text" 
+      <input
+        type="text"
         [(ngModel)]="filtroEmpresa"
-        placeholder="Nombre de empresa" 
+        placeholder="Nombre de empresa"
+        class="filter-input"
+      >
+    </div>
+    <div class="filter-group">
+      <label>RUT Empresa:</label>
+      <input
+        type="text"
+        [(ngModel)]="filtroRuc"
+        (keyup.enter)="aplicarFiltroRuc()"
+        placeholder="Ingrese RUT"
         class="filter-input"
       >
     </div>
@@ -119,108 +123,211 @@
   <!-- Loading -->
   <div class="loading-container" *ngIf="cargando">
     <div class="spinner"></div>
-    <span class="loading-text">Cargando inspecciones...</span>
+    <span class="loading-text">Cargando bloques de inspección...</span>
   </div>
 
-  <!-- Tabla -->
-  <div class="table-container" *ngIf="!cargando && inspeccionesFiltradas.length > 0">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Empresa</th>
-          <th>Fecha Programada</th>
-          <th>Hora</th>
-          <th>Lugar</th>
-          <th>Inspector</th>
-          <th>Estado</th>
-          <th>Resultado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let inspeccion of inspeccionesFiltradas">
-          <td>
-            <span class="codigo-badge">{{ inspeccion.codigo }}</span>
-          </td>
-          <td>
-            <div class="empresa-cell">
-              <div class="empresa-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-              </div>
-              <span class="empresa-nombre">{{ inspeccion.empresaNombre || 'Sin asignar' }}</span>
-            </div>
-          </td>
-          <td>
-            <span class="fecha">{{ inspeccion.fechaProgramada | date:'dd/MM/yyyy' }}</span>
-          </td>
-          <td>
-            <span class="hora">{{ inspeccion.horaProgramada || '-' }}</span>
-          </td>
-          <td>
-            <span class="lugar">{{ inspeccion.lugar || 'Sin especificar' }}</span>
-          </td>
-          <td>
-            <span class="inspector">{{ inspeccion.inspectorNombre || 'Sin asignar' }}</span>
-          </td>
-          <td>
-            <span class="badge" 
-                  [class.badge-info]="inspeccion.estado === 'programada'"
-                  [class.badge-warning]="inspeccion.estado === 'en_proceso'"
-                  [class.badge-success]="inspeccion.estado === 'realizada'"
-                  [class.badge-danger]="inspeccion.estado === 'cancelada'">
-              {{ getEstadoFormateado(inspeccion.estado) }}
-            </span>
-          </td>
-          <td>
-            <span class="badge" 
-                  [class.badge-success]="inspeccion.resultado === 'aprobado'"
-                  [class.badge-danger]="inspeccion.resultado === 'rechazado'"
-                  [class.badge-warning]="inspeccion.resultado === 'observado'"
-                  [class.badge-secondary]="!inspeccion.resultado">
-              {{ inspeccion.resultado || 'Sin resultado' }}
-            </span>
-          </td>
-          <td class="actions">
-            <button class="btn-icon btn-view" (click)="realizarInspeccion(inspeccion)" title="Realizar inspección">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-              </svg>
-            </button>
-            <button class="btn-icon btn-edit" (click)="abrirModalInspeccion(inspeccion)" title="Editar">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-            </button>
-            <button class="btn-icon btn-delete" (click)="cancelarInspeccion(inspeccion)" title="Cancelar">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-              </svg>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Bloques / Expedientes -->
+  <div class="bloques-container" *ngIf="!cargando && bloquesFiltrados.length > 0">
+    <div class="bloque-card" *ngFor="let bloque of bloquesPaginados">
+       <!-- Encabezado del Bloque (Expediente por Trámite) -->
+       <div class="bloque-header">
+         <div class="bloque-info">
+           <div class="bloque-titulo">
+             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="bloque-icon">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+             </svg>
+             <div>
+               <h3>Trámite #{{ bloque.idTramite }} - {{ bloque.empresaNombre }}</h3>
+                <p class="bloque-subtitle">
+                  {{ formatFecha(bloque.inspecciones[0].fechaProgramada) }} {{ bloque.inspecciones[0].hora || '' }} |
+                  {{ bloque.inspecciones.length }} de {{ bloque.totalInstancias }} inspección(es) |
+                  Estado general:
+                 <span [class.badge]="true"
+                       [class.badge-info]="bloque.estado === 'PROGRAMADA'"
+                       [class.badge-warning]="bloque.estado === 'INICIADA' || bloque.estado === 'EN_PROCESO'"
+                       [class.badge-success]="bloque.estado === 'FINALIZADA'"
+                       [class.badge-danger]="bloque.estado === 'CANCELADA'">
+                   {{ getEstadoLabel(bloque.estado) }}
+                 </span>
+               </p>
+             </div>
+           </div>
+         </div>
+
+         <!-- Acciones del Bloque -->
+         <div class="bloque-acciones">
+           <button class="btn btn-secondary btn-sm"
+                   (click)="verInstancias(bloque)"
+                   title="Ver detalle de instancias del trámite">
+             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+             </svg>
+             Ver Instancias
+           </button>
+           <button class="btn btn-outline btn-sm"
+                   (click)="agregarInstancias(bloque)"
+                   title="Agregar instancias faltantes del trámite"
+                   [disabled]="bloque.estado !== 'PROGRAMADA'">
+             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+             </svg>
+             Agregar Instancias
+           </button>
+           <button class="btn btn-primary btn-sm"
+                   (click)="iniciarBloque(bloque)"
+                   title="Iniciar todas las inspecciones de este bloque"
+                   [disabled]="bloque.estado !== 'PROGRAMADA'">
+             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+             </svg>
+             Iniciar Todas
+           </button>
+           <button class="btn btn-danger btn-sm"
+                   (click)="cancelarBloque(bloque)"
+                   title="Cancelar todas las inspecciones de este bloque"
+                   [disabled]="bloque.estado === 'FINALIZADA' || bloque.estado === 'CANCELADA'">
+             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+             </svg>
+             Cancelar Todas
+           </button>
+         </div>
+       </div>
+
+      <!-- Tabla de Inspecciones del Bloque -->
+      <div class="bloque-content">
+        <div class="table-container">
+          <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Inspector</th>
+                  <th>Estado</th>
+                  <th>Resultado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+             <tbody>
+                <tr *ngFor="let inspeccion of bloque.inspecciones">
+                  <td>
+                    <div class="empresa-cell">
+                      <div class="empresa-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                      </div>
+                      <span class="empresa-nombre">{{ inspeccion.empresaNombre || 'Sin asignar' }}</span>
+                    </div>
+                  </td>
+                 <td>
+                   <span class="fecha">{{ formatFecha(inspeccion.fechaProgramada) }}</span>
+                 </td>
+                 <td>
+                   <span class="hora">{{ inspeccion.hora || '-' }}</span>
+                 </td>
+                <td>
+                  <span class="inspector">{{ inspeccion.inspectorNombre || 'Sin asignar' }}</span>
+                </td>
+                <td>
+                  <span class="badge"
+                        [class.badge-info]="inspeccion.estado === 'PROGRAMADA'"
+                        [class.badge-warning]="inspeccion.estado === 'INICIADA' || inspeccion.estado === 'EN_PROCESO'"
+                        [class.badge-success]="inspeccion.estado === 'FINALIZADA'"
+                        [class.badge-danger]="inspeccion.estado === 'CANCELADA'">
+                    {{ getEstadoLabel(inspeccion.estado) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge"
+                        [class.badge-success]="inspeccion.resultadoGeneral === 'aprobado'"
+                        [class.badge-danger]="inspeccion.resultadoGeneral === 'rechazado'"
+                        [class.badge-warning]="inspeccion.resultadoGeneral === 'observado'"
+                        [class.badge-secondary]="!inspeccion.resultadoGeneral">
+                    {{ inspeccion.resultadoGeneral || 'Sin resultado' }}
+                  </span>
+                </td>
+                  <td class="actions">
+                    <!-- Botón Ver Ficha (siempre visible) -->
+                    <button class="btn-icon btn-view" (click)="verFicha(inspeccion)" title="Ver Ficha de Inspección">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                    </button>
+
+                    <!-- Botón Ver Instancias (vehículos) -->
+                    <button class="btn-icon btn-list" (click)="verInstanciasDeInspeccion(inspeccion)" title="Ver Vehículos de la Inspección">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                      </svg>
+                    </button>
+
+                    <!-- Botón Editar (fecha/hora/lugar y agregar vehículos) -->
+                    <button class="btn-icon btn-edit" (click)="editarInspeccion(inspeccion)" title="Editar fecha, hora, lugar y agregar vehículos">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+
+                    <!-- Botón Iniciar (solo si PROGRAMADA) -->
+                   <button *ngIf="inspeccion.estado === 'PROGRAMADA'"
+                           class="btn-icon btn-play"
+                           (click)="iniciarInspeccion(inspeccion)"
+                           title="Iniciar Inspección">
+                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                     </svg>
+                   </button>
+
+                   <!-- Botón Terminar (si INICIADA o EN_PROCESO) -->
+                   <button *ngIf="inspeccion.estado === 'INICIADA' || inspeccion.estado === 'EN_PROCESO'"
+                           class="btn-icon btn-finish"
+                           (click)="terminarInspeccion(inspeccion)"
+                           title="Terminar Inspección">
+                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                     </svg>
+                   </button>
+
+                   <!-- Botón Cancelar (si no FINALIZADA ni CANCELADA) -->
+                   <button *ngIf="inspeccion.estado !== 'FINALIZADA' && inspeccion.estado !== 'CANCELADA'"
+                           class="btn-icon btn-delete"
+                           (click)="cancelarInspeccion(inspeccion)"
+                           title="Cancelar Inspección">
+                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                     </svg>
+                   </button>
+                 </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Sin resultados -->
-  <div class="empty-container" *ngIf="!cargando && inspeccionesFiltradas.length === 0">
+  <div class="empty-container" *ngIf="!cargando && bloquesFiltrados.length === 0">
     <div class="empty-state">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
       </svg>
-      <p>No se encontraron inspecciones</p>
+      <p>No se encontraron bloques de inspección</p>
       <span class="empty-hint">Programa una nueva inspección para comenzar</span>
     </div>
   </div>
 
   <!-- Paginación -->
   <div class="pagination" *ngIf="totalPages > 1">
-    <button 
-      class="btn btn-outline" 
-      [disabled]="page === 0" 
+    <button
+      class="btn btn-outline"
+      [disabled]="page === 0"
       (click)="cambiarPagina(page - 1)">
       <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -228,11 +335,11 @@
       Anterior
     </button>
     <span class="page-info">
-      Página {{ page + 1 }} de {{ totalPages }} ({{ totalElements }} registros)
+      Página {{ page + 1 }} de {{ totalPages }} ({{ totalElements }} bloques)
     </span>
-    <button 
-      class="btn btn-outline" 
-      [disabled]="page >= totalPages - 1" 
+    <button
+      class="btn btn-outline"
+      [disabled]="page >= totalPages - 1"
       (click)="cambiarPagina(page + 1)">
       Siguiente
       <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,106 +348,71 @@
     </button>
   </div>
 
-  <!-- Modal: Nueva/Editar Inspección -->
-  <div class="modal-overlay" *ngIf="mostrandoModal" (click)="cerrarModal()">
-    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>
-          <svg class="modal-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path *ngIf="!modoEdicion" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            <path *ngIf="modoEdicion" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-          </svg>
-          {{ modoEdicion ? 'Editar Inspección' : 'Nueva Inspección' }}
-        </h2>
-        <button class="btn-close" (click)="cerrarModal()">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form (ngSubmit)="guardarInspeccion()">
-          <p class="modal-description">
-            {{ modoEdicion ? 'Actualiza los datos de la inspección' : 'Complete los datos para programar una nueva inspección' }}
-          </p>
+   <!-- Modal Programar Inspección (por grupos) -->
+   <app-modal-programar-inspeccion
+     [mostrando]="mostrandoModalCreacion"
+     [empresas]="empresas"
+     [modo]="inspeccionParaEditarId ? 'agregar' : 'crear'"
+     [inspeccionId]="inspeccionParaEditarId || undefined"
+     (cerrarModal)="cerrarModalCreacion()"
+     (inspeccionGuardada)="onInspeccionGuardada()">
+   </app-modal-programar-inspeccion>
 
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="expediente">Expediente *</label>
-              <select id="expediente" [(ngModel)]="nuevaInspeccion.expedienteId" name="expediente" required>
-                <option [ngValue]="0">Seleccione un expediente</option>
-                <option *ngFor="let exp of empresas" [ngValue]="exp.id">
-                  {{ exp.nombre }}
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="inspector">Inspector *</label>
-              <select id="inspector" [(ngModel)]="nuevaInspeccion.inspectorId" name="inspector" required>
-                <option [ngValue]="0">Seleccione un inspector</option>
-                <option *ngFor="let insp of inspectores" [ngValue]="insp.id">
-                  {{ insp.nombre }}
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="fecha">Fecha Programada *</label>
-              <input 
-                type="date" 
-                id="fecha"
-                [(ngModel)]="nuevaInspeccion.fechaProgramada"
-                name="fecha"
-                required
-              >
-            </div>
-
-            <div class="form-group">
-              <label for="hora">Hora *</label>
-              <input 
-                type="time" 
-                id="hora"
-                [(ngModel)]="nuevaInspeccion.horaProgramada"
-                name="hora"
-                required
-              >
-            </div>
-
-            <div class="form-group full-width">
-              <label for="lugar">Lugar *</label>
-              <input 
-                type="text" 
-                id="lugar"
-                [(ngModel)]="nuevaInspeccion.lugar"
-                name="lugar"
-                placeholder="Dirección o lugar de la inspección"
-                required
-              >
-            </div>
-
-            <div class="form-group full-width">
-              <label for="observaciones">Observaciones</label>
-              <textarea 
-                id="observaciones"
-                [(ngModel)]="nuevaInspeccion.observaciones"
-                name="observaciones"
-                rows="3"
-                placeholder="Observaciones adicionales..."
-              ></textarea>
-            </div>
+   <!-- Modal Ver Instancias de Inspección -->
+   <div *ngIf="mostrarModalVerInstancias" class="fixed inset-0 z-50 overflow-y-auto">
+     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+       <!-- Overlay -->
+       <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="cerrarModalVerInstancias()"></div>
+       <!-- Content -->
+       <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+           <div class="sm:flex sm:items-start">
+             <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+               <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+               </svg>
+             </div>
+             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+               <h3 class="text-lg leading-6 font-medium text-gray-900">
+                 Vehículos - Inspección {{ inspeccionSeleccionadaParaVer?.codigo }}
+               </h3>
+               <div class="mt-4">
+                 <div *ngIf="cargandoInstancias" class="text-center py-4">
+                   <span class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></span>
+                   <p class="text-sm text-gray-500 mt-2">Cargando vehículos...</p>
+                 </div>
+                 <div *ngIf="!cargandoInstancias && inspeccionSeleccionadaParaVer?.instancias && inspeccionSeleccionadaParaVer.instancias.length > 0" class="border rounded-md max-h-60 overflow-y-auto">
+                   <table class="min-w-full divide-y divide-gray-200">
+                     <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Vehículo</th>
+                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Estado</th>
+                        </tr>
+                     </thead>
+                     <tbody class="bg-white divide-y divide-gray-200">
+                        <tr *ngFor="let inst of inspeccionSeleccionadaParaVer.instancias">
+                          <td class="px-4 py-2 text-sm text-gray-900">{{ inst.identificador }}</td>
+                          <td class="px-4 py-2 text-sm">
+                            <span class="badge" [class]="'badge-' + getBadgeClassInstancia(inst.estadoInstancia)">
+                              {{ inst.estadoInstancia || 'N/A' }}
+                            </span>
+                          </td>
+                        </tr>
+                     </tbody>
+                   </table>
+                 </div>
+                 <div *ngIf="!cargandoInstancias && (!inspeccionSeleccionadaParaVer?.instancias || inspeccionSeleccionadaParaVer.instancias.length === 0)" class="text-center py-4 text-gray-500">
+                   No hay vehículos asignados a esta inspección.
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button type="button" class="btn btn-primary ml-2" (click)="agregarVehiculosDesdeVer()">Agregar vehículos</button>
+            <button type="button" class="btn btn-outline" (click)="cerrarModalVerInstancias()">Cerrar</button>
           </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn btn-outline" (click)="cerrarModal()">
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary" [disabled]="cargando">
-              {{ modoEdicion ? 'Actualizar' : 'Programar' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+       </div>
+     </div>
+   </div>
+ </div>

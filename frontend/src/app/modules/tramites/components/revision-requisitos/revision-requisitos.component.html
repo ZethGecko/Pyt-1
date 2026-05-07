@@ -21,18 +21,31 @@
               <span class="label-estado">Estado actual:</span>
               <span class="badge badge-lg" [class]="'badge-' + (tramiteParaRevisar?.estado || '').toLowerCase()">
                 {{ tramiteParaRevisar?.estado | titlecase }}
-              </span>
-              @if (tramiteParaRevisar?.usuarioResponsableNombre) {
-                <span class="responsable-info">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                  </svg>
-                  {{ tramiteParaRevisar.usuarioResponsableNombre }}
-                </span>
-              }
-            </div>
+               </span>
+               @if (tramiteParaRevisar?.usuarioResponsableNombre) {
+                 <span class="responsable-info">
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-4 h-4">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                   </svg>
+                   {{ tramiteParaRevisar.usuarioResponsableNombre }}
+                 </span>
+               }
+             </div>
 
-             <!-- Botón Convertir a Expediente (solo si es tipo INSP, no hay instancia en edición y no hay prompt abierto) -->
+             @if (instanciaEnEdicion()) {
+               <div class="instancia-estado-edit" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e5e7eb;">
+                 <label for="estadoInstancia" class="block text-sm font-medium text-gray-700 mb-1">Estado de la Instancia</label>
+                 <select id="estadoInstancia" class="form-select" [(ngModel)]="estadoInstancia">
+                   <option value="PENDIENTE">Pendiente</option>
+                   <option value="EN_REVISION">En Revisión</option>
+                   <option value="APROBADO">Aprobado</option>
+                   <option value="OBSERVADO">Observado</option>
+                   <option value="REPROBADO">Reprobado</option>
+                 </select>
+               </div>
+             }
+
+              <!-- Botón Convertir a Expediente (solo si es tipo INSP, no hay instancia en edición y no hay prompt abierto) -->
              @if (permiteConvertir && !instanciaEnEdicion()?.identificador && !mostrarPromptIdentificador()) {
                <div class="convertir-action">
                  <button class="btn btn-sm btn-secondary" (click)="convertirAExpediente()" title="Convertir trámite en expediente con instancia">
@@ -145,94 +158,62 @@
                   </div>
                 </div>
 
-                <!-- Tabla de requisitos -->
-                <div class="table-container">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>Requisito</th>
-                        <th>Formato</th>
-                        <th>Estado</th>
-                        <th>Fecha Revisión</th>
-                        <th>Revisor</th>
-                        <th>Acciones</th>
-                        <th>Observaciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (req of requisitosFiltrados; track req.requisitoId) {
-                        <tr [class]="'state-' + req.estado.toLowerCase()">
-                          <td>
-                            <div class="requisito-info">
-                              <strong>{{ req.requisitoNombre }}</strong>
-                              @if (req.codigo) {
-                                <small class="requisito-codigo">{{ req.codigo }}</small>
-                              }
-                              @if (req.esExamen) {
-                                <span class="badge-examen">Examen</span>
-                              }
-                            </div>
-                          </td>
-                          <td>
-                            @if (req.formatoId) {
-                              <div class="formato-cell">
-                                <span class="filename" [title]="req.formatoDescripcion">
-                                  {{ req.formatoArchivoRuta ? (req.formatoArchivoRuta.split('/').pop()) : '' }}
-                                </span>
-                                <div class="formato-actions">
-                                  <button class="btn-action btn-view" (click)="verFormato(req)" title="Ver formato">👁️</button>
-                                  <button class="btn-action btn-download" (click)="descargarFormato(req)" title="Descargar formato">⬇️</button>
-                                </div>
-                              </div>
-                            } @else {
-                              <span class="text-muted">Sin formato</span>
-                            }
-                          </td>
-                          <td>
-                            <span class="badge" [class]="getColorEstado(req.estado)">
-                              {{ getIconoEstado(req.estado) }} {{ req.estadoFormateado || req.estado }}
-                            </span>
-                          </td>
-                          <td>
-                            {{ req.fechaRevision ? (req.fechaRevision | date:'dd/MM/yyyy HH:mm') : '--' }}
-                          </td>
-                          <td>
-                            {{ req.revisionUsuarioNombre || '--' }}
-                          </td>
-                          <td>
-                            <div class="action-buttons">
-                              <button (click)="aprobarRequisito(req)"
-                                      class="btn-action btn-approve"
-                                      title="Aprobar requisito">
-                                ✅ Aprobar
-                              </button>
-                              <button (click)="observarRequisito(req)"
-                                      class="btn-action btn-obs"
-                                      title="Observar requisito">
-                                ⚠️ Observar
-                              </button>
-                              <button (click)="reprobarRequisito(req)"
-                                      class="btn-action btn-reject"
-                                      title="Reprobar requisito">
-                                ❌ Reprobar
-                              </button>
-                            </div>
-                          </td>
-                          <td>
-                            <input type="text"
-                                   class="form-control form-control-sm"
-                                   [(ngModel)]="req.observaciones"
-                                   placeholder="Observaciones">
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                 </div>
-               </div>
-             }
+                 <!-- Tabla de requisitos -->
+                 <div class="table-container">
+                   <table class="data-table">
+                     <thead>
+                       <tr>
+                         <th>Requisito</th>
+                         <th>Estado</th>
+                         <th>Fecha Revisión</th>
+                         <th>Revisor</th>
+                         <th>Observaciones</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       @for (req of requisitosFiltrados; track req.requisitoId) {
+                         <tr [class]="'state-' + req.estado.toLowerCase()">
+                           <td>
+                             <div class="requisito-info">
+                               <strong>{{ req.requisitoNombre }}</strong>
+                               @if (req.codigo) {
+                                 <small class="requisito-codigo">{{ req.codigo }}</small>
+                               }
+                               @if (req.esExamen) {
+                                 <span class="badge-examen">Examen</span>
+                               }
+                             </div>
+                           </td>
+                           <td>
+                             <select class="form-control form-control-sm" [(ngModel)]="req.estado">
+                               <option value="PENDIENTE">Pendiente</option>
+                               <option value="EN_REVISION">En Revisión</option>
+                               <option value="APROBADO">Aprobado</option>
+                               <option value="OBSERVADO">Observado</option>
+                               <option value="REPROBADO">Reprobado</option>
+                             </select>
+                           </td>
+                           <td>
+                             {{ req.fechaRevision ? (req.fechaRevision | date:'dd/MM/yyyy HH:mm') : '--' }}
+                           </td>
+                           <td>
+                             {{ req.revisionUsuarioNombre || '--' }}
+                           </td>
+                           <td>
+                             <input type="text"
+                                    class="form-control form-control-sm"
+                                    [(ngModel)]="req.observaciones"
+                                    placeholder="Observaciones">
+                           </td>
+                         </tr>
+                       }
+                     </tbody>
+                   </table>
+                  </div>
+                </div>
+              }
 
-    <!-- Modal de ingreso de identificador (estilizado) -->
+     <!-- Modal de ingreso de identificador (estilizado) -->
     @if (mostrarPromptIdentificador()) {
       <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
@@ -315,29 +296,34 @@
           }
         </div>
 
-         <div class="final-buttons">
-           <!-- Botón Cancelar (cierra modal) -->
-           <button type="button" class="btn btn-outline" (click)="cerrar()">
-             Cancelar
-           </button>
+          <div class="final-buttons">
+            <!-- Botón Cancelar (cierra modal) -->
+            <button type="button" class="btn btn-outline" (click)="cerrar()">
+              Cancelar
+            </button>
 
-           <!-- Botón Guardar Instancia (guarda cambios sin cerrar y automáticamente limpia para siguiente) -->
-           @if (instanciaEnEdicion()?.identificador) {
-             <button type="button" class="btn btn-primary" (click)="guardarInstanciaActual()" title="Guardar esta instancia y continuar con la siguiente">
-               💾 Guardar y Continuar
-             </button>
-           }
+            @if (esModoEdicion) {
+              <!-- Modo edición única: solo botón Guardar Calificación -->
+              <button type="button" class="btn btn-primary" (click)="guardarCalificacion()">
+                💾 Guardar Calificación
+              </button>
+            } @else {
+              <!-- Modo creación múltiple: botones Guardar y Continuar, Observar, Finalizar -->
+              @if (instanciaEnEdicion()?.identificador) {
+                <button type="button" class="btn btn-primary" (click)="guardarInstanciaActual()" title="Guardar esta instancia y continuar con la siguiente">
+                  💾 Guardar y Continuar
+                </button>
+              }
 
-           <!-- Botón Observar Trámite (solo si hay instancias guardadas) -->
-           <button type="button" class="btn btn-warning" (click)="guardarYObservar()" [disabled]="!puedeFinalizar">
-             ⚠️ Observar Trámite
-           </button>
+               <button type="button" class="btn btn-warning" (click)="guardarYObservar()" [disabled]="!puedeObservar">
+                 ⚠️ Observar Trámite
+               </button>
 
-           <!-- Botón Revisado Completamente -->
-           <button type="button" class="btn btn-success" (click)="guardarYFinalizar()" [disabled]="!puedeFinalizar">
-             ✅ Revisado Completamente
-           </button>
-         </div>
+              <button type="button" class="btn btn-success" (click)="guardarYFinalizar()" [disabled]="!puedeFinalizar">
+                ✅ Revisado Completamente
+              </button>
+            }
+          </div>
       </div>
     }
 </div>

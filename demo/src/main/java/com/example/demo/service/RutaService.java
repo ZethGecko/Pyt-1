@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import com.example.demo.model.Users;
 import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.PuntoRutaRepository;
 import com.example.demo.repository.RutaRepository;
+import com.example.demo.repository.UsersRepository;
 
  @Service
  public class RutaService {
@@ -81,11 +85,13 @@ import com.example.demo.repository.RutaRepository;
      private final RutaRepository repo;
     private final PuntoRutaRepository puntoRutaRepository;
     private final EmpresaRepository empresaRepository;
+    private final UsersRepository usersRepository;
 
-    public RutaService(RutaRepository repo, PuntoRutaRepository puntoRutaRepository, EmpresaRepository empresaRepository) {
+    public RutaService(RutaRepository repo, PuntoRutaRepository puntoRutaRepository, EmpresaRepository empresaRepository, UsersRepository usersRepository) {
         this.repo = repo;
         this.puntoRutaRepository = puntoRutaRepository;
         this.empresaRepository = empresaRepository;
+        this.usersRepository = usersRepository;
     }
 
     public List<Ruta> listarTodos() {
@@ -142,6 +148,8 @@ import com.example.demo.repository.RutaRepository;
 
     @Transactional
     public Ruta guardar(Ruta ruta) {
+        boolean isNew = ruta.getIdRuta() == null;
+
         if (ruta.getFechaRegistro() == null) {
             ruta.setFechaRegistro(LocalDateTime.now());
         }
@@ -152,7 +160,39 @@ import com.example.demo.repository.RutaRepository;
             ruta.setCodigo(generarCodigoUnico());
         }
 
-        // Preparar los puntos de ruta antes de guardar (para que cascade los persista con todos los campos obligatorios)
+        System.out.println("[RutaService.guardar] isNew=" + isNew + ", id=" + ruta.getIdRuta() + ", codigo=" + ruta.getCodigo());
+
+        // Para actualizaciones: preservar usuarioRegistra original si no se envía
+        if (!isNew) {
+            Optional<Ruta> existingOpt = repo.findById(ruta.getIdRuta());
+            if (existingOpt.isPresent()) {
+                Ruta existing = existingOpt.get();
+                // Preservar usuarioRegistra (no debe cambiar en actualizaciones)
+                if (ruta.getUsuarioRegistra() == null) {
+                    ruta.setUsuarioRegistra(existing.getUsuarioRegistra());
+                    System.out.println("[RutaService.guardar] UsuarioRegistra preservado: " + existing.getUsuarioRegistra().getIdUsuarios());
+                }
+                // Preservar fechaRegistro original
+                if (ruta.getFechaRegistro() == null) {
+                    ruta.setFechaRegistro(existing.getFechaRegistro());
+                }
+            }
+        } else {
+            // Para nuevas rutas: obtener usuario autenticado si no viene en el JSON
+            if (ruta.getUsuarioRegistra() == null) {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+                    String username = ((UserDetails) auth.getPrincipal()).getUsername();
+                    Users currentUser = usersRepository.findByUsername(username);
+                    if (currentUser != null) {
+                        ruta.setUsuarioRegistra(currentUser);
+                        System.out.println("[RutaService.guardar] UsuarioRegistra seteado desde security: " + currentUser.getIdUsuarios());
+                    }
+                }
+            }
+         }
+ 
+         // Preparar los puntos de ruta antes de guardar (para que cascade los persista con todos los campos obligatorios)
         List<PuntoRuta> puntos = ruta.getPuntosRuta();
         if (puntos != null && !puntos.isEmpty()) {
             for (int i = 0; i < puntos.size(); i++) {
@@ -176,6 +216,9 @@ import com.example.demo.repository.RutaRepository;
                 // Asignar el usuario registra (NOT NULL) desde la ruta
                 if (ruta.getUsuarioRegistra() != null) {
                     punto.setUsuarioRegistra(ruta.getUsuarioRegistra());
+                } else {
+                    // Esto no debería pasar, pero por seguridad, buscar usuario por defecto?
+                    System.err.println("[RutaService.guardar] ERROR: usuarioRegistra es NULL para un punto. Esto causará violación de NOT NULL.");
                 }
             }
         }

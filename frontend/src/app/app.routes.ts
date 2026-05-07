@@ -1,5 +1,6 @@
 ﻿import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
+import { roleGuard } from './core/auth/guards/role.guard';
 import { publicGuard } from './core/auth/guards/public.guard';
 
 export const routes: Routes = [
@@ -52,6 +53,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./modules/admin/roles-management/roles-management.component').then(m => m.RolesManagementComponent)
   },
+  {
+    path: 'admin/imagenes',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
+    loadComponent: () => import('./modules/admin/imagenes-sitio/imagenes-sitio.component').then(m => m.ImagenesSitioComponent)
+  },
 
   // Privadas - Empresas
   {
@@ -60,103 +67,95 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/empresas/pages/gestion-empresas.component').then(m => m.GestionEmpresasComponent)
   },
 
-  // Privadas - Vehículos
-  {
-    path: 'vehiculos',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/vehiculos/pages/gestion-vehiculos.component').then(m => m.GestionVehiculosComponent)
-  },
-
-   // Privadas - Expedientes (Instancias/Expedientes de Inspección)
+   // Privadas - Vehículos
    {
-     path: 'expedientes',
+     path: 'vehiculos',
      canActivate: [authGuard],
-     loadComponent: () => import('./modules/expedientes/pages/gestion-instancias/gestion-instancias.component').then(m => m.GestionInstanciasComponent)
+     loadComponent: () => import('./modules/vehiculos/pages/gestion-vehiculos.component').then(m => m.GestionVehiculosComponent)
    },
 
-  // Privadas - Inspecciones
-  {
-    path: 'inspecciones',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
-  },
-    {
-      path: 'inspecciones/realizar/:id',
-      canActivate: [authGuard],
-      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
-    },
+   // Privadas - Puntos Ruta
+   {
+     path: 'puntos-ruta',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/empresas/pages/gestion-puntos-ruta.component').then(m => m.GestionPuntosRutaComponent)
+   },
 
-  // Privadas - Exámenes
-  {
-    path: 'examenes',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/examenes/pages/gestion-examenes.component').then(m => m.GestionExamenesComponent)
-  },
+   // Privadas - Inspecciones
+   {
+     path: 'inspecciones',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
+   },
+   {
+     path: 'inspecciones/realizar/:id',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+   },
+   {
+     path: 'inspecciones/campos',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/inspecciones/pages/gestion-campos-inspeccion.component').then(m => m.GestionCamposInspeccionComponent)
+   },
+   {
+     path: 'inspecciones/fichas',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/inspecciones/pages/gestion-fichas-inspeccion.component').then(m => m.GestionFichasInspeccionComponent)
+   },
 
-  // Privadas - Perfil
-  {
-    path: 'perfil',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/perfil/pages/perfil/perfil.component').then(m => m.PerfilComponent)
-  },
-
-   // Privadas - Configuración
+   // Privadas - Configuración (módulo configuracion)
    {
      path: 'configuracion',
      canActivate: [authGuard],
      loadComponent: () => import('./modules/configuracion/pages/configuracion.component').then(m => m.ConfiguracionComponent)
    },
-  {
-    path: 'tipos-transporte',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/gestion-tipos-transporte.component').then(m => m.GestionTiposTransporteComponent)
-  },
-  {
-    path: 'tupac',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/gestion-tupac.component').then(m => m.GestionTUPACComponent)
-  },
-  {
-    path: 'departamentos',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/gestion-departamentos.component').then(m => m.GestionDepartamentosComponent)
-  },
-  {
-    path: 'puntos-ruta',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/empresas/pages/gestion-puntos-ruta.component').then(m => m.GestionPuntosRutaComponent)
-  },
-  // {
-  //   path: 'tipo-tramite-solicitante',
-  //   canActivate: [authGuard],
-  //   loadComponent: () => import('./modules/configuracion/pages/gestion-tipo-tramite-solicitante.component').then(m => m.GestionTipoTramiteSolicitanteComponent)
-  // },
-  {
-    path: 'tipos-tramite',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/gestion-tipos-tramite.component').then(m => m.GestionTiposTramiteComponent)
-  },
-  {
-    path: 'requisitos-tupac',
-    canActivate: [authGuard],
-    loadComponent: () => import('./modules/configuracion/pages/gestion-requisitos-tupac.component').then(m => m.GestionRequisitosTUPACComponent)
-  },
-
-   // Privadas - Tipo Trámite Solicitante
    {
-     path: 'tipo-tramite-solicitante',
+     path: 'tipos-transporte',
      canActivate: [authGuard],
-     loadComponent: () => import('./modules/configuracion/pages/gestion-tipo-tramite-solicitante.component').then(m => m.GestionTipoTramiteSolicitanteComponent)
+     loadComponent: () => import('./modules/configuracion/pages/gestion-tipos-transporte.component').then(m => m.GestionTiposTransporteComponent)
+   },
+   {
+     path: 'tipos-tramite',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/configuracion/pages/gestion-tipos-tramite.component').then(m => m.GestionTiposTramiteComponent)
+   },
+   {
+     path: 'requisitos-tupac',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/configuracion/pages/gestion-requisitos-tupac.component').then(m => m.GestionRequisitosTUPACComponent)
+   },
+   {
+     path: 'tupac',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/configuracion/pages/gestion-tupac.component').then(m => m.GestionTUPACComponent)
+   },
+   {
+     path: 'departamentos',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/configuracion/pages/gestion-departamentos.component').then(m => m.GestionDepartamentosComponent)
    },
 
-  // Privadas - Personas Naturales
-  {
-    path: 'personas-naturales',
-    canActivate: [authGuard],
-    loadChildren: () => import('./modules/personas-naturales/personas-naturales.routes').then(m => m.PERSONAS_NATURALES_ROUTES)
-  },
+   // Privadas - Exámenes
+   {
+     path: 'examenes',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/examenes/pages/gestion-examenes.component').then(m => m.GestionExamenesComponent)
+   },
 
-  // Redirecciones
-  { path: '', redirectTo: '', pathMatch: 'full' },
-  { path: '**', redirectTo: '' }
+   // Privadas - Perfil
+   {
+     path: 'perfil',
+     canActivate: [authGuard],
+     loadComponent: () => import('./modules/perfil/pages/perfil/perfil.component').then(m => m.PerfilComponent)
+   },
+
+   // Privadas - Personas Naturales
+   {
+     path: 'personas-naturales',
+     canActivate: [authGuard],
+     loadChildren: () => import('./modules/personas-naturales/personas-naturales.routes').then(m => m.PERSONAS_NATURALES_ROUTES)
+   },
+
+   // Redirecciones
+   { path: '**', redirectTo: '' }
 ];

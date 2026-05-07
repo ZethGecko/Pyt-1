@@ -19,13 +19,26 @@
      @Autowired
      private InstanciaTramiteService instanciaService;
 
-     @GetMapping("/tramite/{tramiteId}")
-     public ResponseEntity<List<InstanciaTramite>> listarPorTramite(@PathVariable Long tramiteId) {
-         List<InstanciaTramite> instancias = instanciaService.listarPorTramite(tramiteId);
-         return ResponseEntity.ok(instancias);
-     }
+      @GetMapping("/tramite/{tramiteId}")
+      public ResponseEntity<List<InstanciaTramite>> listarPorTramite(@PathVariable Long tramiteId) {
+          List<InstanciaTramite> instancias = instanciaService.listarPorTramite(tramiteId);
+          return ResponseEntity.ok(instancias);
+      }
 
-     @GetMapping
+       @GetMapping("/por-ruc/{ruc}")
+       public ResponseEntity<List<InstanciaTramite>> listarPorRuc(@PathVariable String ruc) {
+           List<InstanciaTramite> instancias = instanciaService.listarPorEmpresaRuc(ruc);
+           return ResponseEntity.ok(instancias);
+       }
+
+       @GetMapping("/empresa/{empresaId}")
+       @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+       public ResponseEntity<List<InstanciaTramite>> listarPorEmpresa(@PathVariable Long empresaId) {
+           List<InstanciaTramite> instancias = instanciaService.listarPorEmpresa(empresaId);
+           return ResponseEntity.ok(instancias);
+       }
+
+      @GetMapping
      @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
      public ResponseEntity<List<InstanciaTramite>> listarTodas() {
          // En una versión futura se puede agregar paginación

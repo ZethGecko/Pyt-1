@@ -53,14 +53,24 @@ public class TUCController {
         return tucService.emitirTUCDesdeFicha(request);
     }
 
-    /**
-     * Lista todas las empresas habilitadas (con TUC activo).
-     * Para cada empresa muestra fecha de emisión, vencimiento y vehículos habilitados.
-     */
-    @GetMapping("/empresas-habilitadas")
-    public List<EmpresaHabilitadaDTO> listarEmpresasHabilitadas() {
-        return tucService.listarEmpresasHabilitadas();
-    }
+     /**
+      * Emite un TUC para un vehículo a partir de su ficha aprobada más reciente.
+      * El tipo puede ser "12_MESES" o "HASTA_FIN_ANIO".
+      */
+     @PostMapping("/emitir/vehiculo/{vehiculoId}")
+     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+     public TUCDTO emitirTUCDesdeVehiculo(@PathVariable Long vehiculoId, @RequestParam String tipo) {
+         return tucService.emitirTUCDesdeVehiculo(vehiculoId, tipo);
+     }
+
+     /**
+      * Lista todas las empresas habilitadas (con TUC activo).
+      * Para cada empresa muestra fecha de emisión, vencimiento y vehículos habilitados.
+      */
+     @GetMapping("/empresas-habilitadas")
+     public List<EmpresaHabilitadaDTO> listarEmpresasHabilitadas() {
+         return tucService.listarEmpresasHabilitadas();
+     }
 
     /**
      * Lista los TUC activos de una empresa específica.
