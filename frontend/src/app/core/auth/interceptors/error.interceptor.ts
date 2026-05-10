@@ -31,15 +31,19 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         req.url.includes('/swagger-ui') ||
         req.url.includes('/v3/api-docs');
 
-      // Manejar errores de conexión y no autorizado
-      if (error.status === 0 || error.status === 401) {
+      // Manejar errores de conexión (0) - logout inmediato
+      // 401 y 403 son manejados por authInterceptor (refresh token)
+      if (error.status === 0) {
         if (!isPublicEndpoint) {
-          console.log('[ErrorInterceptor] Error de conexión o no autorizado, cerrando sesión');
+          console.log('[ErrorInterceptor] Error de conexión (0), cerrando sesión');
           authService.logout();
           router.navigate(['/auth/login']);
         }
-        // Para endpoints públicos, no hacemos logout
+        return throwError(() => error);
       }
+
+      // Para cualquier otro error (400, 404, 500, etc.), propagar el error original
+      return throwError(() => error);
 
       // Para cualquier otro error, propagar el error original (sin modificarlo)
       return throwError(() => error);

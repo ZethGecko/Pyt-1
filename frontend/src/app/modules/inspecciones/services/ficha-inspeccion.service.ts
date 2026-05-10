@@ -3,21 +3,34 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
-export interface ParametroInspeccion {
-  idParametros?: number;
-  parametro: string;
-  observacion?: string;
-  tipoEvaluacion?: string;
-  fichaInspeccionId?: number;
-}
+ export interface ParametroInspeccion {
+   idParametros?: number;
+   parametro: string;
+   observacion?: string;
+   tipoEvaluacion?: string;
+   fichaInspeccionId?: number;
+   seccion?: string;
+ }
 
-export interface FichaInspeccion {
-  id?: number;
-  inspeccionId: number;
-  estado?: string;
-  usuarioInspector?: number;
-  parametros?: ParametroInspeccion[];
-}
+ export interface FichaInspeccion {
+   id?: number;
+   inspeccionId: number | null;
+   instanciaId?: number | null;
+   estado?: boolean;
+   usuarioInspector?: number | null;
+   vehiculoId?: number | null;
+   parametros?: ParametroInspeccion[];
+   resultado?: string;
+   firmaResponsable?: string;
+   fechaFirma?: string;
+   // Títulos del formato
+   tituloPrincipal?: string;
+   subtituloPrincipal?: string;
+   tituloSeccionDatosGenerales?: string;
+   tituloSeccionPlaca?: string;
+   tituloSeccionPlanLunca?: string;
+   tituloSeccionLaboratorio?: string;
+ }
 
 export interface FichaInspeccionResponse {
   content: FichaInspeccion[];

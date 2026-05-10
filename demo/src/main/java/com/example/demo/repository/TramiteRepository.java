@@ -34,7 +34,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     Tramite findByCodigoRutEnriquecido(@Param("codigoRut") String codigoRut);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -62,7 +62,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN e.subtipoTransporte st " +
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -77,7 +77,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findAllEnriquecidos();
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -108,7 +108,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "WHERE LOWER(t.codigoRut) LIKE LOWER(CONCAT('%',:termino,'%')) " +
            "   OR LOWER(d.nombre) LIKE LOWER(CONCAT('%',:termino,'%')) " +
            "   OR LOWER(u.username) LIKE LOWER(CONCAT('%',:termino,'%')) " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -123,7 +123,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findEnriquecidosByTermino(@Param("termino") String termino);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -152,7 +152,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE t.usuarioResponsableId.idUsuarios = :usuarioId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -167,7 +167,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findByUsuarioResponsable_IdUsuarios(@Param("usuarioId") Long usuarioId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -196,7 +196,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE pn.idPersonaNatural = :personaNaturalId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -211,7 +211,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findByPersonaNaturalId(@Param("personaNaturalId") Long personaNaturalId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -240,7 +240,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE e.idEmpresa = :empresaId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -255,7 +255,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findByEmpresaId(@Param("empresaId") Long empresaId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -284,7 +284,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE g.idGerente = :gerenteId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -299,7 +299,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findByGerenteId(@Param("gerenteId") Long gerenteId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -328,7 +328,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE t.usuarioRegistra.idUsuarios = :usuarioId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -343,7 +343,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findByUsuarioRegistraId(@Param("usuarioId") Long usuarioId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -372,7 +372,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE d.idDepartamento = :departamentoId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +
@@ -387,7 +387,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
     List<TramiteListadoDTO> findByDepartamentoId(@Param("departamentoId") Long departamentoId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, " +
            "d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
@@ -416,7 +416,7 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "LEFT JOIN t.tipoTramite tt " +
            "LEFT JOIN t.documentos doc " +
            "WHERE COALESCE(pn.idPersonaNatural, e.idEmpresa, g.idGerente) = :solicitanteId " +
-           "GROUP BY t.idTramite, t.codigoRut, t.estado, t.prioridad, " +
+           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
            "tt.descripcion, tt.idTipoTramite, " +

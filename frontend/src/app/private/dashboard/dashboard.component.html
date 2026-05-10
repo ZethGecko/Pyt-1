@@ -20,106 +20,6 @@
       </div>
     </div>
   </div>
-  
-  <!-- Stats Cards -->
-  <div class="stats-grid">
-    <!-- Card 1: User Info -->
-    <div class="stat-card user-card">
-      <div class="card-header">
-        <div class="card-header-left">
-          <span class="card-label">Usuario</span>
-          <h3 class="card-value">
-            {{authState.currentUser()?.username || 'Invitado'}}
-          </h3>
-        </div>
-        <div class="icon-wrapper user-badge">
-          <app-icon name="user" size="md"></app-icon>
-        </div>
-      </div>
-      <div class="card-details">
-        <div class="detail-item">
-          <span class="detail-label">Rol:</span>
-          <span class="detail-value">{{authState.userRole()}}</span>
-        </div>
-        @if (lastLogin()) {
-          <div class="detail-item">
-            <span class="detail-label">Último acceso:</span>
-            <span class="detail-value">{{lastLogin() | date:'short'}}</span>
-          </div>
-        }
-      </div>
-    </div>
-    
-    <!-- Card 3: Permissions -->
-    <div class="stat-card permissions-card">
-      <div class="card-header">
-        <div class="card-header-left">
-          <span class="card-label">Permisos Activos</span>
-        </div>
-        <div class="icon-wrapper permission-badge">
-          <app-icon name="shield" size="md"></app-icon>
-        </div>
-      </div>
-      <div class="card-details">
-        <div class="permissions-list">
-          @if (authState.canManageUsers()) {
-            <div class="permission-item">
-              <span class="permission-dot permission-dot-blue"></span>
-              <span class="permission-text">Gestión de usuarios</span>
-            </div>
-          }
-          @if (authState.canCreateData()) {
-            <div class="permission-item">
-              <span class="permission-dot permission-dot-green"></span>
-              <span class="permission-text">Crear datos</span>
-            </div>
-          }
-          @if (authState.canDeleteData()) {
-            <div class="permission-item">
-              <span class="permission-dot permission-dot-red"></span>
-              <span class="permission-text">Eliminar datos</span>
-            </div>
-          }
-        </div>
-      </div>
-    </div>
-    
-    <!-- Card 4: Token Status -->
-    <div class="stat-card token-card">
-      <div class="card-header">
-        <div class="card-header-left">
-          <span class="card-label">Token Status</span>
-        </div>
-        <div class="icon-wrapper token-badge">
-          <app-icon name="key" size="md"></app-icon>
-        </div>
-      </div>
-      <div class="card-details">
-        @if (tokenExpiration()) {
-          <h3 class="card-value">
-            {{tokenExpiration() | date:'shortTime'}}
-          </h3>
-          <div class="detail-item">
-            <span class="detail-label">Expira en:</span>
-          </div>
-          <div class="token-progress-container">
-            <div class="token-progress-bar">
-              <div 
-                class="token-progress-fill" 
-                [style.width.%]="tokenRemainingPercentage()">
-              </div>
-            </div>
-          </div>
-          <div class="token-progress-info">
-            <span class="token-remaining">{{tokenRemainingPercentage()}}%</span>
-            <span class="token-total">válido</span>
-          </div>
-        } @else {
-          <h3 class="card-value">No disponible</h3>
-        }
-      </div>
-    </div>
-  </div>
    
       <!-- Trámites de Mi Departamento -->
       <div class="department-tramites-section">
@@ -195,16 +95,22 @@
                      </span>
                    </td>
                    <td class="date-cell">{{tramite.fechaRegistro | date:'dd/MM/yyyy'}}</td>
-                      <td class="actions">
-                        <div class="action-buttons">
-                          <button (click)="abrirModalRevisar(tramite); $event.stopPropagation()" 
-                                  class="btn btn-sm btn-primary"
-                                  title="Revisar requisitos del trámite"
-                                  [disabled]="!puedeRevisarRequisitos(tramite)">
-                            📝 Revisar
-                          </button>
-                        </div>
-                      </td>
+                       <td class="actions">
+                         <div class="action-buttons">
+                           <button (click)="abrirModalRevisar(tramite); $event.stopPropagation()"
+                                   class="btn btn-sm btn-primary"
+                                   title="Revisar requisitos del trámite"
+                                   [disabled]="!puedeRevisarRequisitos(tramite)">
+                             📝 Revisar
+                           </button>
+                           <button (click)="finalizarTramite(tramite); $event.stopPropagation()"
+                                   class="btn btn-sm btn-success"
+                                   title="Finalizar trámite"
+                                   [disabled]="!puedeFinalizarTramite(tramite)">
+                             ✅ Finalizar
+                           </button>
+                         </div>
+                       </td>
                  </tr>
                }
              </tbody>

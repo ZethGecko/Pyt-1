@@ -567,17 +567,16 @@ export class RevisionRequisitosComponent implements OnInit, OnDestroy {
         this.instanciaEnEdicion.set(null);
       }
       this.notificationService.showSuccess('Trámite revisado completamente exitosamente');
-      // Cambiar estado del trámite a FINALIZADO
-      this.tramiteService.finalizar(this.tramiteId, 'Trámite finalizado después de revisión completa').subscribe({
+
+      // Aprobar el trámite (cambia estado a APROBADO) - NO finalizar automáticamente
+      this.tramiteService.aprobar(this.tramiteId, 'Trámite aprobado después de revisión completa').subscribe({
         next: () => {
           this.tramiteFinalizado.emit();
           this.cerrar();
         },
         error: (err) => {
-          console.error('Error finalizando trámite:', err);
-          this.notificationService.showError('Error al finalizar trámite: ' + (err.message || 'Error'));
-          // No emitir para que el usuario pueda reintentar? o igual emitir?
-          // Por segurida, emitimos para actualizar lista y cerrar
+          console.error('Error aprobando trámite:', err);
+          this.notificationService.showError('Error al aprobar trámite: ' + (err.message || 'Error'));
           this.tramiteFinalizado.emit();
           this.cerrar();
         }

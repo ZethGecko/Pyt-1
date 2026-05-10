@@ -1,36 +1,97 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { InspeccionService, InspeccionResponse, BloqueInspeccionDTO } from '../../inspecciones/services/inspeccion.service';
+import { Router, RouterModule } from '@angular/router';
+import { InspeccionService, InspeccionResponse, BloqueInspeccionDTO, InspeccionInstanciaResponse } from '../../inspecciones/services/inspeccion.service';
 import { EmpresaService, EmpresaResponse } from '../../empresas/services/empresa.service';
 import { AuthStateService } from '../../../core/auth/state/auth.state';
 import { ModalProgramarInspeccionComponent } from '../components/modal-programar-inspeccion.component';
+import { ModalInstanciasDisponiblesComponent } from '../components/modal-instancias-disponibles.component';
 import { NotificationService } from '../../../shared/services/notification.service';
+import { FichaInspeccionService, FichaInspeccion } from '../../inspecciones/services/ficha-inspeccion.service';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
+import { switchMap, map } from 'rxjs/operators';
 
-@Component({
+ @Component({
   selector: 'app-gestion-inspecciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalProgramarInspeccionComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ModalProgramarInspeccionComponent, ModalInstanciasDisponiblesComponent],
   templateUrl: './gestion-inspecciones.component.html',
   styleUrls: ['./gestion-inspecciones.component.scss']
 })
 export class GestionInspeccionesComponent implements OnInit {
-  constructor(
-    private inspeccionService: InspeccionService,
-    private empresaService: EmpresaService,
-    private router: Router,
-    private changeDetectorRef: ChangeDetectorRef,
-    private authState: AuthStateService,
-    private notificationService: NotificationService
-  ) {}
+   constructor(
+     private inspeccionService: InspeccionService,
+     private empresaService: EmpresaService,
+     private router: Router,
+     private changeDetectorRef: ChangeDetectorRef,
+     private authState: AuthStateService,
+     private notificationService: NotificationService,
+     private fichaInspeccionService: FichaInspeccionService
+   ) {}
 
-  // 🎯 ESTADOS
-  bloques: BloqueInspeccionDTO[] = [];
-  empresas: EmpresaResponse[] = [];
-  cargando = false;
-  error: string | null = null;
-  exito: string | null = null;
+   ngOnInit(): void {
+     this.cargarInspecciones();
+     this.cargarEmpresas();
+   }
+
+   // 🎯 CARGAR DATOS POR BLOQUES
+   cargarInspecciones(): void {
+     this.cargando = true;
+     this.error = null;
+     this.inspeccionService.listarPorBloque().subscribe({
+       next: (bloques: BloqueInspeccionDTO[]) => {
+         this.bloques = bloques;
+         this.cargando = false;
+         this.changeDetectorRef.detectChanges();
+       },
+       error: (err: any) => {
+         this.error = err.error?.message || 'Error al cargar inspecciones';
+         this.cargando = false;
+         this.changeDetectorRef.detectChanges();
+         console.error(err);
+       }
+     });
+   }
+
+   cargarEmpresas(): void {
+     this.empresaService.listarTodos().subscribe({
+       next: (empresas: EmpresaResponse[]) => {
+         this.empresas = empresas;
+         this.changeDetectorRef.detectChanges();
+       },
+       error: (err: any) => {
+         console.error('Error al cargar empresas:', err);
+         this.changeDetectorRef.detectChanges();
+       }
+     });
+   }
+
+   // 🎯 ESTADOS
+   bloques: BloqueInspeccionDTO[] = [];
+   empresas: EmpresaResponse[] = [];
+   cargando = false;
+   error: string | null = null;
+   exito: string | null = null;
+
+   // 🎯 ESTADOS DISPONIBLES
+   estadosInspeccion = [
+     { value: 'todos', label: 'Todos' },
+     { value: 'PROGRAMADA', label: 'Programada' },
+     { value: 'INICIADA', label: 'Iniciada' },
+     { value: 'EN_PROCESO', label: 'En Proceso' },
+     { value: 'FINALIZADA', label: 'Finalizada' },
+     { value: 'CANCELADA', label: 'Cancelada' }
+   ];
+
+   // 🎯 CLASES CSS POR ESTADO
+   clasesEstado: { [key: string]: string } = {
+     'PROGRAMADA': 'bg-blue-100 text-blue-800 border-blue-200',
+     'INICIADA': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+     'EN_PROCESO': 'bg-orange-100 text-orange-800 border-orange-200',
+     'FINALIZADA': 'bg-green-100 text-green-800 border-green-200',
+     'CANCELADA': 'bg-red-100 text-red-800 border-red-200'
+   };
 
    // 🎯 FILTROS
    filtroEmpresa = '';
@@ -41,80 +102,99 @@ export class GestionInspeccionesComponent implements OnInit {
    // 🎯 MODAL CREACIÓN/AGREGAR
    mostrandoModalCreacion = false;
    inspeccionParaEditarId?: number;
+   modoModal: 'crear' | 'agregar' | 'editar-datos' = 'crear';
 
-  // 🎯 ESTADOS DISPONIBLES
-  estadosInspeccion = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'PROGRAMADA', label: 'Programada' },
-    { value: 'INICIADA', label: 'Iniciada' },
-    { value: 'EN_PROCESO', label: 'En Proceso' },
-    { value: 'FINALIZADA', label: 'Finalizada' },
-    { value: 'CANCELADA', label: 'Cancelada' }
-  ];
+   // 🎯 MODAL AGREGAR INSTANCIAS INDIVIDUALES
+   mostrarModalInstanciasDisponibles = false;
+   inspeccionParaAgregarInstancias?: InspeccionResponse;
+   instanciasDisponibles: InspeccionInstanciaResponse[] = [];
+   cargandoInstanciasDisponibles = false;
 
-  // 🎯 CLASES CSS POR ESTADO
-  clasesEstado: { [key: string]: string } = {
-    'PROGRAMADA': 'bg-blue-100 text-blue-800 border-blue-200',
-    'INICIADA': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'EN_PROCESO': 'bg-orange-100 text-orange-800 border-orange-200',
-    'FINALIZADA': 'bg-green-100 text-green-800 border-green-200',
-    'CANCELADA': 'bg-red-100 text-red-800 border-red-200'
-  };
+   abrirModalCreacion(): void {
+     this.inspeccionParaEditarId = undefined;
+     this.modoModal = 'crear';
+     this.mostrandoModalCreacion = true;
+   }
 
-  ngOnInit(): void {
-    this.cargarInspecciones();
-    this.cargarEmpresas();
-  }
+   editarInspeccion(inspeccion: InspeccionResponse): void {
+     this.inspeccionParaEditarId = inspeccion.idInspeccion;
+     this.modoModal = 'editar-datos';
+     this.mostrandoModalCreacion = true;
+   }
 
-  // 🎯 CARGAR DATOS POR BLOQUES
-  cargarInspecciones(): void {
-    this.cargando = true;
-    this.error = null;
-    this.inspeccionService.listarPorBloque().subscribe({
-      next: (bloques: BloqueInspeccionDTO[]) => {
-        this.bloques = bloques;
-        this.cargando = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (err: any) => {
-        this.error = err.error?.message || 'Error al cargar inspecciones';
-        this.cargando = false;
-        this.changeDetectorRef.detectChanges();
-        console.error(err);
+    agregarVehiculosAInspeccion(inspeccion: InspeccionResponse): void {
+      this.inspeccionParaAgregarInstancias = inspeccion;
+      this.mostrarModalInstanciasDisponibles = true;
+      this.cargarInstanciasDisponibles(inspeccion);
+    }
+
+    cargarInstanciasDisponibles(inspeccion: InspeccionResponse): void {
+      this.cargandoInstanciasDisponibles = true;
+      this.instanciasDisponibles = [];
+
+      const tramiteId = this.obtenerIdTramiteDeInspeccion(inspeccion);
+      if (!tramiteId) {
+        this.cargandoInstanciasDisponibles = false;
+        this.notificationService.error('No se pudo determinar el trámite de la inspección', 'Error', 3000);
+        return;
       }
-    });
-  }
 
-  cargarEmpresas(): void {
-    this.empresaService.listarTodos().subscribe({
-      next: (empresas: EmpresaResponse[]) => {
-        this.empresas = empresas;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('Error al cargar empresas:', err);
-        this.changeDetectorRef.detectChanges();
+      this.inspeccionService.listarInstanciasDisponibles(tramiteId, inspeccion.idInspeccion).subscribe({
+        next: (instancias) => {
+          this.instanciasDisponibles = instancias;
+          this.cargandoInstanciasDisponibles = false;
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (err) => {
+          this.cargandoInstanciasDisponibles = false;
+          this.changeDetectorRef.detectChanges();
+          console.error('Error cargando instancias disponibles:', err);
+          this.notificationService.error('Error al cargar vehículos disponibles', 'Error', 3000);
+        }
+      });
+    }
+
+    agregarInstanciaAInspeccion(instanciaId: number): void {
+      if (!this.inspeccionParaAgregarInstancias) return;
+
+      this.cargando = true;
+      this.inspeccionService.agregarInstancias(this.inspeccionParaAgregarInstancias.idInspeccion, [instanciaId]).subscribe({
+        next: () => {
+          this.notificationService.success('Vehículo agregado exitosamente', 'Éxito', 2000);
+          this.cargarInstanciasDisponibles(this.inspeccionParaAgregarInstancias!);
+          this.onInspeccionGuardada(); // refresca tabla
+        },
+        error: (err) => {
+          this.cargando = false;
+          this.changeDetectorRef.detectChanges();
+          this.notificationService.error(err.error?.message || 'Error al agregar vehículo', 'Error', 3000);
+        }
+      });
+    }
+
+    cerrarModalInstanciasDisponibles(): void {
+      this.mostrarModalInstanciasDisponibles = false;
+      this.inspeccionParaAgregarInstancias = undefined;
+      this.instanciasDisponibles = [];
+    }
+
+    // Obtiene el idTramite buscando en los bloques la inspección dada
+    private obtenerIdTramiteDeInspeccion(inspeccion: InspeccionResponse): number | undefined {
+      for (const bloque of this.bloques) {
+        if (bloque.inspecciones.some(i => i.idInspeccion === inspeccion.idInspeccion)) {
+          return bloque.idTramite;
+        }
       }
-    });
-  }
+      return undefined;
+    }
 
-  // 🎯 MODAL
-  abrirModalCreacion(): void {
-    this.inspeccionParaEditarId = undefined;
-    this.mostrandoModalCreacion = true;
-  }
+   cerrarModalCreacion(): void {
+     this.mostrandoModalCreacion = false;
+     this.inspeccionParaEditarId = undefined;
+     this.modoModal = 'crear';
+   }
 
-  editarInspeccion(inspeccion: InspeccionResponse): void {
-    this.inspeccionParaEditarId = inspeccion.idInspeccion;
-    this.mostrandoModalCreacion = true;
-  }
-
-  cerrarModalCreacion(): void {
-    this.mostrandoModalCreacion = false;
-    this.inspeccionParaEditarId = undefined;
-  }
-
-  onInspeccionGuardada(): void {
+   onInspeccionGuardada(): void {
     this.cargarInspecciones();
     this.cerrarModalCreacion();
   }
@@ -225,29 +305,142 @@ export class GestionInspeccionesComponent implements OnInit {
      this.inspeccionSeleccionadaParaVer = null;
    }
 
-  // 🎯 ACCIONES SOBRE INSPECCIONES INDIVIDUALES (dentro de bloque)
-  verFicha(inspeccion: InspeccionResponse): void {
-    this.router.navigate(['/inspecciones', 'realizar', inspeccion.idInspeccion]);
-  }
+   verFichaVehiculo(instancia: any): void {
+     if (!instancia.fichaId) {
+       // Si no tiene ficha, preguntar si crear una (debería haber sido creada al iniciar)
+       if (confirm('Este vehículo no tiene ficha creada. ¿Desea crear una ahora?')) {
+         this.crearFichaPorVehiculo(this.inspeccionSeleccionadaParaVer!.idInspeccion, instancia.idInstancia!).subscribe({
+           next: (fichaCreada: FichaInspeccion) => {
+             this.notificationService.success('Ficha creada. Redirigiendo...', 'Éxito', 1500);
+             this.router.navigate(['/inspecciones', 'ficha', fichaCreada.id!]);
+           },
+           error: (err: any) => {
+             this.notificationService.error('Error al crear ficha', 'Error', 3000);
+           }
+         });
+       }
+       return;
+     }
+     this.router.navigate(['/inspecciones', 'ficha', instancia.fichaId]);
+   }
 
-  iniciarInspeccion(inspeccion: InspeccionResponse): void {
-    if (inspeccion.estado !== 'PROGRAMADA') {
-      this.notificationService.warning('La inspección ya fue iniciada o finalizada', 'Acción no permitida', 3000);
-      return;
+   iniciarInspeccion(inspeccion: InspeccionResponse): void {
+     if (inspeccion.estado !== 'PROGRAMADA') {
+       this.notificationService.warning('La inspección ya fue iniciada o finalizada', 'Acción no permitida', 3000);
+       return;
+     }
+     this.cargando = true;
+
+     // Iniciar la inspección (cambia estado a INICIADA)
+     this.inspeccionService.cambiarEstado(inspeccion.idInspeccion, 'INICIADA').subscribe({
+       next: () => {
+         this.notificationService.success('Inspección iniciada', 'Éxito', 2000);
+         this.cargarInspecciones();
+
+         // Para cada vehículo (instancia) asignado a esta inspección, crear su ficha de inspección individual
+         this.crearFichasParaVehiculos(inspeccion);
+       },
+       error: (err) => {
+         this.notificationService.error(err.error?.message || 'Error al iniciar inspección', 'Error', 5000);
+         this.cargando = false;
+       }
+     });
+   }
+
+    private crearFichasParaVehiculos(inspeccion: InspeccionResponse): void {
+      // Obtener las instancias (vehículos) asignados a esta inspección
+      this.inspeccionService.obtenerConInstancias(inspeccion.idInspeccion).subscribe({
+        next: (data: InspeccionResponse) => {
+          const instancias = data.instancias || [];
+          if (instancias.length === 0) {
+            this.notificationService.warning('No hay vehículos asignados a esta inspección', 'Advertencia', 3000);
+            this.cargando = false;
+            return;
+          }
+
+          let contador = 0;
+          let primeraFichaId: number | null = null;
+
+           instancias.forEach((instancia) => {
+             // Crear una ficha de inspección para cada vehículo
+             this.crearFichaPorVehiculo(inspeccion.idInspeccion, instancia.idInstancia!).subscribe({
+              next: (fichaCreada: FichaInspeccion) => {
+                contador++;
+                // Guardar el ID de la primera ficha para navegar
+                if (contador === 1) {
+                  primeraFichaId = fichaCreada.id!;
+                }
+                // cuando se creen todas, navegar a la primera ficha
+                if (contador === instancias.length) {
+                  if (primeraFichaId) {
+                    this.router.navigate(['/inspecciones', 'ficha', primeraFichaId]);
+                  } else {
+                    // Fallback: ir a la inspección general
+                    this.router.navigate(['/inspecciones', 'realizar', data.idInspeccion]);
+                  }
+                  this.cargando = false;
+                }
+              },
+              error: (err: any) => {
+                console.error('Error creando ficha para vehículo', instancia.identificador, err);
+                contador++;
+                if (contador === instancias.length) {
+                  this.cargando = false;
+                }
+              }
+            });
+          });
+        },
+        error: (err: any) => {
+          this.notificationService.error('Error al cargar vehículos de la inspección', 'Error', 3000);
+          this.cargando = false;
+        }
+      });
     }
-    this.cargando = true;
-    this.inspeccionService.cambiarEstado(inspeccion.idInspeccion, 'INICIADA').subscribe({
-      next: () => {
-        this.notificationService.success('Inspección iniciada', 'Éxito', 2000);
-        this.cargarInspecciones();
-        this.router.navigate(['/inspecciones', 'realizar', inspeccion.idInspeccion]);
-      },
-      error: (err) => {
-        this.notificationService.error(err.error?.message || 'Error al iniciar inspección', 'Error', 5000);
-        this.cargando = false;
+
+   private crearFichaPorVehiculo(inspeccionId: number, instanciaId: number, vehiculoId?: number): Observable<FichaInspeccion> {
+      if (!inspeccionId || inspeccionId <= 0) {
+        return throwError(() => new Error('ID de inspección no válido'));
       }
-    });
-  }
+      const currentUserId = this.authState.currentUser()?.id;
+      const datosFicha: any = {
+        inspeccionId,
+        estado: true
+      };
+      if (vehiculoId !== undefined) {
+        datosFicha.vehiculoId = vehiculoId;
+      }
+      if (currentUserId !== undefined) {
+        datosFicha.usuarioInspector = currentUserId;
+      }
+      return this.fichaInspeccionService.create(datosFicha).pipe(
+       switchMap((nuevaFicha: FichaInspeccion) => {
+         // Obtener la ficha de formato (la primera ficha de la inspección) para copiar sus parámetros
+         return this.fichaInspeccionService.getByInspeccion(inspeccionId).pipe(
+           switchMap((fichas: FichaInspeccion[]) => {
+             if (fichas && fichas.length > 0) {
+               const plantilla = fichas[0];
+               if (plantilla.parametros && plantilla.parametros.length > 0) {
+                  // Crear parámetros copiados a la nueva ficha (sin idParametros)
+                  const ops = plantilla.parametros.map(p =>
+                    this.inspeccionService.crearParametro(nuevaFicha.id!, {
+                      parametro: p.parametro,
+                      observacion: p.observacion || '',
+                      tipoEvaluacion: p.tipoEvaluacion || 'TEXTO',
+                      seccion: p.seccion
+                    })
+                  );
+                 return forkJoin(ops).pipe(
+                   map(() => nuevaFicha)
+                 );
+               }
+             }
+             return of(nuevaFicha);
+           })
+         );
+       })
+     );
+   }
 
   terminarInspeccion(inspeccion: InspeccionResponse): void {
     if (!confirm(`¿Está seguro de terminar la inspección ${inspeccion.codigo}?`)) return;
@@ -325,8 +518,30 @@ export class GestionInspeccionesComponent implements OnInit {
   }
   get realizadas(): number { return this.finalizadas; }
 
-   irACanvas(): void {
-     this.router.navigateByUrl('/inspecciones/realizar/0');
+    irACanvas(): void {
+      this.router.navigateByUrl('/inspecciones/realizar/0');
+    }
+
+    // Navegar a la ficha de inspección (primera ficha encontrada)
+    verFichaInspeccion(inspeccion: InspeccionResponse): void {
+     this.fichaInspeccionService.getByInspeccion(inspeccion.idInspeccion).subscribe({
+       next: (fichas) => {
+         if (fichas && fichas.length > 0) {
+           this.router.navigate(['/inspecciones', 'ficha', fichas[0].id]);
+         } else {
+           this.notificationService.warning('No hay fichas creadas para esta inspección. Inicie la inspección primero.', 'Sin fichas', 3000);
+         }
+       },
+       error: () => {
+         this.notificationService.error('Error al cargar fichas', 'Error');
+       }
+     });
+   }
+
+   // Navegar al editor de formato (Canvas en modo diseño)
+   editarFormato(inspeccion: InspeccionResponse): void {
+     // Navegar a la ruta de formato con el ID de la inspección para cargar su formato existente
+     this.router.navigate(['/inspecciones', 'campos', inspeccion.idInspeccion]);
    }
 
   aplicarFiltroRuc(): void {
@@ -368,11 +583,11 @@ export class GestionInspeccionesComponent implements OnInit {
      }
    }
 
-   agregarVehiculosDesdeVer(): void {
-     const inspeccion = this.inspeccionSeleccionadaParaVer;
-     this.cerrarModalVerInstancias();
-     if (inspeccion) {
-       this.editarInspeccion(inspeccion);
-     }
-   }
+    agregarVehiculosDesdeVer(): void {
+      const inspeccion = this.inspeccionSeleccionadaParaVer;
+      this.cerrarModalVerInstancias();
+      if (inspeccion) {
+        this.agregarVehiculosAInspeccion(inspeccion);
+      }
+    }
  }

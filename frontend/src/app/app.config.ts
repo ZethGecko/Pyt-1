@@ -10,9 +10,9 @@ import { errorInterceptor } from './core/auth/interceptors/error.interceptor';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(
-      withInterceptors([authInterceptor, errorInterceptor])
-    ),
+     provideHttpClient(
+       withInterceptors([errorInterceptor, authInterceptor])
+     ),
     // Los servicios se proveen automáticamente via providedIn: 'root'
     // Solo agregar aquí servicios que NO tengan providedIn: 'root'
   ]

@@ -81,27 +81,41 @@ export const routes: Routes = [
      loadComponent: () => import('./modules/empresas/pages/gestion-puntos-ruta.component').then(m => m.GestionPuntosRutaComponent)
    },
 
-   // Privadas - Inspecciones
-   {
-     path: 'inspecciones',
-     canActivate: [authGuard],
-     loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
-   },
-   {
-     path: 'inspecciones/realizar/:id',
-     canActivate: [authGuard],
-     loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
-   },
-   {
-     path: 'inspecciones/campos',
-     canActivate: [authGuard],
-     loadComponent: () => import('./modules/inspecciones/pages/gestion-campos-inspeccion.component').then(m => m.GestionCamposInspeccionComponent)
-   },
-   {
-     path: 'inspecciones/fichas',
-     canActivate: [authGuard],
-     loadComponent: () => import('./modules/inspecciones/pages/gestion-fichas-inspeccion.component').then(m => m.GestionFichasInspeccionComponent)
-   },
+    // Privadas - Inspecciones
+    // Rutas específicas primero (más específicas antes que la general 'inspecciones')
+    {
+      path: 'inspecciones/realizar/:id',
+      canActivate: [authGuard],
+      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+    },
+    {
+      path: 'inspecciones/ficha/:fichaId',
+      canActivate: [authGuard],
+      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+    },
+    // Rutas separadas para evitar conflictos con parámetro opcional
+    {
+      path: 'inspecciones/campos',
+      canActivate: [authGuard],
+      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+    },
+    {
+      path: 'inspecciones/campos/:inspeccionId',
+      canActivate: [authGuard],
+      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+    },
+    {
+      path: 'inspecciones/fichas',
+      canActivate: [authGuard],
+      loadComponent: () => import('./modules/inspecciones/pages/gestion-fichas-inspeccion.component').then(m => m.GestionFichasInspeccionComponent)
+    },
+    // Ruta general (debe ir al final para no interceptar subrutas)
+    {
+      path: 'inspecciones',
+      canActivate: [authGuard],
+      pathMatch: 'full',
+      loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
+    },
 
    // Privadas - Configuración (módulo configuracion)
    {

@@ -554,9 +554,22 @@ public class TramiteService {
     @Transactional
     public Tramite cambiarEstado(Long id, String nuevoEstado, String motivo) {
         return repo.findById(id).map(tramite -> {
-            tramite.setEstado(nuevoEstado);
+            String estadoActual = tramite.getEstado();
+            String estadoUpper = nuevoEstado.toUpperCase();
+            
+            // Validación: Solo se puede cambiar a FINALIZADO desde APROBADO
+            if (estadoUpper.equals("FINALIZADO") && !"APROBADO".equals(estadoActual)) {
+                throw new IllegalStateException("Solo se pueden finalizar trámites en estado APROBADO. Estado actual: " + estadoActual);
+            }
+            
+            // Validación: No se puede cambiar desde estados finales (FINALIZADO, CANCELADO, RECHAZADO)
+            List<String> estadosFinales = java.util.Arrays.asList("FINALIZADO", "CANCELADO", "RECHAZADO");
+            if (estadosFinales.contains(estadoActual)) {
+                throw new IllegalStateException("No se puede cambiar el estado de un trámite " + estadoActual);
+            }
+            
+            tramite.setEstado(estadoUpper);
             if (motivo != null && !motivo.trim().isEmpty()) {
-                String estadoUpper = nuevoEstado.toUpperCase();
                 // Para estados finales aprobatorios u observacionales, guardar en observaciones
                 if (estadoUpper.equals("APROBADO") || estadoUpper.equals("OBSERVADO") || estadoUpper.equals("FINALIZADO")) {
                     tramite.setObservaciones(motivo);
@@ -673,8 +686,26 @@ public class TramiteService {
 
     @Transactional
     public Tramite finalizar(Long id, String observaciones) {
-        // "Revisión completada" debe aprobar el trámite, no marcarlo como FINALIZADO
-        return aprobar(id, observaciones);
+        // Solo se puede finalizar desde estado APROBADO
+        Tramite tramite = repo.findById(id).orElse(null);
+        if (tramite == null) {
+            return null;
+        }
+        
+        String estadoActual = tramite.getEstado();
+        if (!"APROBADO".equals(estadoActual)) {
+            throw new IllegalStateException("Solo se pueden finalizar trámites que estén en estado APROBADO. Estado actual: " + estadoActual);
+        }
+        
+        // Cambiar estado a FINALIZADO
+        tramite.setEstado("FINALIZADO");
+        if (observaciones != null) {
+            tramite.setObservaciones(observaciones);
+        }
+        tramite.setFechaFinalizacion(LocalDateTime.now());
+        tramite.setFechaActualizacion(LocalDateTime.now());
+        
+        return repo.save(tramite);
     }
 
     @Transactional
@@ -784,7 +815,7 @@ public class TramiteService {
                     TramiteListadoDTO dto = new TramiteListadoDTO();
                     dto.setId(tramite.getIdTramite());
                     dto.setCodigoRUT(tramite.getCodigoRut());
-                    dto.setEstado(tramite.getEstado());
+                    dto.setEstado(tramite.getEstado() != null ? tramite.getEstado().toLowerCase() : null);
                     dto.setPrioridad(tramite.getPrioridad());
                     dto.setFechaRegistro(tramite.getFechaRegistro());
                     dto.setFechaActualizacion(tramite.getFechaActualizacion());

@@ -1087,16 +1087,13 @@ export class GestionPuntosRutaComponent implements OnInit, AfterViewInit, OnDest
       this.drawnPointMarkers.push(marker);
     });
 
-    if (this.map) {
-      this.drawnPreviewGroup.addTo(this.map);
-    }
+     if (this.map) {
+       this.drawnPreviewGroup.addTo(this.map);
+     }
 
-    // Fit bounds if multiple points
-    if (this.drawnPoints.length > 1) {
-      const bounds = L.latLngBounds(this.drawnPoints);
-      this.map?.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    }
-  }
+     // NOTA: No se llama a fitBounds durante el dibujo para evitar que la vista se recentre.
+     // El mapa solo se ajustará al finalizar la ruta (en finalizarDibujo).
+   }
 
   deshacerPunto(): void {
     if (this.drawnPoints.length === 0) return;

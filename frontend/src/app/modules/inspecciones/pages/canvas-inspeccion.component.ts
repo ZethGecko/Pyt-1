@@ -5,14 +5,18 @@ import { IconComponent } from '../../../shared/components/ui/icon.component';
 import { FormsModule } from '@angular/forms';
 import { FichaInspeccionService, FichaInspeccion, ParametroInspeccion } from '../services/ficha-inspeccion.service';
 import { InspeccionService, InspeccionResponse } from '../services/inspeccion.service';
+import { FormatoInspeccionService, FormatoInspeccion, CampoFormato } from '../services/formato-inspeccion.service';
 import { AuthStateService } from '../../../core/auth/state/auth.state';
-import { forkJoin } from 'rxjs';
+import { NotificationService } from '../../../shared/services/notification.service';
+import { forkJoin, of, catchError, throwError } from 'rxjs';
+import { switchMap, map } from 'rxjs/operators';
 
 type ParametroFichaExtendido = ParametroInspeccion & {
   valor: string;
   _editando?: boolean;
   _valorTemp?: string;
   seccionAsignada?: string;
+  orden?: number;
 };
 
 @Component({
@@ -47,6 +51,11 @@ export class CanvasInspeccionComponent implements OnInit {
     'PLAN LUNCA DE RODALE': [],
     'LABORATORIO': []
   };
+
+  // Variables para firma y resultado (modo ejecución)
+  resultado: string = '';
+  firmaResponsable: string = '';
+  fechaFirma: string = '';
 
   private seccionesMap: { [key: string]: string } = {
     'Nº de la empresa:': 'DATOS GENERALES',
@@ -95,129 +104,232 @@ export class CanvasInspeccionComponent implements OnInit {
 
   tituloTemp: { [key: string]: string } = {};
 
-  private camposPorDefecto: string[] = [
-    'Nº de la empresa:',
-    'Nombre del representante:',
-    'Teléfono:',
-    'Dirección:',
-    'Localización:',
-    'NUMERO DE PLACA:',
-    'MODELO DE LA PLACA:',
-    'AÑO DE LA PLACA:',
-    'PRIMEROS AUXILIOS:',
-    'EXTINTORES DE INCENDIOS:',
-    'ACCIDENTES:',
-    'CARRETERA DE ACCESO:',
-    'CARREO DE CIRCULACIÓN VIAL VIENTOS:',
-    'SEÑALIZACIÓN DE OBRA:',
-    'APLICABILIDAD MUNDIAL DE PLAZA:',
-    'SELECCIÓN DE EMERGENCIA:',
-    'A MUNDIAL DE PLAZA:',
-    'CIRCULACIÓN VIARIA VIENTOS:',
-    'SELECCIÓN DE PUNTO DE CONTACTO:',
-    'APLICABILIDAD DE PLANTA:',
-    'FECHA DE PROGRAMA:',
-    'CARTA DE INDUCCIÓN:',
-    'IMPLEMENTACION DE MANTENIMIENTO:',
-    'CONSTRUCCIÓN DE CIUDAD:',
-    'ESTRUCTURA DE PLAZA:',
-    'COMPONENTE DE SEGURIDAD:'
-  ];
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private fichaInspeccionService: FichaInspeccionService,
     private inspeccionService: InspeccionService,
-    private authState: AuthStateService
+    private formatoInspeccionService: FormatoInspeccionService,
+    private authState: AuthStateService,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
-    const idParam = this.route.snapshot.paramMap.get('id');
+    // Try to get ID from different possible param names
+    let idParam = this.route.snapshot.paramMap.get('id');
+    if (!idParam) {
+      idParam = this.route.snapshot.paramMap.get('inspeccionId');
+    }
+    if (!idParam) {
+      idParam = this.route.snapshot.paramMap.get('fichaId');
+    }
     this.inspeccionId = idParam ? Number(idParam) : 0;
+    const ruta = this.route.snapshot.routeConfig?.path || '';
 
-    if (!this.inspeccionId || this.inspeccionId <= 0) {
+    if (this.inspeccionId && this.inspeccionId > 0 && ruta.includes('campos')) {
       this.modoDiseno = true;
-      this.inicializarFichaVacia();
-    } else {
+      this.cargarFormatoParaEdicion();
+    } else if (this.inspeccionId && this.inspeccionId > 0) {
       this.modoDiseno = false;
       this.cargarDatos();
+    } else {
+      // Sin inspección: cargar formato global
+      this.modoDiseno = true;
+      this.cargarFormatoGlobal();
     }
   }
 
-   private cargarDatos(): void {
-      this.cargandoFicha = true;
-      this.errorCarga = false;
-      
-      forkJoin({
-        fichas: this.fichaInspeccionService.getByInspeccion(this.inspeccionId),
-        inspeccion: this.inspeccionService.obtener(this.inspeccionId)
-      }).subscribe({
-        next: ({ fichas, inspeccion }) => {
-          this.cargandoFicha = false;
-          this.inspeccion = inspeccion;
-          if (fichas && fichas.length > 0) {
-            this.ficha = fichas[0];
-            // Asignar inspector automáticamente si no tiene
-            const currentUserId = this.authState.currentUser()?.id;
-            if (currentUserId && !this.ficha.usuarioInspector) {
-              this.ficha.usuarioInspector = currentUserId;
-              this.fichaInspeccionService.update(this.ficha.id!, this.ficha).subscribe({
-                next: () => {
-                  // Inspector asignado
-                },
-                error: (err) => console.error('Error asignando inspector:', err)
-              });
-            }
-            this.construirParametrosFicha();
-            this.clasificarPorSecciones();
-            this.rellenarDatosAutomaticos();
-          } else {
-            this.errorCarga = true;
-            this.mensajeError = `
-              <strong>No existe una ficha de inspección para esta inspección.</strong><br><br>
-              <strong>Flujo correcto:</strong><br>
-              1. Vaya a <a href="/inspecciones/campos">"Gestión de Campos de Inspección"</a> y cree los campos necesarios<br>
-              2. Cree una nueva inspección en <a href="/inspecciones">"Gestión de Inspecciones"</a><br>
-              3. Luego podrá completar la ficha aquí.
-            `;
+  private cargarFormatoGlobal(): void {
+    this.cargandoFicha = true;
+    this.errorCarga = false;
+    this.formatoInspeccionService.getGlobal().subscribe({
+      next: (formato) => {
+        this.cargandoFicha = false;
+        this.ficha = this.construirFichaDesdeFormato(formato);
+        this.construirParametrosFicha();
+        this.rellenarDatosAutomaticos();
+      },
+      error: (err: any) => {
+        this.cargandoFicha = false;
+        console.error('Error cargando formato global:', err);
+        this.ficha = null;
+        this.inicializarFichaVacia();
+      }
+    });
+  }
+
+  private cargarDatos(): void {
+    this.cargandoFicha = true;
+    this.errorCarga = false;
+
+    forkJoin({
+      fichas: this.fichaInspeccionService.getByInspeccion(this.inspeccionId),
+      inspeccion: this.inspeccionService.obtener(this.inspeccionId),
+      formato: this.formatoInspeccionService.getByInspeccion(this.inspeccionId)
+    }).subscribe({
+      next: ({ fichas, inspeccion, formato }) => {
+        this.cargandoFicha = false;
+        this.inspeccion = inspeccion;
+        if (fichas && fichas.length > 0) {
+          this.ficha = fichas.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+          this.resultado = this.ficha.resultado || '';
+          this.firmaResponsable = (this.ficha as any).firmaResponsable || '';
+          this.fechaFirma = (this.ficha as any).fechaFirma ? this.formatDateToInput((this.ficha as any).fechaFirma) : '';
+
+          const currentUserId = this.authState.currentUser()?.id;
+          if (currentUserId && !this.ficha.usuarioInspector) {
+            this.ficha.usuarioInspector = currentUserId;
+            this.fichaInspeccionService.update(this.ficha.id!, this.ficha).subscribe();
           }
-        },
-        error: (err: any) => {
-          this.cargandoFicha = false;
-          console.error('Error cargando datos:', err);
+
+          if (this.ficha.parametros && this.ficha.parametros.length > 0) {
+            this.construirParametrosFicha();
+          } else if (formato && formato.campos && formato.campos.length > 0) {
+            this.parametrosFicha = formato.campos.map(c => ({
+              idParametros: c.id,
+              parametro: c.nombre,
+              observacion: '',
+              fichaInspeccionId: this.ficha!.id,
+              valor: '',
+              seccion: c.seccion,
+              seccionAsignada: c.seccion,
+              orden: c.orden
+            })) as ParametroFichaExtendido[];
+            this.ficha.parametros = this.parametrosFicha.map(p => ({
+              idParametros: p.idParametros,
+              parametro: p.parametro,
+              observacion: p.valor,
+              seccion: p.seccion
+            })) as any[];
+          } else {
+            this.inicializarFichaVacia();
+          }
+
+          this.clasificarPorSecciones();
+          this.rellenarDatosAutomaticos();
+        } else {
           this.errorCarga = true;
-          this.mensajeError = 'Error al cargar la ficha de inspección. Verifique que la inspección exista.';
+          this.mensajeError = `
+            <strong>No existe una ficha de inspección para esta inspección.</strong><br><br>
+            <strong>Flujo correcto:</strong><br>
+            1. Vaya a <a href="/inspecciones/campos">"Gestión de Campos de Inspección"</a> y cree los campos necesarios<br>
+            2. Cree una nueva inspección en <a href="/inspecciones">"Gestión de Inspecciones"</a><br>
+            3. Luego podrá completar la ficha aquí.
+          `;
         }
-      });
+      },
+      error: (err: any) => {
+        this.cargandoFicha = false;
+        console.error('Error cargando datos:', err);
+        this.errorCarga = true;
+        this.mensajeError = 'Error al cargar la ficha de inspección. Verifique que la inspección exista.';
+      }
+    });
+  }
+
+  private cargarFormatoParaEdicion(): void {
+    this.cargandoFicha = true;
+    this.errorCarga = false;
+
+    forkJoin({
+      inspeccion: this.inspeccionService.obtener(this.inspeccionId)
+    }).pipe(
+      switchMap(({ inspeccion }) => {
+        return this.formatoInspeccionService.getByInspeccion(this.inspeccionId).pipe(
+          catchError(err => {
+            if (err.status === 404) {
+              return of(null);
+            }
+            return throwError(() => err);
+          }),
+          map(formato => ({ inspeccion, formato }))
+        );
+      })
+    ).subscribe({
+      next: ({ inspeccion, formato }) => {
+        this.cargandoFicha = false;
+        this.inspeccion = inspeccion;
+        if (formato) {
+          this.ficha = {
+            id: formato.id,
+            tituloPrincipal: formato.tituloPrincipal,
+            subtituloPrincipal: formato.subtituloPrincipal,
+            tituloSeccionDatosGenerales: formato.tituloSeccionDatosGenerales,
+            tituloSeccionPlaca: formato.tituloSeccionPlaca,
+            tituloSeccionPlanLunca: formato.tituloSeccionPlanLunca,
+            tituloSeccionLaboratorio: formato.tituloSeccionLaboratorio,
+            parametros: formato.campos.map(c => ({
+              idParametros: c.id,
+              parametro: c.nombre,
+              observacion: '',
+              seccion: c.seccion,
+              tipoEvaluacion: c.tipoEvaluacion,
+              orden: c.orden,
+              fichaInspeccionId: c.id
+            } as any))
+          } as FichaInspeccion;
+          this.construirParametrosFicha();
+          this.rellenarDatosAutomaticos();
+        } else {
+          this.ficha = null;
+          this.inicializarFichaVacia();
+        }
+      },
+      error: (err: any) => {
+        this.cargandoFicha = false;
+        console.error('Error cargando formato:', err);
+        this.errorCarga = true;
+        this.mensajeError = 'Error al cargar el formato de inspección.';
+      }
+    });
+  }
+
+  crearFichaManual(): void {
+    if (!confirm('¿Desea crear una ficha de inspección vacía para esta inspección?\n\nNota: Se crearán los campos por defecto, pero puede editarlos luego.')) {
+      return;
     }
 
-   crearFichaManual(): void {
-     if (!confirm('¿Desea crear una ficha de inspección vacía para esta inspección?\n\nNota: Se crearán los campos por defecto, pero puede editarlos luego.')) {
-       return;
-     }
+    this.cargandoFicha = true;
+    const currentUserId = this.authState.currentUser()?.id;
+    this.fichaInspeccionService.create({
+      inspeccionId: this.inspeccionId,
+      estado: false,
+      usuarioInspector: currentUserId
+    }).subscribe({
+      next: () => {
+        this.cargarDatos();
+        this.errorCarga = false;
+        this.cargandoFicha = false;
+        alert('Ficha creada correctamente. Ahora puede editar los campos.');
+      },
+      error: (err: any) => {
+        console.error('Error creando ficha:', err);
+        this.cargandoFicha = false;
+        alert('Error al crear la ficha. Asegúrese de que la inspección exista y tenga los permisos necesarios.');
+      }
+    });
+  }
 
-     this.cargandoFicha = true;
-     const currentUserId = this.authState.currentUser()?.id;
-     this.fichaInspeccionService.create({
-       inspeccionId: this.inspeccionId,
-       estado: 'PENDIENTE',
-       usuarioInspector: currentUserId
-     }).subscribe({
-       next: (nuevaFicha) => {
-         this.ficha = nuevaFicha;
-         this.inicializarFichaVacia();
-         this.errorCarga = false;
-         this.cargandoFicha = false;
-         alert('Ficha creada correctamente. Ahora puede editar los campos.');
-       },
-       error: (err: any) => {
-         console.error('Error creando ficha:', err);
-         this.cargandoFicha = false;
-         alert('Error al crear la ficha. Asegúrese de que la inspección exista y tenga los permisos necesarios.');
-       }
-     });
-   }
+  private construirFichaDesdeFormato(formato: FormatoInspeccion): FichaInspeccion {
+    return {
+      id: formato.id,
+      tituloPrincipal: formato.tituloPrincipal,
+      subtituloPrincipal: formato.subtituloPrincipal,
+      tituloSeccionDatosGenerales: formato.tituloSeccionDatosGenerales,
+      tituloSeccionPlaca: formato.tituloSeccionPlaca,
+      tituloSeccionPlanLunca: formato.tituloSeccionPlanLunca,
+      tituloSeccionLaboratorio: formato.tituloSeccionLaboratorio,
+      parametros: formato.campos.map(c => ({
+        idParametros: c.id,
+        parametro: c.nombre,
+        observacion: '',
+        seccion: c.seccion,
+        tipoEvaluacion: c.tipoEvaluacion,
+        orden: c.orden,
+        fichaInspeccionId: c.id
+      } as any))
+    } as FichaInspeccion;
+  }
 
   private construirParametrosFicha(): void {
     if (!this.ficha?.parametros || this.ficha.parametros.length === 0) {
@@ -233,103 +345,93 @@ export class CanvasInspeccionComponent implements OnInit {
     this.clasificarPorSecciones();
   }
 
-   private clasificarPorSecciones(): void {
-      this.secciones = {
-        'DATOS GENERALES': [],
-        'PLACA': [],
-        'PLAN LUNCA DE RODALE': [],
-        'LABORATORIO': []
-      };
+  private clasificarPorSecciones(): void {
+    this.secciones = {
+      'DATOS GENERALES': [],
+      'PLACA': [],
+      'PLAN LUNCA DE RODALE': [],
+      'LABORATORIO': []
+    };
 
-      for (const param of this.parametrosFicha) {
-        const nombre = param.parametro?.trim() || '';
-        // Use seccionAsignada if present (custom fields), else map by name
-        let seccion = param.seccionAsignada || this.seccionesMap[nombre] || 'LABORATORIO';
-        // Ensure the section exists in our sections object
-        if (!this.secciones[seccion]) {
-          seccion = 'LABORATORIO';
-        }
-        this.secciones[seccion].push(param);
+    const paramsOrdenados = [...this.parametrosFicha].sort((a, b) => {
+      const secA = a.seccionAsignada || a.seccion || '';
+      const secB = b.seccionAsignada || b.seccion || '';
+      if (secA !== secB) return secA.localeCompare(secB);
+      return (a.orden || 0) - (b.orden || 0);
+    });
+
+    for (const param of paramsOrdenados) {
+      const nombre = param.parametro?.trim() || '';
+      let seccion = param.seccionAsignada || param.seccion || this.seccionesMap[nombre] || 'LABORATORIO';
+      if (!this.secciones[seccion]) {
+        seccion = 'LABORATORIO';
       }
+      this.secciones[seccion].push(param);
+    }
+  }
+
+  private rellenarDatosAutomaticos(): void {
+    if (!this.inspeccion || !this.parametrosFicha) return;
+
+    const mapping: { [key: string]: string } = {};
+
+    if (this.inspeccion.empresaRuc) {
+      mapping['Nº de la empresa:'] = this.inspeccion.empresaRuc;
+    } else if (this.inspeccion.empresaNombre) {
+      mapping['Nº de la empresa:'] = this.inspeccion.empresaNombre;
     }
 
-    private rellenarDatosAutomaticos(): void {
-      if (!this.inspeccion || !this.parametrosFicha) return;
+    if (this.inspeccion.gerenteNombre) {
+      mapping['Nombre del representante:'] = this.inspeccion.gerenteNombre;
+    } else if (this.inspeccion.empresaNombre) {
+      mapping['Nombre del representante:'] = this.inspeccion.empresaNombre;
+    }
 
-      const mapping: { [key: string]: string } = {};
+    if (this.inspeccion.empresaTelefono) {
+      mapping['Teléfono:'] = this.inspeccion.empresaTelefono;
+    }
 
-      // Nº de la empresa: usar RUC si existe, sino nombre
-      if (this.inspeccion.empresaRuc) {
-        mapping['Nº de la empresa:'] = this.inspeccion.empresaRuc;
-      } else if (this.inspeccion.empresaNombre) {
-        mapping['Nº de la empresa:'] = this.inspeccion.empresaNombre;
-      }
+    if (this.inspeccion.empresaDireccion) {
+      mapping['Dirección:'] = this.inspeccion.empresaDireccion;
+    }
 
-      // Nombre del representante: gerente o empresa
-      if (this.inspeccion.gerenteNombre) {
-        mapping['Nombre del representante:'] = this.inspeccion.gerenteNombre;
-      } else if (this.inspeccion.empresaNombre) {
-        mapping['Nombre del representante:'] = this.inspeccion.empresaNombre;
-      }
+    if (this.inspeccion.lugar) {
+      mapping['Localización:'] = this.inspeccion.lugar;
+    }
 
-      // Teléfono
-      if (this.inspeccion.empresaTelefono) {
-        mapping['Teléfono:'] = this.inspeccion.empresaTelefono;
-      }
-
-      // Dirección
-      if (this.inspeccion.empresaDireccion) {
-        mapping['Dirección:'] = this.inspeccion.empresaDireccion;
-      }
-
-      // Localización: lugar de la inspección
-      if (this.inspeccion.lugar) {
-        mapping['Localización:'] = this.inspeccion.lugar;
-      }
-
-      // FECHA DE PROGRAMA:
-      if (this.inspeccion.fechaProgramada) {
-        const fecha = this.inspeccion.fechaProgramada;
-        let day: string, month: string, year: string;
-        if (fecha instanceof Date) {
-          day = fecha.getDate().toString().padStart(2, '0');
-          month = (fecha.getMonth() + 1).toString().padStart(2, '0');
-          year = fecha.getFullYear().toString();
+    if (this.inspeccion.fechaProgramada) {
+      const fecha = this.inspeccion.fechaProgramada;
+      let day: string, month: string, year: string;
+      if (fecha instanceof Date) {
+        day = fecha.getDate().toString().padStart(2, '0');
+        month = (fecha.getMonth() + 1).toString().padStart(2, '0');
+        year = fecha.getFullYear().toString();
+      } else {
+        const parts = String(fecha).split('-');
+        if (parts.length === 3) {
+          year = parts[0];
+          month = parts[1];
+          day = parts[2];
         } else {
-          // asumir string yyyy-MM-dd
-          const parts = String(fecha).split('-');
-          if (parts.length === 3) {
-            year = parts[0];
-            month = parts[1];
-            day = parts[2];
-          } else {
-            // fallback
-            const d = new Date(fecha);
-            day = d.getDate().toString().padStart(2, '0');
-            month = (d.getMonth() + 1).toString().padStart(2, '0');
-            year = d.getFullYear().toString();
-          }
+          const d = new Date(fecha);
+          day = d.getDate().toString().padStart(2, '0');
+          month = (d.getMonth() + 1).toString().padStart(2, '0');
+          year = d.getFullYear().toString();
         }
-        mapping['FECHA DE PROGRAMA:'] = `${day}/${month}/${year}`;
       }
+      mapping['FECHA DE PROGRAMA:'] = `${day}/${month}/${year}`;
+    }
 
-      // Asignar a parámetros que existan y estén vacíos
-      for (const param of this.parametrosFicha) {
-        const key = param.parametro?.trim();
-        if (key && mapping[key] !== undefined && (!param.valor || param.valor.trim() === '')) {
-          param.valor = mapping[key];
-        }
+    for (const param of this.parametrosFicha) {
+      const key = param.parametro?.trim();
+      if (key && mapping[key] !== undefined && (!param.valor || param.valor.trim() === '')) {
+        param.valor = mapping[key];
       }
     }
+  }
 
   private inicializarFichaVacia(): void {
-    this.parametrosFicha = this.camposPorDefecto.map(nombre => ({
-      idParametros: undefined,
-      parametro: nombre,
-      observacion: '',
-      fichaInspeccionId: this.ficha?.id,
-      valor: ''
-    })) as ParametroFichaExtendido[];
+    this.parametrosFicha = [];
     this.clasificarPorSecciones();
   }
 
@@ -339,48 +441,118 @@ export class CanvasInspeccionComponent implements OnInit {
 
   guardarCertificado(): void {
     if (this.modoDiseno) {
-      alert('Modo diseño: Los cambios no se guardan. Cree una inspección primero para poder guardar.');
+      const currentUserId = this.authState.currentUser()?.id;
+      if (!currentUserId) {
+        alert('No se pudo obtener el ID del usuario actual');
+        return;
+      }
+
+      // Solo incluir inspeccionId si es válido (>0)
+      const formatoDTO: any = {
+        nombre: 'Formato ' + (this.inspeccion?.codigo || 'Inspección ' + this.inspeccionId),
+        descripcion: 'Formato editado',
+        tituloPrincipal: this.tituloPrincipal,
+        subtituloPrincipal: this.subtituloPrincipal,
+        tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
+        tituloSeccionPlaca: this.titulosSecciones['PLACA'],
+        tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
+        tituloSeccionLaboratorio: this.titulosSecciones['LABORATORIO'],
+        campos: this.parametrosFicha.map(p => ({
+          id: p.idParametros || undefined,
+          nombre: p.parametro,
+          seccion: p.seccionAsignada || p.seccion || 'LABORATORIO',
+          orden: p.orden !== undefined ? p.orden : 0,
+          tipoEvaluacion: 'TEXTO',
+          obligatorio: false
+        }))
+      };
+
+      // Solo agregar inspeccionId si es válido
+      if (this.inspeccionId && this.inspeccionId > 0) {
+        formatoDTO.inspeccionId = this.inspeccionId;
+      }
+
+      this.cargandoFicha = true;
+      const existingFormatoId = this.ficha?.id;
+
+      const request = existingFormatoId
+        ? this.formatoInspeccionService.update(existingFormatoId, formatoDTO)
+        : this.formatoInspeccionService.create(formatoDTO);
+
+      request.subscribe({
+        next: (formato) => {
+          this.ficha = this.construirFichaDesdeFormato(formato);
+          this.construirParametrosFicha();
+          this.rellenarDatosAutomaticos();
+          // Actualizar el ID del formato en la ficha para futuras ediciones
+          this.ficha.id = formato.id;
+          this.notificationService?.showSuccess('Formato guardado correctamente', 'Éxito', 2000);
+          this.cargandoFicha = false;
+        },
+        error: (err: any) => {
+          this.cargandoFicha = false;
+          console.error('Error guardando formato:', err);
+          alert('Error al guardar el formato.');
+        }
+      });
       return;
     }
 
-    const updates = this.parametrosFicha
-      .filter(p => p.idParametros !== undefined)
-      .map(p => {
-        return this.inspeccionService.actualizarParametro(p.idParametros!, {
-          parametro: p.parametro,
-          observacion: p.valor || ''
-        });
-      });
+    this.guardarCertificadoEjecucion();
+  }
 
-    const creates = this.parametrosFicha
-      .filter(p => p.idParametros === undefined)
-      .map(p => {
-        return this.inspeccionService.crearParametro(this.ficha?.id || this.inspeccionId, {
-          parametro: p.parametro,
-          observacion: p.valor || '',
-          tipoEvaluacion: 'TEXTO'
-        });
-      });
-
-    const allOps = [...updates, ...creates];
-
-    if (allOps.length === 0) {
-      alert('No hay cambios para guardar');
-      return;
+  private guardarCertificadoEjecucion(): void {
+    if (this.ficha) {
+      (this.ficha as any).firmaResponsable = this.firmaResponsable || null;
+      (this.ficha as any).fechaFirma = this.fechaFirma || null;
+      this.ficha.estado = this.ficha.estado || false;
+      this.ficha.resultado = this.resultado || undefined;
     }
 
-    import('rxjs').then(({ forkJoin }) => {
-      forkJoin(allOps).subscribe({
+    const fichaDTO = {
+      inspeccionId: this.inspeccionId,
+      estado: this.ficha?.estado || false,
+      usuarioInspector: this.authState.currentUser()?.id || null,
+      vehiculoId: this.inspeccion?.vehiculoId || null,
+      parametros: this.parametrosFicha.map(p => ({
+        idParametros: p.idParametros,
+        parametro: p.parametro,
+        observacion: p.valor || '',
+        seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
+      })),
+      firmaResponsable: this.firmaResponsable || undefined,
+      fechaFirma: this.fechaFirma || undefined,
+      resultado: this.resultado || undefined
+    };
+
+    this.cargandoFicha = true;
+    if (this.ficha && this.ficha.id) {
+      this.fichaInspeccionService.update(this.ficha.id, fichaDTO).subscribe({
         next: () => {
-          alert('Certificado guardado correctamente');
+          this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
+          this.cargandoFicha = false;
           this.cargarDatos();
         },
         error: (err: any) => {
-          console.error('Error guardando parámetros:', err);
-          alert('Error al guardar los datos');
+          this.cargandoFicha = false;
+          console.error('Error actualizando certificado:', err);
+          alert('Error al guardar el certificado.');
         }
       });
-    });
+    } else {
+      this.fichaInspeccionService.create(fichaDTO).subscribe({
+        next: () => {
+          this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
+          this.cargandoFicha = false;
+          this.cargarDatos();
+        },
+        error: (err: any) => {
+          this.cargandoFicha = false;
+          console.error('Error creando certificado:', err);
+          alert('Error al guardar el certificado.');
+        }
+      });
+    }
   }
 
   toggleModoEdicion(): void {
@@ -392,33 +564,50 @@ export class CanvasInspeccionComponent implements OnInit {
   }
 
   limpiarCampos(): void {
-    if (confirm('¿Está seguro de limpiar todos los campos del certificado?')) {
+    if (this.modoDiseno) {
+      if (!confirm('¿Está seguro de eliminar TODOS los campos del formato? Esta acción no se puede deshacer.')) {
+        return;
+      }
+      this.parametrosFicha = [];
+      this.clasificarPorSecciones();
+      this.notificationService?.showSuccess('Todos los campos eliminados', 'Éxito', 2000);
+    } else {
+      if (!confirm('¿Está seguro de limpiar todos los datos ingresados?')) {
+        return;
+      }
       for (const param of this.parametrosFicha) {
         param.valor = '';
         param.observacion = '';
       }
+      this.notificationService?.showSuccess('Datos limpiados', 'Éxito', 2000);
     }
   }
 
-   agregarCampoSeccion(seccion: string): void {
-     const nombre = prompt(`Ingrese el nombre del nuevo campo para la sección "${seccion}":`);
-     if (!nombre || !nombre.trim()) {
-       alert('Debe ingresar un nombre para el campo');
-       return;
-     }
+  agregarCampoSeccion(seccion: string): void {
+    const nombre = prompt(`Ingrese el nombre del nuevo campo para la sección "${seccion}":`);
+    if (!nombre || !nombre.trim()) {
+      alert('Debe ingresar un nombre para el campo');
+      return;
+    }
 
-     const nuevoParametro: ParametroFichaExtendido = {
-       idParametros: undefined,
-       parametro: nombre.trim(),
-       observacion: '',
-       fichaInspeccionId: this.ficha?.id,
-       valor: '',
-       seccionAsignada: seccion
-     };
+    const camposEnSeccion = this.secciones[seccion] || [];
+    const maxOrden = camposEnSeccion.length > 0
+      ? Math.max(...camposEnSeccion.map(c => c.orden || 0))
+      : 0;
 
-     this.parametrosFicha.push(nuevoParametro);
-     this.clasificarPorSecciones();
-   }
+    const nuevoParametro: ParametroFichaExtendido = {
+      idParametros: undefined,
+      parametro: nombre.trim(),
+      observacion: '',
+      fichaInspeccionId: this.ficha?.id,
+      valor: '',
+      seccionAsignada: seccion,
+      orden: maxOrden + 1
+    };
+
+    this.parametrosFicha.push(nuevoParametro);
+    this.clasificarPorSecciones();
+  }
 
   eliminarCampo(param: ParametroFichaExtendido): void {
     if (!confirm(`¿Está seguro de eliminar el campo "${param.parametro}"?`)) {
@@ -426,13 +615,13 @@ export class CanvasInspeccionComponent implements OnInit {
     }
 
     if (param.idParametros) {
-      this.inspeccionService.eliminarParametro(param.idParametros).subscribe({
+      this.formatoInspeccionService.eliminarCampo(param.idParametros).subscribe({
         next: () => {
           this.parametrosFicha = this.parametrosFicha.filter(p => p !== param);
           this.clasificarPorSecciones();
         },
         error: (err: any) => {
-          console.error('Error eliminando parámetro:', err);
+          console.error('Error eliminando campo:', err);
           alert('Error al eliminar el campo');
         }
       });
@@ -452,7 +641,6 @@ export class CanvasInspeccionComponent implements OnInit {
       alert('El nombre del campo no puede estar vacío');
       return;
     }
-
     param.parametro = param._valorTemp.trim();
     param._editando = false;
     param._valorTemp = '';
@@ -525,14 +713,37 @@ export class CanvasInspeccionComponent implements OnInit {
     this.subtituloPrincipalTemp = '';
   }
 
-   cancelarEdicionSubtituloPrincipal(): void {
-     this.editandoSubtituloPrincipal = false;
-     this.subtituloPrincipalTemp = '';
-   }
+  cancelarEdicionSubtituloPrincipal(): void {
+    this.editandoSubtituloPrincipal = false;
+    this.subtituloPrincipalTemp = '';
+  }
 
-   // ========== HELPER ==========
+  puedeEditarFirma(): boolean {
+    return !this.ficha?.estado;
+  }
 
-   puedeEditar(): boolean {
-     return this.modoEdicion || this.modoDiseno;
-   }
- }
+  finalizarInspeccion(): void {
+    if (!this.ficha) {
+      alert('No hay una ficha cargada');
+      return;
+    }
+    if (!this.firmaResponsable || !this.firmaResponsable.trim()) {
+      alert('Debe ingresar el nombre del responsable para finalizar');
+      return;
+    }
+    if (!this.fechaFirma) {
+      alert('Debe seleccionar la fecha de firma');
+      return;
+    }
+    this.ficha.estado = true;
+    this.guardarCertificadoEjecucion();
+  }
+
+  private formatDateToInput(dateStr: string | Date): string {
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+}

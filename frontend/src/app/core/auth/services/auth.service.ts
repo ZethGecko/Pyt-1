@@ -63,18 +63,24 @@ export class AuthService {
 
   refreshToken(): Observable<any> {
     const refreshToken = this.tokenService.getRefreshToken();
+    console.log('[AuthService] refreshToken() called. Refresh token from storage:', refreshToken ? 'present' : 'NULL/EMPTY');
     return this.http.post(`${this.apiUrl}/refresh`, {}, {
       headers: {
         'X-Refresh-Token': refreshToken || ''
       }
     }).pipe(
         tap((response: any) => {
+          console.log('[AuthService] refreshToken response:', response);
           if (response.token) {
             this.tokenService.saveToken(response.token);
           }
           if (response.refreshToken) {
             this.tokenService.saveRefreshToken(response.refreshToken);
           }
+        }),
+        catchError((err) => {
+          console.error('[AuthService] refreshToken error:', err);
+          return throwError(() => err);
         })
     );
   }

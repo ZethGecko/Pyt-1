@@ -28,11 +28,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   paginaActual = 1;
   itemsPorPagina = 10;
 
-  // Filtros
   filtroEstado: string = '';
   filtroPrioridad: string = '';
 
-  // Estadísticas
   stats = {
     total: 0,
     enRevision: 0,
@@ -42,11 +40,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     atrasados: 0
   };
 
-  // Usuario actual
   usuarioActual: any = null;
   departamentoActual: any = null;
 
-  // Modal de revisión de requisitos
   mostrarModalRequisitos = false;
   tramiteParaRevisar: TramiteEnriquecido | null = null;
 
@@ -72,16 +68,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   cargarTramites(): void {
     this.cargando = true;
-
     const usuarioActual = this.usuarioActual;
-    const esSuperAdmin = usuarioActual?.role?.name === 'SUPER_ADMIN' || 
-                         usuarioActual?.role?.name === 'SUPER_ADMIN';
+    const esSuperAdmin = usuarioActual?.role?.name === 'SUPER_ADMIN';
     const departamentoId = this.departamentoActual?.idDepartamento || this.departamentoActual?.id;
     const puedeVerTodos = esSuperAdmin || usuarioActual?.role?.canViewAllData === true;
-
-    console.log('[TramitesDashboard] Usuario:', usuarioActual);
-    console.log('[TramitesDashboard] Departamento:', departamentoId);
-    console.log('[TramitesDashboard] esSuperAdmin:', esSuperAdmin, 'puedeVerTodos:', puedeVerTodos);
 
     let observable: Observable<TramiteEnriquecido[]>;
     if (!departamentoId && !puedeVerTodos) {
@@ -92,7 +82,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.actualizarPaginacion();
       return;
     } else if (puedeVerTodos) {
-      // Superadmin o roles con canViewAllData ven todos los trámites
       observable = this.tramiteService.listarTodosEnriquecidos();
     } else {
       observable = this.tramiteService.listarPorDepartamento(departamentoId);
@@ -127,10 +116,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   calcularEstadisticas(): void {
     this.stats = {
       total: this.tramites.length,
-      enRevision: this.tramites.filter(t => t.estado === 'en_revision').length,
-      derivados: this.tramites.filter(t => t.estado === 'derivado').length,
-      aprobados: this.tramites.filter(t => t.estado === 'aprobado').length,
-      observados: this.tramites.filter(t => t.estado === 'observado').length,
+      enRevision: this.tramites.filter(t => this.getEstadoNormalizado(t) === 'en_revision').length,
+      derivados: this.tramites.filter(t => this.getEstadoNormalizado(t) === 'derivado').length,
+      aprobados: this.tramites.filter(t => this.getEstadoNormalizado(t) === 'aprobado').length,
+      observados: this.tramites.filter(t => this.getEstadoNormalizado(t) === 'observado').length,
       atrasados: this.tramites.filter(t => t.estaAtrasado).length
     };
   }
@@ -138,7 +127,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   aplicarFiltros(): void {
     this.paginaActual = 1;
     this.tramitesFiltrados = this.tramites.filter(tramite => {
-      if (this.filtroEstado && tramite.estado !== this.filtroEstado) return false;
+      if (this.filtroEstado && this.getEstadoNormalizado(tramite) !== this.filtroEstado.toLowerCase()) return false;
       if (this.filtroPrioridad && tramite.prioridad !== this.filtroPrioridad) return false;
       return true;
     });
@@ -154,7 +143,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   cambiarEstado(tramite: TramiteEnriquecido, nuevoEstado: string): void {
     const motivo = prompt(`Ingrese el motivo para cambiar el estado a ${nuevoEstado}:`);
     if (!motivo) return;
-
     this.tramiteService.cambiarEstado(tramite.id, nuevoEstado, motivo).subscribe({
       next: () => {
         this.notificationService.showSuccess('Estado actualizado exitosamente');
@@ -167,38 +155,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-   getEstadosDisponibles(): string[] {
-     return ['registrado', 'en_revision', 'derivado', 'aprobado', 'rechazado', 'observado', 'finalizado', 'cancelado'];
-   }
+  getEstadosDisponibles(): string[] {
+    const estadosUnicos = [...new Set(this.tramites.map(t => this.getEstadoNormalizado(t)))];
+    const ordenEstados = ['registrado', 'en_revision', 'derivado', 'observado', 'aprobado', 'finalizado', 'rechazado', 'cancelado'];
+    return estadosUnicos.sort((a, b) => {
+      const indexA = ordenEstados.indexOf(a);
+      const indexB = ordenEstados.indexOf(b);
+      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }
 
-   getPrioridadesDisponibles(): string[] {
-     return ['urgente', 'alta', 'normal', 'baja'];
-   }
+  getPrioridadesDisponibles(): string[] {
+    return ['urgente', 'alta', 'normal', 'baja'];
+  }
 
-   cambiarPagina(pagina: number): void {
-     this.paginaActual = pagina;
-     this.actualizarPaginacion();
-   }
+  cambiarPagina(pagina: number): void {
+    this.paginaActual = pagina;
+    this.actualizarPaginacion();
+  }
 
-   actualizarPaginacion(): void {
-     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-     const fin = inicio + this.itemsPorPagina;
-     this.tramitesPaginados = this.tramitesFiltrados.slice(inicio, fin);
-   }
+  actualizarPaginacion(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + this.itemsPorPagina;
+    this.tramitesPaginados = this.tramitesFiltrados.slice(inicio, fin);
+  }
 
-   get paginasTotales(): number {
-     return Math.ceil(this.tramitesFiltrados.length / this.itemsPorPagina);
-   }
+  get paginasTotales(): number {
+    return Math.ceil(this.tramitesFiltrados.length / this.itemsPorPagina);
+  }
 
-   // 🎯 REVISIÓN DE REQUISITOS
-   abrirModalRevisar(tramite: TramiteEnriquecido): void {
-    if (tramite.estado !== 'registrado' && tramite.estado !== 'en_revision') {
-      this.notificationService.showWarning('Solo se pueden revisar trámites en estado "Registrado" o "En Revisión"');
+  abrirModalRevisar(tramite: TramiteEnriquecido): void {
+    const estadosFinales = ['finalizado', 'cancelado', 'rechazado'];
+    const estadoNormalizado = this.getEstadoNormalizado(tramite);
+    if (estadosFinales.includes(estadoNormalizado)) {
+      this.notificationService.showWarning('No se puede revisar un trámite en estado final');
       return;
     }
 
-    if (tramite.estado === 'registrado') {
-      // Iniciar revisión sin solicitar motivo (automático)
+    if (estadoNormalizado === 'registrado') {
       this.tramiteService.cambiarEstado(tramite.id, 'en_revision', '').subscribe({
         next: () => {
           this.notificationService.showSuccess('Trámite en revisión');
@@ -228,23 +225,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   puedeRevisarRequisitos(tramite: TramiteEnriquecido): boolean {
-    return tramite.estado === 'registrado' || tramite.estado === 'en_revision';
+    const estadosFinales = ['finalizado', 'cancelado', 'rechazado'];
+    return !estadosFinales.includes(this.getEstadoNormalizado(tramite));
   }
 
-  // ✅ FINALIZAR TRÁMITE
   puedeFinalizarTramite(tramite: TramiteEnriquecido): boolean {
-    const total = tramite.totalDocumentos || 0;
-    const aprobados = tramite.documentosAprobados || 0;
-    return tramite.estado === 'en_revision' && total > 0 && aprobados === total;
+    return this.getEstadoNormalizado(tramite) === 'aprobado';
   }
 
   finalizarTramite(tramite: TramiteEnriquecido): void {
     if (!this.puedeFinalizarTramite(tramite)) {
-      this.notificationService.showWarning('No se puede finalizar: todos los requisitos deben estar aprobados');
+      this.notificationService.showWarning('Solo se pueden finalizar trámites en estado "Aprobado"');
       return;
     }
-    if (confirm('¿Está seguro de finalizar este trámite?')) {
-      this.tramiteService.cambiarEstado(tramite.id, 'APROBADO', 'Trámite finalizado').subscribe({
+    if (confirm('¿Está seguro de finalizar este trámite? Una vez finalizado no se podrán realizar modificaciones.')) {
+      this.tramiteService.finalizar(tramite.id).subscribe({
         next: () => {
           this.notificationService.showSuccess('Trámite finalizado exitosamente');
           this.cargarTramites();
@@ -256,8 +251,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  // 📝 REVISAR (Alias para compatibilidad)
   revisarTramite(tramite: TramiteEnriquecido): void {
     this.abrirModalRevisar(tramite);
+  }
+
+  getEstadoNormalizado(tramite: TramiteEnriquecido): string {
+    return (tramite.estado || '').toLowerCase();
+  }
+
+  getColorEstado(estado: string): string {
+    const estadoLower = (estado || '').toLowerCase();
+    if (['aprobado', 'finalizado'].includes(estadoLower)) return 'bg-green-100 text-green-800 border-green-200';
+    if (['rechazado', 'cancelado'].includes(estadoLower)) return 'bg-red-100 text-red-800 border-red-200';
+    if (['observado', 'pendiente'].includes(estadoLower)) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    if (['en_revision', 'derivado'].includes(estadoLower)) return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (estadoLower === 'registrado') return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+    return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+
+  getIconoEstado(estado: string): string {
+    const estadoLower = (estado || '').toLowerCase();
+    const iconos: { [key: string]: string } = {
+      'registrado': '📝',
+      'en_revision': '🔍',
+      'derivado': '➡️',
+      'aprobado': '✅',
+      'rechazado': '❌',
+      'observado': '⚠️',
+      'finalizado': '🏁',
+      'pendiente': '⏳',
+      'cancelado': '🚫'
+    };
+    return iconos[estadoLower] || '📋';
   }
 }

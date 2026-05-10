@@ -39,6 +39,21 @@ export interface InspeccionResponse {
   }[];
 }
 
+export interface InspeccionInstanciaResponse {
+  idInspeccionInstancia?: number;
+  idInstancia: number;
+  tramiteId: number;
+  identificador: string;
+  codigoRut?: string;
+  estadoInstancia: string;
+  placa?: string;
+  observaciones?: string;
+  fechaInspeccion?: string | Date;
+  fichaId?: number;
+  fichaResultado?: string;
+  fichaEstado?: boolean;
+}
+
 export interface BloqueInspeccionDTO {
   idTramite: number;
   empresaNombre: string;
@@ -77,17 +92,18 @@ export interface FichaInspeccionResponse {
   evidenciaUrl?: string;
 }
 
-export interface ParametroInspeccionResponse {
-  id: number;
-  parametro: string;
-  observacion?: string;
-  tipoEvaluacion?: string;
-  fichaInspeccionId?: number;
-  fichaInspeccion?: {
-    id: number;
-    resultado?: string;
-  };
-}
+ export interface ParametroInspeccionResponse {
+   id: number;
+   parametro: string;
+   observacion?: string;
+   tipoEvaluacion?: string;
+   fichaInspeccionId?: number;
+   fichaInspeccion?: {
+     id: number;
+     resultado?: string;
+   };
+   seccion?: string;
+ }
 
 @Injectable({ providedIn: 'root' })
 export class InspeccionService {
@@ -226,21 +242,23 @@ export class InspeccionService {
    return this.http.get<ParametroInspeccionResponse[]>(`${this.parametrosUrl}/categoria/${categoria}`);
  }
 
- crearParametro(fichaInspeccionId: number, parametro: {
-   parametro: string;
-   observacion?: string;
-   tipoEvaluacion?: string;
- }): Observable<ParametroInspeccionResponse> {
-   return this.http.post<ParametroInspeccionResponse>(`${this.parametrosUrl}/ficha/${fichaInspeccionId}`, parametro);
- }
+  crearParametro(fichaInspeccionId: number, parametro: {
+    parametro: string;
+    observacion?: string;
+    tipoEvaluacion?: string;
+    seccion?: string;
+  }): Observable<ParametroInspeccionResponse> {
+    return this.http.post<ParametroInspeccionResponse>(`${this.parametrosUrl}/ficha/${fichaInspeccionId}`, parametro);
+  }
 
- actualizarParametro(id: number, parametro: {
-   parametro?: string;
-   observacion?: string;
-   tipoEvaluacion?: string;
- }): Observable<ParametroInspeccionResponse> {
-   return this.http.put<ParametroInspeccionResponse>(`${this.parametrosUrl}/${id}`, parametro);
- }
+  actualizarParametro(id: number, parametro: {
+    parametro?: string;
+    observacion?: string;
+    tipoEvaluacion?: string;
+    seccion?: string;
+  }): Observable<ParametroInspeccionResponse> {
+    return this.http.put<ParametroInspeccionResponse>(`${this.parametrosUrl}/${id}`, parametro);
+  }
 
  eliminarParametro(id: number): Observable<void> {
    return this.http.delete<void>(`${this.parametrosUrl}/${id}`);
@@ -274,7 +292,16 @@ export class InspeccionService {
      return this.http.put<InspeccionResponse[]>(`${this.apiUrl}/bloques/${fecha}/${lugar}/iniciar`, body);
    }
 
-   cancelarBloque(fecha: string, lugar: string): Observable<InspeccionResponse[]> {
-     return this.http.put<InspeccionResponse[]>(`${this.apiUrl}/bloques/${fecha}/${lugar}/cancelar`, {});
-   }
- }
+    cancelarBloque(fecha: string, lugar: string): Observable<InspeccionResponse[]> {
+      return this.http.put<InspeccionResponse[]>(`${this.apiUrl}/bloques/${fecha}/${lugar}/cancelar`, {});
+    }
+
+    // ========== INSTANCIAS DISPONIBLES ==========
+    listarInstanciasDisponibles(tramiteId: number, inspeccionId?: number): Observable<InspeccionInstanciaResponse[]> {
+      const params: any = {};
+      if (inspeccionId !== undefined) {
+        params.inspeccionId = inspeccionId;
+      }
+      return this.http.get<InspeccionInstanciaResponse[]>(`${this.apiUrl}/tramite/${tramiteId}/instancias-disponibles`, { params });
+    }
+  }

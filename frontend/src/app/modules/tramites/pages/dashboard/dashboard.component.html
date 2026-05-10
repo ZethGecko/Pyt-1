@@ -147,29 +147,30 @@
                    </span>
                   </td>
                    <td>
-                     <div class="action-buttons">
-                       <!-- Botón Revisar (único para iniciar revisión o abrir modal) -->
-                       <button (click)="abrirModalRevisar(tramite)"
-                               class="btn btn-sm btn-primary"
-                               title="Revisar requisitos del trámite"
-                               [disabled]="!puedeRevisarRequisitos(tramite)">
-                         📝 Revisar
-                       </button>
-                       <!-- Botón Observar -->
-                       <button (click)="cambiarEstado(tramite, 'observado')"
-                               class="btn btn-sm btn-outline"
-                               title="Observar trámite - Marcar con observaciones"
-                               [disabled]="tramite.estado !== 'en_revision' && tramite.estado !== 'registrado'">
-                         ⚠️ Observar
-                       </button>
-                       <!-- Botón Finalizar -->
-                       <button (click)="finalizarTramite(tramite)"
-                               class="btn btn-sm btn-success"
-                               title="Finalizar trámite - Requiere todos los requisitos aprobados"
-                               [disabled]="!puedeFinalizarTramite(tramite)">
-                         ✅ Finalizar
-                       </button>
-                     </div>
+                      <div class="action-buttons">
+                        <!-- Botón Revisar (único para iniciar revisión o abrir modal) -->
+                        <button (click)="abrirModalRevisar(tramite)"
+                                class="btn btn-sm btn-primary"
+                                title="Revisar requisitos del trámite"
+                                [disabled]="!puedeRevisarRequisitos(tramite)">
+                          📝 Revisar
+                        </button>
+                         <!-- Botón Observar -->
+                         <button (click)="cambiarEstado(tramite, 'observado')"
+                                 class="btn btn-sm btn-outline"
+                                 title="Observar trámite - Marcar con observaciones"
+                                 [disabled]="!['en_revision', 'registrado'].includes(getEstadoNormalizado(tramite))">
+                           ⚠️ Observar
+                         </button>
+                        <!-- Botón Finalizar (solo visible si estado = aprobado) -->
+                        @if (puedeFinalizarTramite(tramite)) {
+                          <button (click)="finalizarTramite(tramite)"
+                                  class="btn btn-sm btn-success"
+                                  title="Finalizar trámite">
+                            ✅ Finalizar
+                          </button>
+                        }
+                      </div>
                    </td>
                 </tr>
              }

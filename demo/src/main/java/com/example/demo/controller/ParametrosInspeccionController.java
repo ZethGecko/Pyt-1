@@ -63,9 +63,18 @@ public class ParametrosInspeccionController {
         return parametrosInspeccionService.listarTodos();
     }
 
-    @PostMapping("/ficha/{fichaInspeccionId}/basicos")
-    public ResponseEntity<List<ParametrosInspeccion>> crearParametrosBasicos(@PathVariable Long fichaInspeccionId) {
-        // TODO: implement creating basic parameters for ficha
-        return ResponseEntity.ok(new ArrayList<>());
-    }
-}
+     @PostMapping("/ficha/{fichaInspeccionId}/basicos")
+     public ResponseEntity<List<ParametrosInspeccion>> crearParametrosBasicos(@PathVariable Long fichaInspeccionId) {
+         // TODO: implement creating basic parameters for ficha
+         return ResponseEntity.ok(new ArrayList<>());
+     }
+
+     @PutMapping("/{id}")
+     public ResponseEntity<ParametrosInspeccion> actualizar(@PathVariable Integer id, @RequestBody ParametrosInspeccion parametro) {
+         if (!id.equals(parametro.getIdParametros())) {
+             return ResponseEntity.badRequest().build();
+         }
+         ParametrosInspeccion actualizado = parametrosInspeccionService.guardar(parametro);
+         return ResponseEntity.ok(actualizado);
+     }
+ }

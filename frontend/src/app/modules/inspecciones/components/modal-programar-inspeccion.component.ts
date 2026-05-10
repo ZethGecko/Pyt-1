@@ -125,10 +125,11 @@ interface FormularioInspeccion {
                             @for (inst of instanciasFiltradas; track inst.idInstancia) {
                               <tr>
                                 <td class="px-4 py-2">
-                                  <input type="checkbox"
-                                         [checked]="instanciasSeleccionadas.includes(inst.idInstancia)"
-                                         (change)="toggleSeleccion(inst.idInstancia, $event.target.checked)"
-                                         class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                                   <input type="checkbox"
+                                          [checked]="instanciasSeleccionadas.includes(inst.idInstancia)"
+                                          (change)="toggleSeleccion(inst.idInstancia, $event.target.checked)"
+                                          [disabled]="modo === 'agregar' && instanciasOriginales.includes(inst.idInstancia)"
+                                          class="rounded border-gray-300 text-green-600 focus:ring-green-500">
                                 </td>
                                 <td class="px-4 py-2 text-sm text-gray-900">
                                   {{ inst.tramite?.codigoRut || 'N/A' }}
@@ -156,72 +157,78 @@ interface FormularioInspeccion {
                   </div>
                 }
                 
-                 <!-- Fecha y Hora (en crear y agregar) -->
-                 @if (modo === 'crear' || modo === 'agregar') {
+                 <!-- Fecha y Hora (solo en crear y editar-datos) -->
+                 @if (modo === 'crear' || modo === 'editar-datos') {
                    <div class="grid grid-cols-2 gap-4">
                      <div>
-                       <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                       <label class="block text-sm font-medium text-gray-700 mb-1">
+                         {{ modo === 'agregar' ? 'Fecha' : 'Fecha *' }}
+                       </label>
                        <input type="date" 
                               [(ngModel)]="formulario.fecha"
+                              [readonly]="modo === 'agregar'"
                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
                      </div>
                      <div>
-                       <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+                       <label class="block text-sm font-medium text-gray-700 mb-1">
+                         {{ modo === 'agregar' ? 'Hora' : 'Hora *' }}
+                       </label>
                        <input type="time"
                               name="horaProgramada"
-                              required
                               [(ngModel)]="formulario.horaProgramada"
+                              [readonly]="modo === 'agregar'"
                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
                      </div>
                    </div>
                    <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-1">Lugar *</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-1">
+                       {{ modo === 'agregar' ? 'Lugar' : 'Lugar *' }}
+                     </label>
                      <input type="text" 
                             [(ngModel)]="formulario.lugar"
                             placeholder="Dirección de la inspección"
+                            [readonly]="modo === 'agregar'"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
                    </div>
                  }
-                
-                <!-- Observaciones -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                  <textarea [(ngModel)]="formulario.observaciones"
-                            rows="2"
-                            placeholder="Notas adicionales..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"></textarea>
-                </div>
+                 
+                 <!-- Observaciones -->
+                 <div>
+                   <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                   <textarea [(ngModel)]="formulario.observaciones"
+                             rows="2"
+                             placeholder="Notas adicionales..."
+                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"></textarea>
+                 </div>
                 
               </div>
             </div>
             
-            <!-- Footer -->
-            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <button (click)="guardar()"
-                      [disabled]="cargando || !validarFormulario()"
-                      class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
-                @if (cargando) {
-                  <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                }
-                @if (instanciasSeleccionadas.length > 1) {
-                  @if (modo === 'agregar') {
-                    Agregar {{ instanciasSeleccionadas.length - instanciasOriginales.length }} Vehículos
-                  } @else {
-                    Programar {{ instanciasSeleccionadas.length }} Inspecciones
-                  }
-                } @else {
-                  @if (modo === 'agregar') {
-                    Agregar Vehículo
-                  } @else {
-                    Programar Inspección
-                  }
-                }
-              </button>
-              <button (click)="cerrar()"
-                      class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                Cancelar
-              </button>
-            </div>
+             <!-- Footer -->
+             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+               <button (click)="guardar()"
+                       [disabled]="cargando || !validarFormulario()"
+                       class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50">
+                 @if (cargando) {
+                   <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                 }
+                 @if (modo === 'agregar') {
+                   Agregar {{ instanciasSeleccionadas.length - instanciasOriginales.length }} Vehículo(s)
+                 } @else if (modo === 'editar-datos') {
+                   Guardar Cambios
+                 } @else {
+                   @if (instanciasSeleccionadas.length > 1) {
+                     Programar {{ instanciasSeleccionadas.length }} Inspecciones
+                   } @else {
+                     Programar Inspección
+                   }
+                 }
+               </button>
+               <button (click)="cerrar()"
+                       class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                 Cancelar
+               </button>
+             </div>
             
           </div>
         </div>
@@ -271,15 +278,17 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
     this.cargarTramitesConInstancias();
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['mostrando'] && this.mostrando) {
-      if (this.modo === 'agregar' && this.inspeccionId) {
-        this.cargarInspeccionParaAgregar();
-      } else {
-        this.resetFormulario();
-      }
-    }
-  }
+   ngOnChanges(changes: SimpleChanges): void {
+     if (changes['mostrando'] && this.mostrando) {
+       if (this.modo === 'agregar' && this.inspeccionId) {
+         this.cargarInspeccionParaAgregar();
+       } else if (this.modo === 'editar-datos' && this.inspeccionId) {
+         this.cargarInspeccionParaEditar();
+       } else {
+         this.resetFormulario();
+       }
+     }
+   }
 
   cargarTramitesConInstancias(): void {
     this.tramiteService.listarConInstancias().subscribe({
@@ -301,9 +310,10 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
     });
   }
 
-  cargarInspeccionParaAgregar(): void {
-    this.cargando = true;
-    this.inspeccionService.obtenerConInstancias(this.inspeccionId!).subscribe({
+   cargarInspeccionParaAgregar(): void {
+     this.resetFormulario(); // Limpia datos previos
+     this.cargando = true;
+     this.inspeccionService.obtenerConInstancias(this.inspeccionId!).subscribe({
       next: (inspeccion) => {
         // Cargar datos de la inspección existente en el formulario para editar cabecera
         const fechaProgramada = inspeccion.fechaProgramada;
@@ -357,9 +367,11 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
                 this.cargando = false;
               }
             });
-          } else {
-            this.cargando = false;
-          }
+         } else {
+           this.instanciasFiltradas = [];
+           this.instanciasSeleccionadas = [];
+           this.cargando = false;
+         }
         } else {
           this.cargando = false;
         }
@@ -369,9 +381,35 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
         this.cargando = false;
       }
     });
-  }
+   }
 
-  resetFormulario(): void {
+   cargarInspeccionParaEditar(): void {
+     this.resetFormulario(); // Limpia datos previos
+     this.cargando = true;
+     this.inspeccionService.obtenerConInstancias(this.inspeccionId!).subscribe({
+       next: (inspeccion) => {
+         // Cargar solo datos de cabecera (fecha, hora, lugar, observaciones)
+         const fechaProgramada = inspeccion.fechaProgramada;
+         if (fechaProgramada) {
+           if (fechaProgramada instanceof Date) {
+             this.formulario.fecha = fechaProgramada.toISOString().split('T')[0];
+           } else {
+             this.formulario.fecha = fechaProgramada as string;
+           }
+         }
+         this.formulario.horaProgramada = inspeccion.hora || '';
+         this.formulario.lugar = inspeccion.lugar || '';
+         this.formulario.observaciones = inspeccion.observacionesGenerales || '';
+         this.cargando = false;
+       },
+       error: (err) => {
+         console.error('Error al cargar inspección para editar:', err);
+         this.cargando = false;
+       }
+     });
+   }
+
+   resetFormulario(): void {
     this.formulario = {
       fecha: '',
       horaProgramada: '',
@@ -459,35 +497,51 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
     }
   }
 
-   validarFormulario(): boolean {
-     if (this.modo === 'crear' && !this.tramiteSeleccionadoId) {
-       this.error = 'Seleccione un trámite';
-       return false;
-     }
-     if (this.modo === 'crear') {
-       if (!this.formulario.fecha || this.formulario.fecha.trim() === '') {
-         this.error = 'Ingrese la fecha programada';
-         return false;
-       }
-       if (!this.formulario.horaProgramada || this.formulario.horaProgramada.trim() === '') {
-         this.error = 'Ingrese la hora programada';
-         return false;
-       }
-       if (!this.formulario.lugar || this.formulario.lugar.trim() === '') {
-         this.error = 'Ingrese el lugar de la inspección';
-         return false;
-       }
-     }
-     if (this.instanciasSeleccionadas.length === 0) {
-       this.error = 'Seleccione al menos una instancia de trámite';
-       return false;
-     }
-     if (this.modo === 'crear' && !this.empresaSoloLectura && !this.empresaSeleccionadaId) {
-       this.error = 'Seleccione una empresa';
-       return false;
-     }
-     return true;
-   }
+    validarFormulario(): boolean {
+      // Modo crear: valida todo
+      if (this.modo === 'crear') {
+        if (!this.tramiteSeleccionadoId) {
+          this.error = 'Seleccione un trámite';
+          return false;
+        }
+        if (!this.formulario.fecha || this.formulario.fecha.trim() === '') {
+          this.error = 'Ingrese la fecha programada';
+          return false;
+        }
+        if (!this.formulario.horaProgramada || this.formulario.horaProgramada.trim() === '') {
+          this.error = 'Ingrese la hora programada';
+          return false;
+        }
+        if (!this.formulario.lugar || this.formulario.lugar.trim() === '') {
+          this.error = 'Ingrese el lugar de la inspección';
+          return false;
+        }
+        if (!this.empresaSoloLectura && !this.empresaSeleccionadaId) {
+          this.error = 'Seleccione una empresa';
+          return false;
+        }
+      }
+
+      // Modo editar-datos: solo valida fecha/hora/lugar
+      if (this.modo === 'editar-datos') {
+        if (!this.formulario.fecha || this.formulario.fecha.trim() === '') {
+          this.error = 'Ingrese la fecha programada';
+          return false;
+        }
+        if (!this.formulario.horaProgramada || this.formulario.horaProgramada.trim() === '') {
+          this.error = 'Ingrese la hora programada';
+          return false;
+        }
+        if (!this.formulario.lugar || this.formulario.lugar.trim() === '') {
+          this.error = 'Ingrese el lugar de la inspección';
+          return false;
+        }
+      }
+
+      // Modo agregar: no requiere validación de campos, solo verifica que haya al menos una instancia si el usuario decide agregar
+      // Permite guardar incluso sin nuevas instancias (simplemente no hará nada)
+      return true;
+    }
 
     guardar(): void {
       if (!this.validarFormulario()) {
@@ -498,10 +552,55 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
       this.cargando = true;
       this.error = null;
 
-      if (this.modo === 'agregar' && this.inspeccionId) {
+      if (this.modo === 'crear') {
+        // Crear nueva inspección con todas las instancias seleccionadas
+        const data: any = {
+          tramiteId: this.tramiteSeleccionadoId,
+          instanciasTramiteIds: this.instanciasSeleccionadas,
+          fechaProgramada: this.formulario.fecha,
+          hora: this.formulario.horaProgramada,
+          lugar: this.formulario.lugar,
+          observacionesGenerales: this.formulario.observaciones
+        };
+        this.inspeccionService.crearConInstancias(data).subscribe({
+          next: () => {
+            this.cargando = false;
+            this.notificationService.success('Inspección programada correctamente', 'Éxito', 3000);
+            this.cerrar();
+            this.inspeccionGuardada.emit();
+          },
+          error: (err) => {
+            this.cargando = false;
+            this.error = err.error?.message || 'Error al programar la inspección';
+          }
+        });
+
+      } else if (this.modo === 'agregar' && this.inspeccionId) {
+        // Solo agregar instancias nuevas, sin modificar fecha/hora/lugar
         const nuevas = this.instanciasSeleccionadas.filter(id => !this.instanciasOriginales.includes(id));
 
-        // Actualizar cabecera de la inspección
+        if (nuevas.length === 0) {
+          this.cargando = false;
+          this.notificationService.info('No hay vehículos nuevos para agregar', 'Info', 2000);
+          this.cerrar();
+          return;
+        }
+
+        this.inspeccionService.agregarInstancias(this.inspeccionId, nuevas).subscribe({
+          next: () => {
+            this.cargando = false;
+            this.notificationService.success('Vehículos agregados exitosamente', 'Éxito', 3000);
+            this.cerrar();
+            this.inspeccionGuardada.emit();
+          },
+          error: (err) => {
+            this.cargando = false;
+            this.error = err.error?.message || 'Error al agregar vehículos';
+          }
+        });
+
+      } else if (this.modo === 'editar-datos' && this.inspeccionId) {
+        // Solo actualizar fecha/hora/lugar
         const updateData: any = {
           fechaProgramada: this.formulario.fecha,
           hora: this.formulario.horaProgramada,
@@ -509,47 +608,18 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
           observacionesGenerales: this.formulario.observaciones
         };
 
-        this.inspeccionService.actualizar(this.inspeccionId, updateData).pipe(
-          switchMap(() => {
-            if (nuevas.length === 0) {
-              return of(null);
-            }
-            return this.inspeccionService.agregarInstancias(this.inspeccionId!, nuevas);
-          })
-        ).subscribe({
+        this.inspeccionService.actualizar(this.inspeccionId, updateData).subscribe({
           next: () => {
             this.cargando = false;
-            this.notificationService.success('Inspección actualizada exitosamente', 'Éxito', 3000);
+            this.notificationService.success('Datos de inspección actualizados', 'Éxito', 3000);
             this.cerrar();
             this.inspeccionGuardada.emit();
           },
           error: (err) => {
             this.cargando = false;
-            this.error = err.error?.message || 'Error al actualizar inspección';
+            this.error = err.error?.message || 'Error al actualizar datos';
           }
         });
-       } else {
-         const data: any = {
-           instanciasTramiteIds: this.instanciasSeleccionadas,
-           fechaProgramada: this.formulario.fecha,
-           hora: this.formulario.horaProgramada!,
-           lugar: this.formulario.lugar!,
-           observacionesGenerales: this.formulario.observaciones
-         };
-         // NOTA: La empresa se deriva del trámite, no se envía por separado
-         console.log('DEBUG: Enviando datos de inspección:', data);
-         this.inspeccionService.crearConInstancias(data).subscribe({
-         next: (inspeccion) => {
-           this.cargando = false;
-           this.notificationService.success('Inspección programada correctamente', 'Éxito', 3000);
-           this.cerrar();
-           this.inspeccionGuardada.emit();
-         },
-         error: (err) => {
-           this.cargando = false;
-           this.error = err.error?.message || 'Error al programar la inspección';
-         }
-       });
       }
     }
 

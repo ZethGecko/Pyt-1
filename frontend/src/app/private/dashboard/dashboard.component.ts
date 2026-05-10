@@ -234,14 +234,36 @@ export class DashboardComponent implements OnInit {
       return ['registrado', 'en_revision', 'derivado', 'aprobado', 'rechazado', 'observado', 'finalizado', 'cancelado'];
     }
 
-    // ========== UTILIDADES ==========
-    getColorEstado(estado: string): string {
-      const estadoLower = (estado || '').toLowerCase();
-      if (['aprobado', 'finalizado'].includes(estadoLower)) return 'success';
-      if (['rechazado', 'cancelado'].includes(estadoLower)) return 'danger';
-      if (['observado', 'pendiente'].includes(estadoLower)) return 'warning';
-      if (['en_revision', 'derivado'].includes(estadoLower)) return 'info';
-      if (estadoLower === 'registrado') return 'primary';
-      return 'secondary';
-    }
+   // ========== UTILIDADES ==========
+   getColorEstado(estado: string): string {
+     const estadoLower = (estado || '').toLowerCase();
+     if (['aprobado', 'finalizado'].includes(estadoLower)) return 'success';
+     if (['rechazado', 'cancelado'].includes(estadoLower)) return 'danger';
+     if (['observado', 'pendiente'].includes(estadoLower)) return 'warning';
+     if (['en_revision', 'derivado'].includes(estadoLower)) return 'info';
+     if (estadoLower === 'registrado') return 'primary';
+     return 'secondary';
+   }
+
+   puedeFinalizarTramite(tramite: TramiteEnriquecido): boolean {
+     return tramite.estado?.toLowerCase() === 'aprobado';
+   }
+
+   finalizarTramite(tramite: TramiteEnriquecido): void {
+     if (!this.puedeFinalizarTramite(tramite)) {
+       this.notificationService.showWarning('Solo se pueden finalizar trámites en estado "Aprobado"');
+       return;
+     }
+     if (confirm('¿Está seguro de finalizar este trámite? Una vez finalizado no se podrán realizar modificaciones.')) {
+       this.tramiteService.finalizar(tramite.id).subscribe({
+         next: () => {
+           this.notificationService.showSuccess('Trámite finalizado exitosamente');
+           this.cargarTramitesDepartamento();
+         },
+         error: (err) => {
+           this.notificationService.showError('Error al finalizar: ' + (err.message || 'Error desconocido'));
+         }
+       });
+     }
+   }
 }

@@ -264,32 +264,39 @@
             </div>
           </div>
 
-          <!-- Contenedor del mapa (derecha) -->
-          <div class="map-viewport">
-            <div #mapContainer id="map" class="map"></div>
+           <!-- Contenedor del mapa (derecha) -->
+           <div class="map-viewport">
+             <div #mapContainer id="map" class="map"></div>
 
-            <!-- Drawing Toolbar Overlay -->
-            <div class="drawing-toolbar" *ngIf="drawingMode">
-              <div class="drawing-instructions">
-                <app-icon name="edit" size="md"></app-icon>
-                Haz clic en el mapa para agregar puntos
-              </div>
-              <div class="drawing-actions">
-                <button class="btn btn-sm btn-secondary" (click)="deshacerPunto()" [disabled]="drawnPoints.length === 0">
-                  <app-icon name="refresh" size="sm"></app-icon>
-                  Deshacer
-                </button>
-                <button class="btn btn-sm btn-primary" (click)="finalizarDibujo()" [disabled]="drawnPoints.length < 2">
-                  <app-icon name="check-circle" size="sm"></app-icon>
-                  Finalizar Ruta ({{ drawnPoints.length }} puntos)
-                </button>
-                <button class="btn btn-sm btn-secondary" (click)="cancelarDibujo()">
-                  <app-icon name="x" size="sm"></app-icon>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
+             <!-- Drawing Sidebar (flotante lateral izquierdo) -->
+             <div class="drawing-sidebar" *ngIf="drawingMode">
+               <div class="drawing-header">
+                 <app-icon name="edit" size="md"></app-icon>
+                 <span>Dibujando Ruta</span>
+                 <button class="drawing-close" (click)="cancelarDibujo()" title="Cancelar dibujo">
+                   <app-icon name="x" size="sm"></app-icon>
+                 </button>
+               </div>
+               <div class="drawing-content">
+                 <p class="drawing-instructions">
+                   Haz clic en el mapa para agregar puntos
+                 </p>
+                 <div class="drawing-stats">
+                   <span class="badge">{{ drawnPoints.length }} punto(s)</span>
+                 </div>
+                 <div class="drawing-actions">
+                   <button class="btn btn-sm btn-secondary w-full" (click)="deshacerPunto()" [disabled]="drawnPoints.length === 0">
+                     <app-icon name="refresh" size="sm"></app-icon>
+                     Deshacer
+                   </button>
+                   <button class="btn btn-sm btn-primary w-full" (click)="finalizarDibujo()" [disabled]="drawnPoints.length < 2">
+                     <app-icon name="check-circle" size="sm"></app-icon>
+                     Finalizar Ruta
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
        </div>
      </div>
 

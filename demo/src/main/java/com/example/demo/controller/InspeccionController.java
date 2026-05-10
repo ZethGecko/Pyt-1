@@ -112,7 +112,7 @@ public class InspeccionController {
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/parametros/{paramId}")
-    public ParametroInspeccionResponseDTO actualizarParametro(@PathVariable Integer paramId,
+    public ParametroInspeccionResponseDTO actualizarParametro(@PathVariable Long paramId,
                                                                @RequestBody ParametroInspeccionDTO dto) {
         return inspeccionService.actualizarParametro(paramId, dto);
     }
@@ -122,7 +122,7 @@ public class InspeccionController {
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/parametros/{paramId}")
-    public void eliminarParametro(@PathVariable Integer paramId) {
+    public void eliminarParametro(@PathVariable Long paramId) {
         inspeccionService.eliminarParametro(paramId);
     }
 

@@ -118,11 +118,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
               path.startsWith("/api/empresas") ||
               path.startsWith("/api/puntos") ||
               path.startsWith("/api/grupos-presentacion/") ||
-              path.startsWith("/api/parametros-inspeccion/") ||
-              path.startsWith("/api/fichas-inspeccion/") ||
-              // Recursos estáticos
-              path.equals("/") || path.startsWith("/index.html") || path.startsWith("/assets/") ||
-              path.startsWith("/manifest.json") || path.startsWith("/favicon.ico")) {
+               path.startsWith("/api/parametros-inspeccion/") ||
+               // Recursos estáticos
+               path.equals("/") || path.startsWith("/index.html") || path.startsWith("/assets/") ||
+               path.startsWith("/manifest.json") || path.startsWith("/favicon.ico")) {
               System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered");
               return true;
           }

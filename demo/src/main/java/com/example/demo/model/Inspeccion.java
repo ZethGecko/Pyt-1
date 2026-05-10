@@ -86,6 +86,12 @@ public class Inspeccion {
     @JsonIgnore
     private Vehiculo vehiculo;
 
+    // Relación con FormatoInspeccion
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "formato_inspeccion_id")
+    @JsonIgnore
+    private FormatoInspeccion formatoInspeccion;
+
     // Relación con FichaInspeccion
     @OneToMany(mappedBy = "inspeccionEntity", cascade = CascadeType.ALL)
     @JsonIgnore
@@ -159,6 +165,9 @@ public class Inspeccion {
 
     public Vehiculo getVehiculo() { return vehiculo; }
     public void setVehiculo(Vehiculo vehiculo) { this.vehiculo = vehiculo; }
+
+    public FormatoInspeccion getFormatoInspeccion() { return formatoInspeccion; }
+    public void setFormatoInspeccion(FormatoInspeccion formatoInspeccion) { this.formatoInspeccion = formatoInspeccion; }
 
     public List<FichaInspeccion> getFichasInspeccion() { return fichasInspeccion; }
     public void setFichasInspeccion(List<FichaInspeccion> fichasInspeccion) { this.fichasInspeccion = fichasInspeccion; }

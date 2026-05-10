@@ -1,15 +1,27 @@
 package com.example.demo.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-public class FichaInspeccionUpdateRequestDTO {
-    private Long usuarioInspectorId;
-    private Boolean estado;
-    private String resultado;
-    private String observaciones;
-    private List<ParametroInspeccionDTO> parametros;
+  public class FichaInspeccionUpdateRequestDTO {
+      @JsonProperty("usuarioInspector")
+      private Long usuarioInspectorId;
+      private Boolean estado;
+      private String resultado;
+      private String observaciones;
+      private String firmaResponsable;
+      private String fechaFirma;
+      private List<ParametroInspeccionDTO> parametros;
 
-    public FichaInspeccionUpdateRequestDTO() {}
+      // Campos de título del formato (opcionales)
+      private String tituloPrincipal;
+      private String subtituloPrincipal;
+      private String tituloSeccionDatosGenerales;
+      private String tituloSeccionPlaca;
+      private String tituloSeccionPlanLunca;
+      private String tituloSeccionLaboratorio;
+
+     public FichaInspeccionUpdateRequestDTO() {}
 
     public Long getUsuarioInspectorId() {
         return usuarioInspectorId;
@@ -43,11 +55,35 @@ public class FichaInspeccionUpdateRequestDTO {
         this.observaciones = observaciones;
     }
 
-    public List<ParametroInspeccionDTO> getParametros() {
-        return parametros;
-    }
+     public List<ParametroInspeccionDTO> getParametros() {
+         return parametros;
+     }
 
-    public void setParametros(List<ParametroInspeccionDTO> parametros) {
-        this.parametros = parametros;
-    }
-}
+     public void setParametros(List<ParametroInspeccionDTO> parametros) {
+         this.parametros = parametros;
+     }
+
+     public String getTituloPrincipal() { return tituloPrincipal; }
+     public void setTituloPrincipal(String tituloPrincipal) { this.tituloPrincipal = tituloPrincipal; }
+
+     public String getSubtituloPrincipal() { return subtituloPrincipal; }
+     public void setSubtituloPrincipal(String subtituloPrincipal) { this.subtituloPrincipal = subtituloPrincipal; }
+
+     public String getTituloSeccionDatosGenerales() { return tituloSeccionDatosGenerales; }
+     public void setTituloSeccionDatosGenerales(String tituloSeccionDatosGenerales) { this.tituloSeccionDatosGenerales = tituloSeccionDatosGenerales; }
+
+     public String getTituloSeccionPlaca() { return tituloSeccionPlaca; }
+     public void setTituloSeccionPlaca(String tituloSeccionPlaca) { this.tituloSeccionPlaca = tituloSeccionPlaca; }
+
+     public String getTituloSeccionPlanLunca() { return tituloSeccionPlanLunca; }
+     public void setTituloSeccionPlanLunca(String tituloSeccionPlanLunca) { this.tituloSeccionPlanLunca = tituloSeccionPlanLunca; }
+
+      public String getTituloSeccionLaboratorio() { return tituloSeccionLaboratorio; }
+      public void setTituloSeccionLaboratorio(String tituloSeccionLaboratorio) { this.tituloSeccionLaboratorio = tituloSeccionLaboratorio; }
+
+      public String getFirmaResponsable() { return firmaResponsable; }
+      public void setFirmaResponsable(String firmaResponsable) { this.firmaResponsable = firmaResponsable; }
+
+      public String getFechaFirma() { return fechaFirma; }
+      public void setFechaFirma(String fechaFirma) { this.fechaFirma = fechaFirma; }
+  }

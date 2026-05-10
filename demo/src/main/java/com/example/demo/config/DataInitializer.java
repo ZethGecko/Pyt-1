@@ -708,6 +708,7 @@ public class DataInitializer {
              "categorias_transporte", "categoria_transporte", "grupo_presentacion", "examen", "inspeccion",
              "expediente", "solicitud", "publicacion", "observacion_solicitud", "historial_tramite", "tramite",
              "tipo_transporte", "subtipo_transporte",
+             "formato_inspeccion", "campo_formato", "valor_campo", "ficha_inspeccion",
              // Hyphenated tables (as used in endpoints)
              "categorias-transporte", "categoria-transporte", "tipos-transporte", "tipo-transporte", "subtipos-transporte", "subtipo-transporte"
          };

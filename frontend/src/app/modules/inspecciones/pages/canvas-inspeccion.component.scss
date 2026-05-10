@@ -865,4 +865,121 @@ $radius-lg: 0.75rem;
     }
   }
 
- // Ocultar el colon cuando el label es editable (se maneja en el template)
+  // Ocultar el colon cuando el label es editable (se maneja en el template)
+
+  // ========== SECCIÓN DE FINALIZACIÓN ==========
+  .finalizacion-section {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+
+    .finalizacion-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $color-text-primary;
+      margin: 0 0 0.75rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem;
+
+      label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: $color-text-secondary;
+        margin-bottom: 0.25rem;
+      }
+
+      input, select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        font-size: 0.875rem;
+        background: white;
+        transition: border-color 0.15s, box-shadow 0.15s;
+
+        &:focus {
+          outline: none;
+          border-color: $color-primary;
+          box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+        }
+
+        &:disabled {
+          background: #f3f4f6;
+          cursor: not-allowed;
+        }
+      }
+
+      .resultado-select {
+        cursor: pointer;
+      }
+    }
+
+    .action-btn.finalize {
+      width: 100%;
+      margin-top: 0.5rem;
+      background: $color-success;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: darken($color-success, 10%);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  // ========== INPUTS DE FIRMA Y FECHA EN EL CERTIFICADO ==========
+  .firma-input-large, .fecha-input-large {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: 0.875rem;
+    text-align: center;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+
+    &:read-only {
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-weight: 600;
+      color: $color-text-primary;
+    }
+  }
+
+  .firma-texto, .fecha-texto {
+    font-weight: 600;
+    color: $color-text-primary;
+    border-bottom: 1px dotted $color-border;
+    padding-bottom: 2px;
+  }
+
+  .firma-area {
+    padding: 0.5rem;
+    border: 1px dashed $color-border;
+    border-radius: $radius-md;
+    background: #fafafa;
+  }
+
+  // ========== SEPARADOR EN SIDEBAR ==========
+  .sidebar-separator {
+    border: none;
+    border-top: 1px solid $color-border;
+    margin: 1rem 0;
+  }

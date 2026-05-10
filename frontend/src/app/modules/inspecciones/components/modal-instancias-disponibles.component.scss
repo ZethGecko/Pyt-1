@@ -1,0 +1,95 @@
+// Variables
+@use 'sass:color';
+
+$primary-color: #2563eb;
+$secondary-color: #64748b;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$info-color: #06b6d4;
+$text-secondary: #64748b;
+$border-color: #e2e8f0;
+$transition-fast: 150ms ease;
+$border-radius: 0.5rem;
+
+// Badges
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+
+  &.badge-info {
+    background-color: #cffafe;
+    color: $info-color;
+    border: 1px solid #a5f3fc;
+  }
+
+  &.badge-success {
+    background-color: #dcfce7;
+    color: $success-color;
+    border: 1px solid #bbf7d0;
+  }
+
+  &.badge-warning {
+    background-color: #fef3c7;
+    color: $warning-color;
+    border: 1px solid #fde68a;
+  }
+
+  &.badge-secondary {
+    background-color: #f1f5f9;
+    color: $text-secondary;
+    border: 1px solid $border-color;
+  }
+}
+
+// Buttons
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: $border-radius;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all $transition-fast;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.btn-success {
+  background-color: $success-color;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust($success-color, $lightness: -10%);
+  }
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid $border-color;
+  color: $text-secondary;
+
+  &:hover:not(:disabled) {
+    background-color: #f1f5f9;
+  }
+}
