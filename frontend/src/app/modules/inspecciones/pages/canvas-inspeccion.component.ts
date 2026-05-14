@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { IconComponent } from '../../../shared/components/ui/icon.component';
@@ -8,6 +8,7 @@ import { InspeccionService, InspeccionResponse } from '../services/inspeccion.se
 import { FormatoInspeccionService, FormatoInspeccion, CampoFormato } from '../services/formato-inspeccion.service';
 import { AuthStateService } from '../../../core/auth/state/auth.state';
 import { NotificationService } from '../../../shared/services/notification.service';
+import { DraftInspeccionService } from '../services/draft-inspeccion.service';
 import { forkJoin, of, catchError, throwError } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
 
@@ -20,34 +21,38 @@ type ParametroFichaExtendido = ParametroInspeccion & {
   orden?: number;
 };
 
-@Component({
-  selector: 'app-canvas-inspeccion',
-  standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent, FormsModule],
-  templateUrl: './canvas-inspeccion.component.html',
-  styleUrls: ['./canvas-inspeccion.component.scss']
-})
-export class CanvasInspeccionComponent implements OnInit {
-  inspeccionId: number = 0;
-  modoEdicion: boolean = false;
-  ficha: FichaInspeccion | null = null;
-  inspeccion?: InspeccionResponse;
-  parametrosFicha: ParametroFichaExtendido[] = [];
-  errorCarga: boolean = false;
-  mensajeError: string = '';
-  cargandoFicha: boolean = false;
-  modoDiseno: boolean = false;
+ @Component({
+   selector: 'app-canvas-inspeccion',
+   standalone: true,
+   imports: [CommonModule, RouterLink, IconComponent, FormsModule],
+   templateUrl: './canvas-inspeccion.component.html',
+   styleUrls: ['./canvas-inspeccion.component.scss']
+ })
+ export class CanvasInspeccionComponent implements OnInit, OnDestroy {
+   inspeccionId: number = 0;
+   modoEdicion: boolean = false;
+   ficha: FichaInspeccion | null = null;
+   inspeccion?: InspeccionResponse;
+   parametrosFicha: ParametroFichaExtendido[] = [];
+   errorCarga: boolean = false;
+   mensajeError: string = '';
+   cargandoFicha: boolean = false;
+   modoDiseno: boolean = false;
 
-  // Textos editables del encabezado
-  tituloPrincipal: string = 'CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA';
-  subtituloPrincipal: string = 'CÁTEDRA DE LA EMPRESA';
-  subtitulo2: string = ''; // Segundo subtítulo (corresponde a subtitulo2 en backend)
-  editandoTituloPrincipal: boolean = false;
-  editandoSubtituloPrincipal: boolean = false;
-  editandoSubtitulo2: boolean = false;
-  tituloPrincipalTemp: string = '';
-  subtituloPrincipalTemp: string = '';
-  subtitulo2Temp: string = '';
+   // Estado de conexión
+   isOnline: boolean = navigator.onLine;
+   draftGuardado: boolean = false;
+
+   // Textos editables del encabezado
+   tituloPrincipal: string = 'CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA';
+   subtituloPrincipal: string = 'CÁTEDRA DE LA EMPRESA';
+   subtitulo2: string = ''; // Segundo subtítulo (corresponde a subtitulo2 en backend)
+   editandoTituloPrincipal: boolean = false;
+   editandoSubtituloPrincipal: boolean = false;
+   editandoSubtitulo2: boolean = false;
+   tituloPrincipalTemp: string = '';
+   subtituloPrincipalTemp: string = '';
+   subtitulo2Temp: string = '';
 
    secciones: { [key: string]: ParametroFichaExtendido[] } = {
      'DATOS GENERALES': [],
@@ -58,10 +63,13 @@ export class CanvasInspeccionComponent implements OnInit {
      'OBSERVACIONES': []
    };
 
-  // Variables para firma y resultado (modo ejecución)
-  resultado: string = '';
-  firmaResponsable: string = '';
-  fechaFirma: string = '';
+   // Variables para firma y resultado (modo ejecución)
+   resultado: string = '';
+   firmaResponsable: string = '';
+   fechaFirma: string = '';
+
+   // Debounce para autoguardado
+   private autosaveTimeout: any = null;
 
   private seccionesMap: { [key: string]: string } = {
     'Nº de la empresa:': 'DATOS GENERALES',
@@ -114,66 +122,98 @@ export class CanvasInspeccionComponent implements OnInit {
 
   tituloTemp: { [key: string]: string } = {};
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private fichaInspeccionService: FichaInspeccionService,
-    private inspeccionService: InspeccionService,
-    private formatoInspeccionService: FormatoInspeccionService,
-    private authState: AuthStateService,
-    private notificationService: NotificationService
-  ) {}
+   constructor(
+     private route: ActivatedRoute,
+     private router: Router,
+     private fichaInspeccionService: FichaInspeccionService,
+     private inspeccionService: InspeccionService,
+     private formatoInspeccionService: FormatoInspeccionService,
+     private authState: AuthStateService,
+     private notificationService: NotificationService,
+     private draftService: DraftInspeccionService
+   ) {}
 
    ngOnInit(): void {
-    const ruta = this.route.snapshot.routeConfig?.path || '';
-    // Intentar obtener ID por diferentes nombres de parámetro
-    let idParam = this.route.snapshot.paramMap.get('id') ||
-                  this.route.snapshot.paramMap.get('inspeccionId') ||
-                  this.route.snapshot.paramMap.get('fichaId');
+     // Detectar cambios de conexión
+     window.addEventListener('online', () => this.handleOnline());
+     window.addEventListener('offline', () => this.handleOffline());
 
-    if (!idParam) {
-      // Sin ID: cargar formato global (modo diseño)
-      this.modoDiseno = true;
-      this.cargarFormatoGlobal();
-      return;
-    }
+     const ruta = this.route.snapshot.routeConfig?.path || '';
+     let idParam = this.route.snapshot.paramMap.get('id') ||
+                   this.route.snapshot.paramMap.get('inspeccionId') ||
+                   this.route.snapshot.paramMap.get('fichaId');
 
-    const idNum = Number(idParam);
-    this.inspeccionId = idNum;
+     if (!idParam) {
+       // Sin ID: cargar formato global (modo diseño)
+       this.modoDiseno = true;
+       this.cargarFormatoGlobal();
+       return;
+     }
 
-    if (ruta.includes('campos')) {
-      // Ruta para editar formato (modo diseño)
-      this.modoDiseno = true;
-      this.cargarFormatoParaEdicion();
-    } else if (ruta.includes('ficha')) {
-      // Ruta para ver ficha (modo ejecución). El parámetro es fichaId.
-      // Obtener la ficha para conocer el inspeccionId real.
-      this.cargandoFicha = true;
-      this.fichaInspeccionService.getById(idNum).subscribe({
-        next: (ficha: FichaInspeccion) => {
-          this.cargandoFicha = false;
-          this.ficha = ficha;
-          if (ficha.inspeccionId) {
-            this.inspeccionId = ficha.inspeccionId;
-            this.modoDiseno = false;
-            this.cargarDatos();
-          } else {
-            this.errorCarga = true;
-            this.mensajeError = 'La ficha no está asociada a ninguna inspección.';
-          }
-        },
-        error: (err) => {
-          this.cargandoFicha = false;
-          this.errorCarga = true;
-          this.mensajeError = 'No se pudo cargar la ficha de inspección.';
-        }
-      });
-    } else {
-      // Ruta realizar/:id (inspeccionId directo)
-      this.modoDiseno = false;
-      this.cargarDatos();
-    }
-  }
+     const idNum = Number(idParam);
+     this.inspeccionId = idNum;
+
+     if (ruta.includes('campos')) {
+       // Ruta para editar formato (modo diseño) - no usar borrador
+       this.modoDiseno = true;
+       this.cargarFormatoParaEdicion();
+       return;
+     }
+
+     if (ruta.includes('ficha')) {
+       // Ruta para ver ficha (modo ejecución). El parámetro es fichaId.
+       // No se usa sistema de borradores para fichas ya guardadas
+       this.modoDiseno = false;
+       this.cargandoFicha = true;
+       this.fichaInspeccionService.getById(idNum).subscribe({
+         next: (ficha: FichaInspeccion) => {
+           this.cargandoFicha = false;
+           this.ficha = ficha;
+           if (ficha.inspeccionId) {
+             this.inspeccionId = ficha.inspeccionId;
+             this.cargarDatos(); // carga normal
+           } else {
+             this.errorCarga = true;
+             this.mensajeError = 'La ficha no está asociada a ninguna inspección.';
+           }
+         },
+         error: (err) => {
+           this.cargandoFicha = false;
+           this.errorCarga = true;
+           this.mensajeError = 'No se pudo cargar la ficha de inspección.';
+         }
+       });
+       return;
+     }
+
+     // Ruta realizar/:id (inspeccionId directo) - modo ejecución
+     this.modoDiseno = false;
+
+     // Verificar si hay borrador guardado para esta inspección
+     const draft = this.draftService.getDraft(this.inspeccionId);
+     if (draft) {
+       const fecha = new Date(draft.ultimaModificacion).toLocaleString('es-ES');
+       if (confirm(`Se encontró un borrador guardado el ${fecha}. ¿Desea recuperarlo?`)) {
+         this.aplicarBorrador(draft);
+         // Cargar solo datos de la inspección (empresa, lugar, etc) sin sobrescribir el borrador
+         this.inspeccionService.obtener(this.inspeccionId).subscribe({
+           next: (inspeccion) => {
+             this.inspeccion = inspeccion;
+             this.rellenarDatosAutomaticos();
+           },
+           error: (err) => {
+             console.warn('No se pudieron cargar datos de la inspección para rellenar automáticos:', err);
+           }
+         });
+         return; // No continuar con cargarDatos() para no sobrescribir
+       } else {
+         this.draftService.clearDraft(this.inspeccionId);
+       }
+     }
+
+     // Si no hay borrador, cargar datos normales desde servidor
+     this.cargarDatos();
+   }
 
    private cargarFormatoGlobal(): void {
      this.cargandoFicha = true;
@@ -589,9 +629,10 @@ export class CanvasInspeccionComponent implements OnInit {
       this.clasificarPorSecciones();
     }
 
-  volverAtras(): void {
-    this.router.navigate(['/inspecciones']);
-  }
+   volverAtras(): void {
+     this.prepararParaSalida();
+     this.router.navigate(['/inspecciones']);
+   }
 
    guardarCertificado(): void {
      if (this.modoDiseno) {
@@ -656,59 +697,64 @@ export class CanvasInspeccionComponent implements OnInit {
      this.guardarCertificadoEjecucion();
    }
 
-  private guardarCertificadoEjecucion(): void {
-    if (this.ficha) {
-      (this.ficha as any).firmaResponsable = this.firmaResponsable || null;
-      (this.ficha as any).fechaFirma = this.fechaFirma || null;
-      this.ficha.estado = this.ficha.estado || false;
-      this.ficha.resultado = this.resultado || undefined;
-    }
+   private guardarCertificadoEjecucion(soloSync: boolean = false): void {
+     if (this.ficha) {
+       (this.ficha as any).firmaResponsable = this.firmaResponsable || null;
+       (this.ficha as any).fechaFirma = this.fechaFirma || null;
+       this.ficha.estado = this.ficha.estado || false;
+       this.ficha.resultado = this.resultado || undefined;
+     }
 
-    const fichaDTO = {
-      inspeccionId: this.inspeccionId,
-      estado: this.ficha?.estado || false,
-      usuarioInspector: this.authState.currentUser()?.id || null,
-      vehiculoId: this.inspeccion?.vehiculoId || null,
-      parametros: this.parametrosFicha.map(p => ({
-        idParametros: p.idParametros,
-        parametro: p.parametro,
-        observacion: p.valor || '',
-        seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
-      })),
-      firmaResponsable: this.firmaResponsable || undefined,
-      fechaFirma: this.fechaFirma || undefined,
-      resultado: this.resultado || undefined
-    };
+     const fichaDTO = {
+       inspeccionId: this.inspeccionId,
+       estado: this.ficha?.estado || false,
+       usuarioInspector: this.authState.currentUser()?.id || null,
+       vehiculoId: this.inspeccion?.vehiculoId || null,
+       parametros: this.parametrosFicha.map(p => ({
+         idParametros: p.idParametros,
+         parametro: p.parametro,
+         observacion: p.valor || '',
+         seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
+       })),
+       firmaResponsable: this.firmaResponsable || undefined,
+       fechaFirma: this.fechaFirma || undefined,
+       resultado: this.resultado || undefined
+     };
 
-    this.cargandoFicha = true;
-    if (this.ficha && this.ficha.id) {
-      this.fichaInspeccionService.update(this.ficha.id, fichaDTO).subscribe({
-        next: () => {
-          this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
-          this.cargandoFicha = false;
-          this.cargarDatos();
-        },
-        error: (err: any) => {
-          this.cargandoFicha = false;
-          console.error('Error actualizando certificado:', err);
-          alert('Error al guardar el certificado.');
-        }
-      });
-    } else {
-      this.fichaInspeccionService.create(fichaDTO).subscribe({
-        next: () => {
-          this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
-          this.cargandoFicha = false;
-          this.cargarDatos();
-        },
-        error: (err: any) => {
-          this.cargandoFicha = false;
-          console.error('Error creando certificado:', err);
-          alert('Error al guardar el certificado.');
-        }
-      });
-    }
-  }
+     // Si no hay conexión y no es solo sync, guardar solo local y notificar
+     if (!this.isOnline && !soloSync) {
+       this.guardarBorradorAutomatico();
+       alert('Sin conexión. Los datos se han guardado localmente. Se sincronizarán cuando se restablezca la conexión.');
+       return;
+     }
+
+     this.cargandoFicha = true;
+     const request = this.ficha && this.ficha.id
+       ? this.fichaInspeccionService.update(this.ficha.id, fichaDTO)
+       : this.fichaInspeccionService.create(fichaDTO);
+
+     request.subscribe({
+       next: () => {
+         this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
+         this.cargandoFicha = false;
+         // Limpiar borrador local tras guardar exitosamente en servidor
+         this.limpiarBorrador();
+         if (!soloSync) {
+           this.cargarDatos();
+         }
+       },
+       error: (err: any) => {
+         this.cargandoFicha = false;
+         console.error('Error guardando certificado:', err);
+         if (soloSync) {
+           console.log('[CanvasInspeccion] Falló sincronización, se mantendrá borrador local');
+         } else {
+           alert('Error al guardar el certificado. Los datos se han guardado localmente.');
+           this.guardarBorradorAutomatico();
+         }
+       }
+     });
+   }
 
   toggleModoEdicion(): void {
     this.modoEdicion = !this.modoEdicion;
@@ -718,25 +764,30 @@ export class CanvasInspeccionComponent implements OnInit {
     window.print();
   }
 
-  limpiarCampos(): void {
-    if (this.modoDiseno) {
-      if (!confirm('¿Está seguro de eliminar TODOS los campos del formato? Esta acción no se puede deshacer.')) {
-        return;
-      }
-      this.parametrosFicha = [];
-      this.clasificarPorSecciones();
-      this.notificationService?.showSuccess('Todos los campos eliminados', 'Éxito', 2000);
-    } else {
-      if (!confirm('¿Está seguro de limpiar todos los datos ingresados?')) {
-        return;
-      }
-      for (const param of this.parametrosFicha) {
-        param.valor = '';
-        param.observacion = '';
-      }
-      this.notificationService?.showSuccess('Datos limpiados', 'Éxito', 2000);
-    }
-  }
+   limpiarCampos(): void {
+     if (this.modoDiseno) {
+       if (!confirm('¿Está seguro de eliminar TODOS los campos del formato? Esta acción no se puede deshacer.')) {
+         return;
+       }
+       this.parametrosFicha = [];
+       this.clasificarPorSecciones();
+       this.notificationService?.showSuccess('Todos los campos eliminados', 'Éxito', 2000);
+     } else {
+       if (!confirm('¿Está seguro de limpiar todos los datos ingresados?')) {
+         return;
+       }
+       for (const param of this.parametrosFicha) {
+         param.valor = '';
+         param.observacion = '';
+       }
+       this.resultado = '';
+       this.firmaResponsable = '';
+       this.fechaFirma = '';
+       this.notificationService?.showSuccess('Datos limpiados', 'Éxito', 2000);
+     }
+     // Actualizar borrador local
+     this.guardarBorradorAutomatico();
+   }
 
   agregarCampoSeccion(seccion: string): void {
     const nombre = prompt(`Ingrese el nombre del nuevo campo para la sección "${seccion}":`);
@@ -807,19 +858,20 @@ export class CanvasInspeccionComponent implements OnInit {
      param._valorTemp = '';
    }
 
-   seleccionarOpcion(param: ParametroFichaExtendido, opcion: 'BIEN' | 'MAL'): void {
-     if (param.valorOpcion === opcion) {
-       param.valorOpcion = null;
-       param.valor = '';
-   } else {
-       for (const param of this.parametrosFicha) {
-         param.valor = '';
-         param.observacion = '';
-         param.valorOpcion = null;
-       }
-       this.notificationService?.showSuccess('Datos limpiados', 'Éxito', 2000);
-     }
-   }
+    seleccionarOpcion(param: ParametroFichaExtendido, opcion: 'BIEN' | 'MAL'): void {
+      if (param.valorOpcion === opcion) {
+        param.valorOpcion = null;
+        param.valor = '';
+      } else {
+        for (const param of this.parametrosFicha) {
+          param.valor = '';
+          param.observacion = '';
+          param.valorOpcion = null;
+        }
+        this.notificationService?.showSuccess('Datos limpiados', 'Éxito', 2000);
+      }
+      this.guardarBorradorAutomatico(); // Guardar tras cambiar opción
+    }
 
    // ========== EDICIÓN DE TÍTULOS DE SECCIÓN ==========
 
@@ -935,11 +987,175 @@ export class CanvasInspeccionComponent implements OnInit {
     this.guardarCertificadoEjecucion();
   }
 
-  private formatDateToInput(dateStr: string | Date): string {
-    const d = new Date(dateStr);
-    const year = d.getFullYear();
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const day = d.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
+   private formatDateToInput(dateStr: string | Date): string {
+     const d = new Date(dateStr);
+     const year = d.getFullYear();
+     const month = (d.getMonth() + 1).toString().padStart(2, '0');
+     const day = d.getDate().toString().padStart(2, '0');
+     return `${year}-${month}-${day}`;
+   }
+
+   // ========== GESTIÓN DE BORRADORES LOCALES ==========
+
+   /**
+    * Pregunta al usuario si desea recuperar un borrador guardado
+    */
+   private preguntarRecuperarBorrador(draft: any): void {
+     const fecha = new Date(draft.ultimaModificacion).toLocaleString('es-ES');
+     if (confirm(`Se encontró un borrador guardado el ${fecha}. ¿Desea recuperarlo?`)) {
+       this.aplicarBorrador(draft);
+     } else {
+       this.draftService.clearDraft(this.inspeccionId);
+     }
+   }
+
+   /**
+    * Aplica los datos del borrador al componente
+    */
+   private aplicarBorrador(draft: any): void {
+     this.parametrosFicha = draft.parametrosFicha || [];
+     this.firmaResponsable = draft.firmaResponsable || '';
+     this.fechaFirma = draft.fechaFirma || '';
+     this.resultado = draft.resultado || '';
+     this.tituloPrincipal = draft.tituloPrincipal || this.tituloPrincipal;
+     this.subtituloPrincipal = draft.subtituloPrincipal || this.subtituloPrincipal;
+     this.subtitulo2 = draft.subtitulo2 || '';
+     this.titulosSecciones = draft.titulosSecciones || this.titulosSecciones;
+     this.clasificarPorSecciones();
+     this.draftGuardado = true;
+     this.notificationService?.showSuccess('Borrador recuperado correctamente', 'Éxito', 2000);
+   }
+
+   /**
+    * Guarda el estado actual como borrador (auto-guardado)
+    */
+   private guardarBorradorAutomatico(): void {
+     if (this.modoDiseno) return; // No guardar borradores en modo diseño
+
+     this.draftService.saveDraft(this.inspeccionId, {
+       parametrosFicha: this.parametrosFicha,
+       firmaResponsable: this.firmaResponsable,
+       fechaFirma: this.fechaFirma,
+       resultado: this.resultado,
+       tituloPrincipal: this.tituloPrincipal,
+       subtituloPrincipal: this.subtituloPrincipal,
+       subtitulo2: this.subtitulo2,
+       titulosSecciones: this.titulosSecciones
+     });
+     this.draftGuardado = true;
+   }
+
+   /**
+    * Guarda borrador al navegar away o cerrar
+    */
+   private prepararParaSalida(): void {
+     if (this.modoDiseno) return;
+     // Solo guardar si hay datos
+     const tieneDatos = this.parametrosFicha.some(p => p.valor && p.valor.trim() !== '') ||
+                       this.firmaResponsable.trim() !== '' ||
+                       this.fechaFirma !== '' ||
+                       this.resultado.trim() !== '';
+     if (tieneDatos) {
+       this.guardarBorradorAutomatico();
+       console.log('[CanvasInspeccion] Borrador guardado antes de salir');
+     }
+   }
+
+   /**
+    * Limpia el borrador local (cuando se guarda exitosamente en servidor)
+    */
+   private limpiarBorrador(): void {
+     this.draftService.clearDraft(this.inspeccionId);
+     this.draftGuardado = false;
+   }
+
+   // ========== MANEJO DE CONEXIÓN ==========
+
+   @HostListener('window:online', ['$event'])
+   onWindowOnline(): void {
+     this.isOnline = true;
+     console.log('[CanvasInspeccion] Conexión restablecida');
+     this.notificationService?.showSuccess('Conexión restablecida. Los datos se sincronizarán automáticamente.', 'En línea', 3000);
+     // Intentar sincronizar borrador si hay uno pendiente
+     this.intentarSincronizarBorrador();
+   }
+
+   @HostListener('window:offline', ['$event'])
+   onWindowOffline(): void {
+     this.isOnline = false;
+     console.log('[CanvasInspeccion] Conexión perdida');
+     this.notificationService?.showWarning('Sin conexión. Los datos se guardarán localmente.', 'Desconectado', 3000);
+   }
+
+   private handleOnline(): void {
+     this.isOnline = true;
+   }
+
+   private handleOffline(): void {
+     this.isOnline = false;
+   }
+
+   /**
+    * Intenta subir el borrador local al servidor si hay conexión
+    */
+   private intentarSincronizarBorrador(): void {
+     if (!this.isOnline) return;
+
+     const draft = this.draftService.getDraft(this.inspeccionId);
+     if (draft) {
+       console.log('[CanvasInspeccion] Intentando sincronizar borrador con servidor...');
+       // Auto-guardar en servidor
+       this.guardarCertificadoEjecucion(true); // true = solo sync, no alert
+     }
+   }
+
+   // ========== CICLO DE VIDA ==========
+
+   /**
+    * Aplica los datos del borrador al componente
+    */
+   private aplicarBorrador(draft: any): void {
+     this.parametrosFicha = draft.parametrosFicha || [];
+     this.firmaResponsable = draft.firmaResponsable || '';
+     this.fechaFirma = draft.fechaFirma || '';
+     this.resultado = draft.resultado || '';
+     this.tituloPrincipal = draft.tituloPrincipal || this.tituloPrincipal;
+     this.subtituloPrincipal = draft.subtituloPrincipal || this.subtituloPrincipal;
+     this.subtitulo2 = draft.subtitulo2 || '';
+     this.titulosSecciones = draft.titulosSecciones || this.titulosSecciones;
+     this.clasificarPorSecciones();
+     this.draftGuardado = true;
+     this.notificationService?.showSuccess('Borrador recuperado correctamente', 'Éxito', 2000);
+   }
+   onInputChange(): void {
+     if (this.autosaveTimeout) {
+       clearTimeout(this.autosaveTimeout);
+     }
+     this.autosaveTimeout = setTimeout(() => {
+       this.guardarBorradorAutomatico();
+     }, 1000); // Guardar 1 segundo después de la última modificación
+   }
+
+   /**
+    * Llamado cuando cambian valores de opciones (BIEN/MAL)
+    */
+   onOpcionChange(): void {
+     if (this.autosaveTimeout) {
+       clearTimeout(this.autosaveTimeout);
+     }
+     this.autosaveTimeout = setTimeout(() => {
+       this.guardarBorradorAutomatico();
+     }, 1000);
+   }
+
+   ngOnDestroy(): void {
+     window.removeEventListener('online', this.handleOnline);
+     window.removeEventListener('offline', this.handleOffline);
+     this.prepararParaSalida();
+
+     if (this.autosaveTimeout) {
+       clearTimeout(this.autosaveTimeout);
+     }
+   }
+   }
 }

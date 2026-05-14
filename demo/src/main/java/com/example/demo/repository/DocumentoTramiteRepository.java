@@ -18,7 +18,16 @@ public interface DocumentoTramiteRepository extends JpaRepository<DocumentoTrami
            "LEFT JOIN FETCH d.grupoPresentacion " +
            "LEFT JOIN FETCH d.instanciaTramite " +
            "WHERE d.tramiteId = :tramiteId")
-    List<DocumentoTramite> findByTramiteIdWithFetch(@Param("tramiteId") Long tramiteId);
+    List<DocumentoTramite> findByTramiteIdWithAllFetch(@Param("tramiteId") Long tramiteId);
+
+    @Query("SELECT d FROM DocumentoTramite d " +
+           "LEFT JOIN FETCH d.requisito " +
+           "LEFT JOIN FETCH d.usuarioAsignado " +
+           "LEFT JOIN FETCH d.usuarioRevisa " +
+           "LEFT JOIN FETCH d.grupoPresentacion " +
+           "LEFT JOIN FETCH d.instanciaTramite " +
+           "WHERE d.tramiteId = :tramiteId AND (d.instanciaTramite.idInstancia = :instanciaId OR d.instanciaTramite IS NULL)")
+    List<DocumentoTramite> findByTramiteIdAndInstanciaOrGlobal(@Param("tramiteId") Long tramiteId, @Param("instanciaId") Long instanciaId);
 
     @Query("SELECT d FROM DocumentoTramite d LEFT JOIN FETCH d.requisito WHERE d.tramiteId = :tramiteId")
     List<DocumentoTramite> findByTramiteIdWithRequisito(@Param("tramiteId") Long tramiteId);

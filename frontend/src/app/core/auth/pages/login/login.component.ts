@@ -57,15 +57,16 @@ export class LoginComponent {
            console.log('[LoginComponent] Error en respuesta:', this.errorMessage);
          }
        },
-       error: (error) => {
-         console.log('[LoginComponent] Error en petición:', error);
-         this.isLoading = false;
-         this.cdr.detectChanges(); // Forzar detección de cambios
-         const msg = error?.error?.message || error?.message || 'Error al iniciar sesión';
-         this.errorMessage = msg;
-         this.cdr.detectChanges(); // Forzar detección de cambios
-         console.log('[LoginComponent] Mensaje de error asignado:', this.errorMessage);
-       }
+        error: (error) => {
+          console.log('[LoginComponent] Error en petición:', error);
+          this.isLoading = false;
+          this.cdr.detectChanges(); // Forzar detección de cambios
+          const msg = error?.error?.message || error?.message || 'Error al iniciar sesión';
+          this.errorMessage = msg;
+          this.loginForm.reset(); // Limpiar campos al haber error
+          this.cdr.detectChanges(); // Forzar detección de cambios
+          console.log('[LoginComponent] Mensaje de error asignado:', this.errorMessage);
+        }
      });
    }
 }

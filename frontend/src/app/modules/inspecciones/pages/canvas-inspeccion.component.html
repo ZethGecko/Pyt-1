@@ -69,7 +69,7 @@
           <h4 class="finalizacion-title">Resultado de la Inspección</h4>
           <div class="form-group">
             <label>Resultado:</label>
-            <select [(ngModel)]="resultado" [disabled]="!puedeEditarFirma()" class="resultado-select">
+             <select [(ngModel)]="resultado" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarFirma()" class="resultado-select">
               <option value="APROBADO">✅ Aprobado</option>
               <option value="OBSERVADO">⚠️ Observado</option>
               <option value="RECHAZADO">❌ Rechazado</option>
@@ -104,15 +104,32 @@
         </div>
       </nav>
 
-      <div class="sidebar-footer">
-        <div class="info-box">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <p *ngIf="modoDiseno">Editando formato de inspección. Los cambios se guardan en la plantilla.</p>
-          <p *ngIf="!modoDiseno">Completando ficha de inspección. Los datos se guardan automáticamente.</p>
-        </div>
-      </div>
+       <div class="sidebar-footer">
+         <div class="info-box">
+           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+           </svg>
+           <p *ngIf="modoDiseno">Editando formato de inspección. Los cambios se guardan en la plantilla.</p>
+           <p *ngIf="!modoDiseno">Completando ficha de inspección. Los datos se guardan automáticamente.</p>
+         </div>
+
+         <!-- Indicador de conexión y borrador -->
+         <div class="status-bar">
+           <span class="status-indicator" [class.online]="isOnline" [class.offline]="!isOnline">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+               <path *ngIf="isOnline" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.25 17.292v-7.25L8.174 11.25 6.5 13l5.75 5.75 5.75-5.75-1.674-1.75z"/>
+               <path *ngIf="!isOnline" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm3.5 14.5l-1-1-1.5 1.5 1.5 1.5 1-1-1.172-1.172c.391.078.803.117 1.229.117 4.5 0 8.625-2.625 10.5-6.5H12v-2h6.5c-1.125 3.375-4.125 5.75-7.75 5.75-3.422 0-6.437-1.875-8-4.783l-1.25 1.828z"/>
+             </svg>
+             {{ isOnline ? 'En línea' : 'Desconectado' }}
+           </span>
+           <span *ngIf="draftGuardado" class="draft-indicator">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H6c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/>
+             </svg>
+             Borrador guardado
+           </span>
+         </div>
+       </div>
     </div>
   </aside>
 
@@ -151,13 +168,14 @@
                        [class.editable-title]="modoDiseno">
                    {{ tituloPrincipal }}
                  </span>
-                 <input *ngIf="editandoTituloPrincipal"
-                        type="text"
-                        class="editable-title-input large"
-                        [(ngModel)]="tituloPrincipalTemp"
-                        (blur)="guardarEdicionTituloPrincipal()"
-                        (keydown.enter)="guardarEdicionTituloPrincipal()"
-                        (keydown.escape)="cancelarEdicionTituloPrincipal()">
+                  <input *ngIf="editandoTituloPrincipal"
+                         type="text"
+                         class="editable-title-input large"
+                         [(ngModel)]="tituloPrincipalTemp" (ngModelChange)="onInputChange()"
+                         (ngModelChange)="onInputChange()"
+                         (blur)="guardarEdicionTituloPrincipal()"
+                         (keydown.enter)="guardarEdicionTituloPrincipal()"
+                         (keydown.escape)="cancelarEdicionTituloPrincipal()">
                </h1>
                <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
                  <span *ngIf="!editandoSubtituloPrincipal"
@@ -165,13 +183,14 @@
                        [class.editable-title]="modoDiseno">
                    {{ subtituloPrincipal }}
                  </span>
-                 <input *ngIf="editandoSubtituloPrincipal"
-                        type="text"
-                        class="editable-title-input large"
-                        [(ngModel)]="subtituloPrincipalTemp"
-                        (blur)="guardarEdicionSubtituloPrincipal()"
-                        (keydown.enter)="guardarEdicionSubtituloPrincipal()"
-                        (keydown.escape)="cancelarEdicionSubtituloPrincipal()">
+                  <input *ngIf="editandoSubtituloPrincipal"
+                         type="text"
+                         class="editable-title-input large"
+                         [(ngModel)]="subtituloPrincipalTemp" (ngModelChange)="onInputChange()"
+                         (ngModelChange)="onInputChange()"
+                         (blur)="guardarEdicionSubtituloPrincipal()"
+                         (keydown.enter)="guardarEdicionSubtituloPrincipal()"
+                         (keydown.escape)="cancelarEdicionSubtituloPrincipal()">
                </h2>
 
                <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide mt-2">
@@ -180,13 +199,14 @@
                        [class.editable-title]="modoDiseno">
                    {{ subtitulo2 }}
                  </span>
-                 <input *ngIf="editandoSubtitulo2"
-                        type="text"
-                        class="editable-title-input large"
-                        [(ngModel)]="subtitulo2Temp"
-                        (blur)="guardarEdicionSubtitulo2()"
-                        (keydown.enter)="guardarEdicionSubtitulo2()"
-                        (keydown.escape)="cancelarEdicionSubtitulo2()">
+                  <input *ngIf="editandoSubtitulo2"
+                         type="text"
+                         class="editable-title-input large"
+                         [(ngModel)]="subtitulo2Temp" (ngModelChange)="onInputChange()"
+                         (ngModelChange)="onInputChange()"
+                         (blur)="guardarEdicionSubtitulo2()"
+                         (keydown.enter)="guardarEdicionSubtitulo2()"
+                         (keydown.escape)="cancelarEdicionSubtitulo2()">
                </h2>
              </div>
            </div>
@@ -201,14 +221,15 @@
                      [class.editable-title]="modoDiseno">
                  {{ titulosSecciones['DATOS GENERALES'] }}
                </span>
-                <input *ngIf="editandoTitulo['DATOS GENERALES']"
-                       type="text"
-                       class="editable-title-input"
-                       [(ngModel)]="tituloTemp['DATOS GENERALES']"
-                       (blur)="guardarEdicionTitulo('DATOS GENERALES')"
-                       (keydown.enter)="guardarEdicionTitulo('DATOS GENERALES')"
-                       (keydown.escape)="cancelarEdicionTitulo('DATOS GENERALES')"
-                       >
+                 <input *ngIf="editandoTitulo['DATOS GENERALES']"
+                        type="text"
+                        class="editable-title-input"
+                        [(ngModel)]="tituloTemp['DATOS GENERALES']" (ngModelChange)="onInputChange()"
+                        (ngModelChange)="onInputChange()"
+                        (blur)="guardarEdicionTitulo('DATOS GENERALES')"
+                        (keydown.enter)="guardarEdicionTitulo('DATOS GENERALES')"
+                        (keydown.escape)="cancelarEdicionTitulo('DATOS GENERALES')"
+                        >
               </h3>
              <!-- Código de Ficha al lado de DATOS GENERALES -->
              <div class="text-right">
@@ -219,26 +240,27 @@
              </div>
            </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ng-container *ngFor="let param of secciones['DATOS GENERALES']">
-              <div class="flex items-start">
-                <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
-                       [class.editable-label]="modoDiseno && !param._editando"
-                       (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
-                  <span *ngIf="!param._editando">{{ param.parametro }}:</span>
-                  <input *ngIf="param._editando"
-                         type="text"
-                         class="inline-edit-input"
-                         [(ngModel)]="param._valorTemp"
-                         (blur)="guardarEdicionCampo(param)"
-                         (keydown.enter)="guardarEdicionCampo(param)"
-                         (keydown.escape)="cancelarEdicionCampo(param)"
-                         #inputEdit>
-                </label>
-                 <div class="flex-1 flex items-center gap-2">
-                   <input type="text"
-                          class="editable-input flex-1"
-                          [(ngModel)]="param.valor"
-                          placeholder="( )">
+              <ng-container *ngFor="let param of secciones['DATOS GENERALES']">
+                <div class="flex items-start">
+                  <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
+                         [class.editable-label]="modoDiseno && !param._editando"
+                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                    <input *ngIf="param._editando"
+                           type="text"
+                           class="inline-edit-input"
+                           [(ngModel)]="param._valorTemp" (ngModelChange)="onInputChange()"
+                           (blur)="guardarEdicionCampo(param)"
+                           (keydown.enter)="guardarEdicionCampo(param)"
+                           (keydown.escape)="cancelarEdicionCampo(param)"
+                           #inputEdit>
+                  </label>
+                  <div class="flex-1 flex items-center gap-2">
+                    <input type="text"
+                           class="editable-input flex-1"
+                           [(ngModel)]="param.valor" (ngModelChange)="onInputChange()"
+                           (ngModelChange)="onInputChange()"
+                           placeholder="( )">
                    <div *ngIf="modoDiseno" class="flex gap-1">
                      <button type="button"
                              (click)="eliminarCampo(param)"
@@ -268,26 +290,27 @@
          <div class="certificado-section mb-8">
            <h3 class="section-header text-lg">UNIDAD VEHICULAR</h3>
            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <ng-container *ngFor="let param of secciones['UNIDAD VEHICULAR']">
-               <div class="flex items-start">
-                 <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
-                        [class.editable-label]="modoDiseno && !param._editando"
-                        (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
-                   <span *ngIf="!param._editando">{{ param.parametro }}:</span>
-                   <input *ngIf="param._editando"
-                          type="text"
-                          class="inline-edit-input"
-                          [(ngModel)]="param._valorTemp"
-                          (blur)="guardarEdicionCampo(param)"
-                          (keydown.enter)="guardarEdicionCampo(param)"
-                          (keydown.escape)="cancelarEdicionCampo(param)"
-                          #inputEdit>
-                 </label>
-                 <div class="flex-1 flex items-center gap-2">
-                   <input type="text"
-                          class="editable-input flex-1"
-                          [(ngModel)]="param.valor"
-                          placeholder="( )">
+              <ng-container *ngFor="let param of secciones['UNIDAD VEHICULAR']">
+                <div class="flex items-start">
+                  <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
+                         [class.editable-label]="modoDiseno && !param._editando"
+                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                    <input *ngIf="param._editando"
+                           type="text"
+                           class="inline-edit-input"
+                           [(ngModel)]="param._valorTemp" (ngModelChange)="onInputChange()"
+                           (blur)="guardarEdicionCampo(param)"
+                           (keydown.enter)="guardarEdicionCampo(param)"
+                           (keydown.escape)="cancelarEdicionCampo(param)"
+                           #inputEdit>
+                  </label>
+                  <div class="flex-1 flex items-center gap-2">
+                    <input type="text"
+                           class="editable-input flex-1"
+                           [(ngModel)]="param.valor" (ngModelChange)="onInputChange()"
+                           (ngModelChange)="onInputChange()"
+                           placeholder="( )">
                    <div *ngIf="modoDiseno" class="flex gap-1">
                      <button type="button"
                              (click)="eliminarCampo(param)"
@@ -324,14 +347,15 @@
                   [class.editable-title]="modoDiseno">
               {{ titulosSecciones['PLAN LUNCA DE RODALE'] }}
             </span>
-             <input *ngIf="editandoTitulo['PLAN LUNCA DE RODALE']"
-                    type="text"
-                    class="editable-title-input"
-                    [(ngModel)]="tituloTemp['PLAN LUNCA DE RODALE']"
-                    (blur)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
-                    (keydown.enter)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
-                    (keydown.escape)="cancelarEdicionTitulo('PLAN LUNCA DE RODALE')"
-                    >
+              <input *ngIf="editandoTitulo['PLAN LUNCA DE RODALE']"
+                     type="text"
+                     class="editable-title-input"
+                     [(ngModel)]="tituloTemp['PLAN LUNCA DE RODALE']"
+                     (ngModelChange)="onInputChange()"
+                     (blur)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                     (keydown.enter)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                     (keydown.escape)="cancelarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                     >
            </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <ng-container *ngFor="let param of secciones['PLAN LUNCA DE RODALE']">
@@ -399,10 +423,11 @@
                    [class.editable-title]="modoDiseno">
                {{ titulosSecciones['OBSERVACIONES'] || 'OBSERVACIONES' }}
              </span>
-             <input *ngIf="editandoTitulo['OBSERVACIONES']"
-                    type="text"
-                    class="editable-title-input"
-                    [(ngModel)]="tituloTemp['OBSERVACIONES']"
+              <input *ngIf="editandoTitulo['OBSERVACIONES']"
+                     type="text"
+                     class="editable-title-input"
+                     [(ngModel)]="tituloTemp['OBSERVACIONES']" (ngModelChange)="onInputChange()"
+                     (ngModelChange)="onInputChange()"
                      (blur)="guardarEdicionTitulo('OBSERVACIONES')"
                      (keydown.enter)="guardarEdicionTitulo('OBSERVACIONES')"
                      (keydown.escape)="cancelarEdicionTitulo('OBSERVACIONES')"
@@ -415,20 +440,22 @@
                         [class.editable-label]="modoDiseno && !param._editando"
                         (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
                    <span *ngIf="!param._editando">{{ param.parametro }}:</span>
-                   <input *ngIf="param._editando"
-                          type="text"
-                          class="inline-edit-input"
-                          [(ngModel)]="param._valorTemp"
-                          (blur)="guardarEdicionCampo(param)"
-                          (keydown.enter)="guardarEdicionCampo(param)"
-                          (keydown.escape)="cancelarEdicionCampo(param)"
-                          #inputEdit>
+                  <input *ngIf="param._editando"
+                         type="text"
+                         class="inline-edit-input"
+                         [(ngModel)]="param._valorTemp"
+                         (ngModelChange)="onInputChange()"
+                         (blur)="guardarEdicionCampo(param)"
+                         (keydown.enter)="guardarEdicionCampo(param)"
+                         (keydown.escape)="cancelarEdicionCampo(param)"
+                         #inputEdit>
                  </label>
-                 <div class="flex-1 flex flex-col">
-                   <textarea class="editable-input flex-1"
-                             [(ngModel)]="param.valor"
-                             placeholder="( )"
-                             rows="4"></textarea>
+                  <div class="flex-1 flex flex-col">
+                    <textarea class="editable-input flex-1"
+                              [(ngModel)]="param.valor" (ngModelChange)="onInputChange()"
+                              (ngModelChange)="onInputChange()"
+                              placeholder="( )"
+                              rows="4"></textarea>
                    <div *ngIf="modoDiseno" class="flex gap-1 mt-1">
                      <button type="button"
                              (click)="eliminarCampo(param)"
@@ -461,7 +488,7 @@
               <div class="firma-area">
                 <label class="block text-sm font-medium text-gray-700 mb-1">FIRMA DEL RESPONSABLE</label>
                 <input type="text"
-                       [(ngModel)]="firmaResponsable"
+                       [(ngModel)]="firmaResponsable" (ngModelChange)="onInputChange()"
                        [readonly]="!puedeEditarFirma()"
                        placeholder="Nombre del responsable"
                        class="firma-input-large"
@@ -475,7 +502,7 @@
               <div class="firma-area">
                 <label class="block text-sm font-medium text-gray-700 mb-1">FECHA</label>
                 <input type="date"
-                       [(ngModel)]="fechaFirma"
+                       [(ngModel)]="fechaFirma" (ngModelChange)="onInputChange()"
                        [readonly]="!puedeEditarFirma()"
                        class="fecha-input-large"
                        *ngIf="puedeEditarFirma(); else fechaSoloLectura">

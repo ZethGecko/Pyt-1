@@ -1369,6 +1369,79 @@ $border-radius-lg: 0.75rem;
   }
 }
 
+// ========== ESTILOS PARA BOTONES DE INSTANCIA ==========
+.btn-instancia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $text-primary;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: #f1f5f9;
+    border-color: $primary-color;
+    color: $primary-color;
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+
+  &.active {
+    background: linear-gradient(135deg, $primary-color, $primary-hover);
+    color: white;
+    border-color: $primary-color;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      background: linear-gradient(135deg, $primary-hover, color.adjust($primary-hover, $lightness: -5%));
+      color: white;
+    }
+  }
+}
+
+// ========== ESTILOS PARA BOTÓN RECARGAR ==========
+.btn-recargar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f8fafc;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $text-primary;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #f1f5f9;
+    border-color: $text-muted;
+    color: $primary-color;
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+
+    svg {
+      animation: spin 0.6s linear infinite;
+    }
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    transition: transform $transition-fast;
+  }
+}
+
 // ========== ESTILOS PARA BOTÓN DE DETALLE EN TABLA ==========
 .btn-detail {
   display: inline-flex;

@@ -5,6 +5,7 @@ import com.example.demo.repository.RequisitoTUPACRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -41,6 +42,13 @@ public class RequisitoTUPACService {
 
     public List<RequisitoTUPAC> listarPorTupac(Long tupacId) {
         return requisitoTUPACRepository.findByTupacIdWithFetch(tupacId);
+    }
+
+    public List<RequisitoTUPAC> listarPorIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return requisitoTUPACRepository.findByIdsWithFetch(ids);
     }
 
     public List<String> obtenerTiposDocumentoUnicos() {

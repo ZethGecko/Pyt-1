@@ -16,7 +16,7 @@ export interface TramiteListado {
 }
 
 export interface InstanciaTramitePublic {
-  idInstancia: number;
+  idInstancia: string;
   identificador: string;
   estado: string;
   fechaCreacion: string;
@@ -29,7 +29,7 @@ export interface SeguimientoCompleto {
   revisiones: any[];
   inscripciones: any[];
   instancias?: InstanciaTramitePublic[];
-  instanciaSeleccionadaId?: number;
+  instanciaSeleccionadaId?: string;
 }
 
 @Injectable({
@@ -52,17 +52,20 @@ export class SeguimientoService {
     return this.http.get<TramiteListado[]>(`${this.apiUrl}/tramites/enriquecidos`);
   }
 
-  // Obtener seguimiento completo por código RUT (incluye instancias)
-  obtenerSeguimientoCompleto(codigoRUT: string, instanciaId?: number): Observable<SeguimientoCompleto> {
-    let params = {};
-    if (instanciaId !== undefined && instanciaId !== null) {
-      params = { instanciaId: instanciaId.toString() };
+    // Obtener seguimiento completo por código RUT (incluye instancias)
+    obtenerSeguimientoCompleto(codigoRUT: string, instanciaId?: string): Observable<SeguimientoCompleto> {
+      let params: any = {};
+      if (instanciaId !== undefined && instanciaId !== null && instanciaId !== '') {
+        params = { instanciaId: instanciaId };
+        console.log('[SeguimientoService] GET con params:', params);
+      } else {
+        console.log('[SeguimientoService] GET sin params');
+      }
+      return this.http.get<SeguimientoCompleto>(
+        `${this.apiUrl}/tramites/publico/seguimiento/${encodeURIComponent(codigoRUT)}`,
+        { params }
+      );
     }
-    return this.http.get<SeguimientoCompleto>(
-      `${this.apiUrl}/tramites/publico/seguimiento/${encodeURIComponent(codigoRUT)}`,
-      { params }
-    );
-  }
 
   // Formatear fecha
   formatDate(date: string | Date | null | undefined): string {

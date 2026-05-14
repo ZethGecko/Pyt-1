@@ -26,12 +26,15 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   tramiteDetalle: SeguimientoCompleto | null = null;
   cargandoDetalle: boolean = false;
 
-  // Instancias
-  instancias: Array<{ idInstancia: number; identificador: string; estado: string; fechaCreacion: string }> = [];
-  instanciaSeleccionadaId: number | null = null;
+    // Instancias
+    instancias: Array<{ idInstancia: string; identificador: string; estado: string; fechaCreacion: string }> = [];
+    instanciaSeleccionadaId: string | null = null;
+    errorInstancia: string | null = null;
+    filtroInstancia: string = ''; // <-- filtro para buscar instancias
 
-  // Destroy subject para limpiar subscriptions
-  private destroy$ = new Subject<void>();
+   // Destroy subject para limpiar subscriptions
+   private destroy$ = new Subject<void>();
+   private seguimientoSubscription: any = null;
 
   // Imágenes del sitio
   imagenes: Map<string, ImagenSitio> = new Map();
@@ -62,10 +65,13 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
+   ngOnDestroy(): void {
+     this.destroy$.next();
+     this.destroy$.complete();
+     if (this.seguimientoSubscription) {
+       this.seguimientoSubscription.unsubscribe();
+     }
+   }
 
   // Cerrar modal con tecla ESC
   @HostListener('document:keydown', ['$event'])
@@ -191,75 +197,125 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   /**
    * Abre el modal de detalle para un trámite específico
    */
-  verDetalle(tramite: TramiteListado): void {
-    this.tramiteDetalle = null;
-    this.mostrarDetalle = true;
-    this.cargandoDetalle = true;
-    this.instancias = [];
-    this.instanciaSeleccionadaId = null;
+   verDetalle(tramite: TramiteListado): void {
+     this.tramiteDetalle = null;
+     this.mostrarDetalle = true;
+     this.cargandoDetalle = true;
+     this.instancias = [];
+     this.instanciaSeleccionadaId = null;
+     this.errorInstancia = null;
 
-    this.seguimientoService.obtenerSeguimientoCompleto(tramite.codigoRUT).subscribe({
-      next: (data) => {
-        this.tramiteDetalle = data;
-        this.instancias = data.instancias || [];
-        this.instanciaSeleccionadaId = data.instanciaSeleccionadaId || null;
-        this.cargandoDetalle = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar detalle del trámite:', err);
-        this.error = 'Error al cargar el detalle del trámite';
-        this.cargandoDetalle = false;
-        this.mostrarDetalle = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
-  }
+     // Cancelar suscripción anterior
+     if (this.seguimientoSubscription) {
+       this.seguimientoSubscription.unsubscribe();
+     }
 
-  /**
-   * Cambia a una instancia específica del trámite
-   */
-  /**
-   * Cambia a una instancia específica del trámite
-   */
-  cambiarInstancia(instanciaId: number): void {
-    this.cargarDatosInstancia(instanciaId);
-  }
+     this.seguimientoService.obtenerSeguimientoCompleto(tramite.codigoRUT).subscribe({
+       next: (data) => {
+         this.tramiteDetalle = data;
+         this.instancias = data.instancias || [];
+         this.instanciaSeleccionadaId = data.instanciaSeleccionadaId != null ? String(data.instanciaSeleccionadaId) : null;
+         this.cargandoDetalle = false;
+         this.changeDetectorRef.detectChanges();
+       },
+       error: (err) => {
+         console.error('Error al cargar detalle del trámite:', err);
+         this.error = 'Error al cargar el detalle del trámite';
+         this.cargandoDetalle = false;
+         this.mostrarDetalle = false;
+         this.changeDetectorRef.detectChanges();
+       }
+     });
+   }
 
-  /**
-   * Recarga los datos de la instancia actualmente seleccionada
-   */
-  recargarDatosInstancia(): void {
-    if (this.instanciaSeleccionadaId) {
-      this.cargarDatosInstancia(this.instanciaSeleccionadaId);
+    /**
+     * Cambia a una instancia específica del trámite
+     */
+    cambiarInstancia(instanciaId: string): void {
+      console.log('[Seguimiento] Cambiando a instancia:', instanciaId);
+      this.instanciaSeleccionadaId = instanciaId;
+      this.errorInstancia = null;
+      this.cargarDatosInstancia(instanciaId);
     }
-  }
 
-  /**
-   * Método privado para cargar datos de una instancia
-   */
-  private cargarDatosInstancia(instanciaId: number): void {
-    if (!this.tramiteDetalle) return;
-    const codigoRUT = this.tramiteDetalle.tramite?.codigoRUT;
-    if (!codigoRUT) return;
-
-    this.cargandoDetalle = true;
-    this.seguimientoService.obtenerSeguimientoCompleto(codigoRUT, instanciaId).subscribe({
-      next: (data) => {
-        this.tramiteDetalle = data;
-        this.instancias = data.instancias || [];
-        this.instanciaSeleccionadaId = data.instanciaSeleccionadaId || instanciaId;
-        this.cargandoDetalle = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar instancia:', err);
-        this.error = 'Error al cargar los datos de la instancia';
-        this.cargandoDetalle = false;
-        this.changeDetectorRef.detectChanges();
+    /**
+     * Recarga los datos de la instancia actualmente seleccionada
+     */
+    recargarDatosInstancia(): void {
+      const instanciaId = this.instanciaSeleccionadaId;
+      if (instanciaId) {
+        this.cargarDatosInstancia(instanciaId);
+      } else {
+        console.warn('[Seguimiento] No hay instancia seleccionada, recargando datos por defecto');
+        this.cargarDatosInstanciaDefault();
       }
-    });
-  }
+    }
+
+    /**
+     * Método privado para cargar datos de una instancia
+     */
+    private cargarDatosInstancia(instanciaId: string): void {
+      console.log('[Frontend] >>> cargarDatosInstancia llamada. instanciaId:', instanciaId);
+      console.log('[Frontend] tramiteDetalle presente?', !!this.tramiteDetalle);
+      if (!this.tramiteDetalle) {
+        console.warn('[Frontend] tramiteDetalle es null, abortando carga de instancia');
+        return;
+      }
+      const codigoRUT = this.tramiteDetalle.tramite?.codigoRut; // <-- corregido: codigoRut (no codigoRUT)
+      console.log('[Frontend] codigoRut extraído:', codigoRUT);
+      if (!codigoRUT) {
+        console.warn('[Frontend] No hay codigoRut, abortando');
+        return;
+      }
+
+      this.cargandoDetalle = true;
+
+      // Cancelar petición anterior si existe
+      if (this.seguimientoSubscription) {
+        this.seguimientoSubscription.unsubscribe();
+      }
+
+      console.log('[Frontend] Ejecutando obtenerSeguimientoCompleto con instanciaId:', instanciaId);
+      this.seguimientoSubscription = this.seguimientoService.obtenerSeguimientoCompleto(codigoRUT, instanciaId).subscribe({
+        next: (data) => {
+          console.log('[Frontend] <<< Datos recibidos para instancia', instanciaId, ':', data);
+          this.tramiteDetalle = data;
+          this.instanciaSeleccionadaId = data.instanciaSeleccionadaId?.toString() || instanciaId;
+          this.cargandoDetalle = false;
+        },
+        error: (err) => {
+          console.error('[Frontend] Error al cargar instancia', instanciaId, ':', err);
+          this.errorInstancia = 'Error al cargar datos de la instancia: ' + (err.message || 'Error desconocido');
+          this.cargandoDetalle = false;
+          this.cargarDatosInstanciaDefault();
+        }
+      });
+    }
+
+    private cargarDatosInstanciaDefault(): void {
+      if (!this.tramiteDetalle) return;
+      const codigoRUT = this.tramiteDetalle.tramite?.codigoRut; // <-- corregido
+      if (!codigoRUT) return;
+     this.cargandoDetalle = true;
+
+     if (this.seguimientoSubscription) {
+       this.seguimientoSubscription.unsubscribe();
+     }
+
+     this.seguimientoSubscription = this.seguimientoService.obtenerSeguimientoCompleto(codigoRUT).subscribe({
+       next: (data) => {
+         this.tramiteDetalle = data;
+         this.instancias = data.instancias || [];
+         this.instanciaSeleccionadaId = data.instanciaSeleccionadaId != null ? String(data.instanciaSeleccionadaId) : null;
+         this.cargandoDetalle = false;
+         this.changeDetectorRef.detectChanges();
+       },
+       error: (err) => {
+         console.error('Error al cargar datos por defecto:', err);
+         this.cargandoDetalle = false;
+       }
+     });
+   }
 
   /**
    * Cierra el modal de detalle

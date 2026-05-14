@@ -1,11 +1,12 @@
 package com.example.demo.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+ import org.springframework.security.access.prepost.PreAuthorize;
+ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,8 @@ import com.example.demo.model.Tramite;
 import com.example.demo.model.Users;
 import com.example.demo.repository.UsersRepository;
 import com.example.demo.service.TramiteService;
+
+import jakarta.annotation.security.PermitAll;
 
 @RestController
 @RequestMapping("/api/tramites")
@@ -62,11 +65,19 @@ public class TramiteController {
         return service.buscarPorCodigoRUT(codigoRut).orElse(null);
     }
 
-     @GetMapping("/publico/seguimiento/{codigoRUT}")
-     public Map<String, Object> obtenerSeguimientoCompletoPublico(@PathVariable String codigoRUT, 
-         @RequestParam(required = false) Long instanciaId) {
-         return service.obtenerSeguimientoCompleto(codigoRUT, instanciaId);
-     }
+      @GetMapping("/publico/seguimiento/{codigoRUT}")
+      @PermitAll
+      public Map<String, Object> obtenerSeguimientoCompletoPublico(@PathVariable String codigoRUT,
+          @RequestParam(name = "instanciaId", required = false) Long instanciaId) {
+          try {
+              return service.obtenerSeguimientoCompleto(codigoRUT, instanciaId);
+          } catch (IllegalArgumentException e) {
+              Map<String, Object> error = new HashMap<>();
+              error.put("error", e.getMessage());
+              throw new org.springframework.web.server.ResponseStatusException(
+                  org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
+          }
+      }
 
     @GetMapping("/usuario/{usuarioId}")
     public List<Tramite> listarPorUsuario(@PathVariable Long usuarioId) {

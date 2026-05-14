@@ -136,22 +136,24 @@ public class Tramite {
          } else {
              this.solicitanteNombre = null;
              this.solicitanteId = null;
-         }
-     }
+          }
+      }
 
-    public Long getSolicitanteId() { return solicitanteId; }
-    public void setSolicitanteId(Long solicitanteId) { this.solicitanteId = solicitanteId; }
+      @PrePersist
+      public void prePersist() {
+          LocalDateTime now = LocalDateTime.now();
+          if (this.fechaRegistro == null) {
+              this.fechaRegistro = now;
+          }
+          this.fechaActualizacion = now;
+      }
 
-    public String getSolicitanteNombre() { return solicitanteNombre; }
-    public void setSolicitanteNombre(String solicitanteNombre) { this.solicitanteNombre = solicitanteNombre; }
+      @PreUpdate
+      public void preUpdate() {
+          this.fechaActualizacion = LocalDateTime.now();
+      }
 
-    public String getTipoTramiteCodigo() { return tipoTramiteCodigo; }
-    public void setTipoTramiteCodigo(String tipoTramiteCodigo) { this.tipoTramiteCodigo = tipoTramiteCodigo; }
-
-    public String getTipoTramiteDescripcion() { return tipoTramiteDescripcion; }
-    public void setTipoTramiteDescripcion(String tipoTramiteDescripcion) { this.tipoTramiteDescripcion = tipoTramiteDescripcion; }
-
-    // Getters y setters
+     // Getters y setters
     public Long getIdTramite() { return idTramite; }
     public void setIdTramite(Long idTramite) { this.idTramite = idTramite; }
     

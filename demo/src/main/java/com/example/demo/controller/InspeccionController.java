@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,10 +37,6 @@ import com.example.demo.dto.SiguienteInstanciaPendienteResponse;
 import com.example.demo.dto.VehiculoDTO;
 import com.example.demo.model.Inspeccion;
 import com.example.demo.service.InspeccionService;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inspecciones")

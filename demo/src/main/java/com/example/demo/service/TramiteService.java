@@ -2,10 +2,13 @@ package com.example.demo.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,172 +127,288 @@ public class TramiteService {
              return null;
          }
 
-         // Limpiar colecciones del tramite para evitar recursión
-         tramite.setDocumentos(null);
-         tramite.setHistorialTramites(null);
-         if (tramite.getDepartamentoActual() != null) {
-             tramite.getDepartamentoActual().setTramites(null);
-         }
-         if (tramite.getTipoTramite() != null) {
-             tramite.getTipoTramite().setTramites(null);
-         }
-
-         // Obtener historial con todas las relaciones
-         List<HistorialTramite> historial = historialRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
-         // Eliminar referencia circular
-         historial.forEach(h -> h.setTramite(null));
-
-         // Obtener documentos con todas las relaciones
-         List<DocumentoTramite> documentos = documentoRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
-         // Eliminar referencia circular y limpiar datos que causan ciclos
-         documentos.forEach(d -> {
-             d.setTramite(null);
-             if (d.getRequisito() != null) {
-                 d.getRequisito().setDocumentos(null);
-                 d.getRequisito().setGruposPresentacion(null);
-             }
-         });
-
-         // Obtener inscripciones de exámenes asociadas al trámite
-         List<InscripcionExamen> inscripciones = inscripcionExamenRepository.findByTramiteId(tramite.getIdTramite());
-         System.out.println("[TramiteService] Inscripciones encontradas para tramite " + tramite.getIdTramite() + ": " + inscripciones.size());
-         // Limpiar referencias circulares
-         inscripciones.forEach(ins -> {
-             ins.setTramite(null);
-             if (ins.getGrupoPresentacion() != null) {
-                 ins.getGrupoPresentacion().setDocumentosTramite(null);
-             }
-             if (ins.getPersona() != null) {
-                 ins.getPersona().setInscripciones(null);
-             }
-         });
-
-         // Obtener instancias del trámite
-         List<InstanciaTramite> instancias = instanciaRepository.findByTramite_IdTramiteOrderByFechaCreacionDesc(tramite.getIdTramite());
-
-         // Determinar instancia seleccionada
-         InstanciaTramite instanciaSeleccionada = null;
-         if (instanciaId != null) {
-             instanciaSeleccionada = instancias.stream()
-                 .filter(i -> instanciaId.equals(i.getIdInstancia()))
-                 .findFirst()
-                 .orElse(null);
-         }
-         if (instanciaSeleccionada == null && !instancias.isEmpty()) {
-             // Buscar instancia ACTIVA, si no, la más reciente
-             instanciaSeleccionada = instancias.stream()
-                 .filter(i -> "ACTIVO".equalsIgnoreCase(i.getEstado()))
-                 .findFirst()
-                 .orElse(instancias.get(0));
-         }
-
-          // Filtrar documentos e inscripciones por instanciaSeleccionada (si existe)
-          if (instanciaSeleccionada != null) {
-              final Long instanciaIdFiltro = instanciaSeleccionada.getIdInstancia();
-              documentos = documentos.stream()
-                  .filter(d -> d.getInstanciaTramite() == null || 
-                               d.getInstanciaTramite().getIdInstancia().equals(instanciaIdFiltro))
-                  .collect(Collectors.toList());
-              inscripciones = inscripciones.stream()
-                  .filter(i -> i.getInstanciaTramite() == null || 
-                               i.getInstanciaTramite().getIdInstancia().equals(instanciaIdFiltro))
-                  .collect(Collectors.toList());
+          // Limpiar colecciones del tramite para evitar recursión
+          tramite.setDocumentos(null);
+          tramite.setHistorialTramites(null);
+          if (tramite.getDepartamentoActual() != null) {
+              tramite.getDepartamentoActual().setTramites(null);
+          }
+          if (tramite.getTipoTramite() != null) {
+              tramite.getTipoTramite().setTramites(null);
           }
 
-         // Obtener requisitos del tipo de trámite (incluye exámenes)
-         List<RequisitoTUPAC> requisitosTipo = new ArrayList<>();
-         if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
-             List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
-             requisitosTipo = requisitoService.listarActivos().stream()
-                     .filter(r -> r.getId() != null && requisitosIds.contains(r.getId()))
-                     .collect(Collectors.toList());
-         }
+           // Obtener historial con todas las relaciones
+           List<HistorialTramite> historial = historialRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
 
-         // Mapa de requisitoId a DocumentoTramite
-         Map<Long, DocumentoTramite> docMap = documentos.stream()
-                 .filter(d -> d.getRequisito() != null)
-                 .collect(Collectors.toMap(d -> d.getRequisito().getId(), d -> d));
+            // Variables para documentos e inscripciones
+            List<DocumentoTramite> documentos;
+            List<InscripcionExamen> inscripciones;
+            String warningInstancia = null;
 
-         // Mapa de requisitoId a InscripcionExamen
-         Map<Long, InscripcionExamen> inscripcionesMap = new HashMap<>();
-         for (InscripcionExamen ins : inscripciones) {
-             if (ins.getGrupoPresentacion() != null && ins.getGrupoPresentacion().getRequisitoExamen() != null) {
-                 Long reqId = ins.getGrupoPresentacion().getRequisitoExamen().getId();
-                 if (!inscripcionesMap.containsKey(reqId)) {
-                     inscripcionesMap.put(reqId, ins);
-                 }
-             }
-         }
+            // Obtener instancias del trámite
+          List<InstanciaTramite> instancias = instanciaRepository.findByTramite_IdTramiteOrderByFechaCreacionDesc(tramite.getIdTramite());
+          System.out.println("[Seguimiento] Tramite " + tramite.getCodigoRut() + " - Instancias encontradas: " + instancias.size());
 
-         // Combinar requisitos con documentos e inscripciones para generar revisiones
-         List<Map<String, Object>> revisiones = requisitosTipo.stream().map(req -> {
-             DocumentoTramite doc = docMap.get(req.getId());
-             InscripcionExamen ins = inscripcionesMap.get(req.getId());
-             Map<String, Object> rev = new HashMap<>();
-             rev.put("id", doc != null ? doc.getIdDocumento() : 0);
-             rev.put("tramiteId", tramite.getIdTramite());
-             rev.put("requisitoId", req.getId());
-             rev.put("esExamen", req.getEsExamen());
-             rev.put("codigo", req.getCodigo());
-             rev.put("descripcion", req.getDescripcion());
-             rev.put("requisitoNombre", req.getDescripcion());
-             rev.put("tipoDocumento", req.getTipoDocumento());
-             rev.put("obligatorio", req.getObligatorio());
+            // Determinar instancia seleccionada
+            InstanciaTramite instanciaSeleccionada = null;
+            if (instanciaId != null) {
+               instanciaSeleccionada = instancias.stream()
+                   .filter(i -> i.getIdInstancia() != null && instanciaId.longValue() == i.getIdInstancia().longValue())
+                   .findFirst()
+                   .orElse(null);
+               System.out.println("[Seguimiento] Instancia solicitada: " + instanciaId + " -> encontrada: " + (instanciaSeleccionada != null));
+               if (instanciaSeleccionada == null) {
+                   System.out.println("[Seguimiento] Instancia ID " + instanciaId + " NO encontrada. IDs disponibles: " + 
+                       instancias.stream().map(i -> i.getIdInstancia()).collect(Collectors.toList()));
+                   // Usar la más reciente en lugar de lanzar excepción
+                   instanciaSeleccionada = instancias.stream()
+                       .filter(i -> "ACTIVO".equalsIgnoreCase(i.getEstado()))
+                       .findFirst()
+                       .orElse(instancias.get(0));
+                   warningInstancia = "Instancia " + instanciaId + " no encontrada. Se cargó la instancia más reciente.";
+               }
+           }
+          if (instanciaSeleccionada == null && !instancias.isEmpty()) {
+              // Buscar instancia ACTIVA, si no, la más reciente
+              instanciaSeleccionada = instancias.stream()
+                  .filter(i -> "ACTIVO".equalsIgnoreCase(i.getEstado()))
+                  .findFirst()
+                  .orElse(instancias.get(0));
+              System.out.println("[Seguimiento] Instancia seleccionada por defecto: " + instanciaSeleccionada.getIdInstancia() + " (" + instanciaSeleccionada.getIdentificador() + ")");
+          } else if (instanciaSeleccionada != null) {
+              System.out.println("[Seguimiento] Instancia seleccionada: " + instanciaSeleccionada.getIdInstancia() + " (" + instanciaSeleccionada.getIdentificador() + ")");
+          } else {
+              System.out.println("[Seguimiento] No hay instancias para este trámite");
+          }
 
-             if (doc != null) {
-                 rev.put("estado", doc.getEstado());
-                 rev.put("estadoFormateado", formatearEstado(doc.getEstado()));
-                 rev.put("colorEstado", getColorEstado(doc.getEstado()));
-                 rev.put("fechaPresentacion", doc.getFechaPresentacion());
-                 rev.put("fechaRevision", doc.getFechaRevision());
-                 rev.put("observaciones", doc.getObservaciones());
-                 rev.put("revisionUsuarioNombre", doc.getUsuarioRevisa() != null ? doc.getUsuarioRevisa().getUsername() : null);
-             } else if (ins != null) {
-                 rev.put("estado", ins.getEstado());
-                 rev.put("estadoFormateado", formatearEstado(ins.getEstado()));
-                 rev.put("colorEstado", getColorEstado(ins.getEstado()));
-                 rev.put("fechaPresentacion", ins.getFechaInscripcion());
-                 rev.put("fechaRevision", null);
-                 rev.put("observaciones", ins.getObservaciones());
-                 rev.put("revisionUsuarioNombre", null);
-                 rev.put("inscripcionId", ins.getIdInscripcion());
-                 rev.put("pagado", ins.getPagado());
-                 rev.put("resultado", ins.getResultado());
-                 rev.put("nota", ins.getNota());
-                 rev.put("grupoPresentacion", ins.getGrupoPresentacion());
-             } else {
-                 rev.put("estado", "PENDIENTE");
-                 rev.put("estadoFormateado", "Pendiente");
-                 rev.put("colorEstado", "warning");
-                 rev.put("fechaPresentacion", null);
-                 rev.put("fechaRevision", null);
-                 rev.put("observaciones", null);
-                 rev.put("revisionUsuarioNombre", null);
-             }
-             return rev;
-         }).collect(Collectors.toList());
+          // Obtener documentos e inscripciones, filtrando por instancia si corresponde
+          if (instanciaSeleccionada != null) {
+              Long instId = instanciaSeleccionada.getIdInstancia();
+              System.out.println("[Seguimiento] Filtrando por instancia ID: " + instId);
+              
+              // Obtener todos los documentos e inscripciones del trámite (con fetch completo)
+              documentos = documentoRepo.findByTramiteIdWithAllFetch(tramite.getIdTramite());
+              inscripciones = inscripcionExamenRepository.findByTramiteId(tramite.getIdTramite());
+              
+              System.out.println("[Seguimiento] Antes de filtro: documentos=" + documentos.size() + 
+                                ", inscripciones=" + inscripciones.size());
+              
+              // Log detallado de cada documento e inscripción
+              for (DocumentoTramite doc : documentos) {
+                  Long docInstId = doc.getInstanciaTramiteId();
+                  System.out.println("[Seguimiento]   Doc id=" + doc.getIdDocumento() + 
+                                    ", reqId=" + (doc.getRequisito() != null ? doc.getRequisito().getId() : "null") + 
+                                    ", instanciaId=" + docInstId);
+              }
+              for (InscripcionExamen ins : inscripciones) {
+                  Long insInstId = ins.getInstanciaTramite() != null ? ins.getInstanciaTramite().getIdInstancia() : null;
+                  System.out.println("[Seguimiento]   Inscripcion id=" + ins.getIdInscripcion() + 
+                                    ", instanciaId=" + insInstId);
+              }
+              
+              // Filtrar documentos: solo los de la instancia seleccionada o sin instancia (globales)
+              documentos = documentos.stream()
+                  .filter(d -> {
+                      Long docInstId = d.getInstanciaTramiteId();
+                      return docInstId == null || docInstId.equals(instId);
+                  })
+                  .collect(Collectors.toList());
+              
+              // Filtrar inscripciones: solo las de la instancia seleccionada o sin instancia
+              inscripciones = inscripciones.stream()
+                  .filter(ins -> {
+                      Long insInstId = ins.getInstanciaTramite() != null ? ins.getInstanciaTramite().getIdInstancia() : null;
+                      return insInstId == null || insInstId.equals(instId);
+                  })
+                  .collect(Collectors.toList());
+              
+              System.out.println("[Seguimiento] Después de filtrar: documentos=" + documentos.size() + 
+                                ", inscripciones=" + inscripciones.size());
+          } else {
+              // Si no hay instancias, obtener todos
+              documentos = documentoRepo.findByTramiteIdWithAllFetch(tramite.getIdTramite());
+              inscripciones = inscripcionExamenRepository.findByTramiteId(tramite.getIdTramite());
+          }
 
-         // Construir respuesta
-         Map<String, Object> response = new HashMap<>();
-         response.put("tramite", tramite);
-         response.put("historial", historial);
-         response.put("documentos", documentos);
-         response.put("revisiones", revisiones);
-         response.put("inscripciones", inscripciones);
+          // Limpiar referencias circulares
+          historial.forEach(h -> h.setTramite(null));
+          documentos.forEach(d -> {
+              d.setTramite(null);
+              if (d.getRequisito() != null) {
+                  d.getRequisito().setDocumentos(null);
+                  d.getRequisito().setGruposPresentacion(null);
+              }
+          });
+          inscripciones.forEach(ins -> {
+              ins.setTramite(null);
+              if (ins.getGrupoPresentacion() != null) {
+                  ins.getGrupoPresentacion().setDocumentosTramite(null);
+              }
+              if (ins.getPersona() != null) {
+                  ins.getPersona().setInscripciones(null);
+              }
+          });
+           // Si no hay instanciaSeleccionada, se incluyen todos (documentos/inscripciones globales y por instancia)
 
-         // Agregar información de instancias
-         List<Map<String, Object>> instanciasSimplificadas = instancias.stream()
-             .map(i -> {
-                 Map<String, Object> map = new HashMap<>();
-                 map.put("idInstancia", i.getIdInstancia());
-                 map.put("identificador", i.getIdentificador());
-                 map.put("estado", i.getEstado());
-                 map.put("fechaCreacion", i.getFechaCreacion());
-                 return map;
-             })
-             .collect(Collectors.toList());
-         response.put("instancias", instanciasSimplificadas);
-         response.put("instanciaSeleccionadaId", instanciaSeleccionada != null ? instanciaSeleccionada.getIdInstancia() : null);
+          // Obtener TODOS los IDs de requisitos que deben mostrarse:
+          // - Los asignados al tipo de trámite
+          // - Los que aparecen en documentos (para la instancia filtrada)
+          // - Los que aparecen en inscripciones de exámenes (para la instancia filtrada)
+          Set<Long> todosRequisitosIds = new HashSet<>();
+          
+          // Desde el tipo de trámite
+          if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
+              List<Long> ids = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
+              todosRequisitosIds.addAll(ids);
+              System.out.println("[Seguimiento] RequisitosIds desde tipoTramite: " + ids);
+          }
+          
+          // Desde documentos
+          System.out.println("[Seguimiento] Documentos después de filtrar por instancia: " + documentos.size());
+          for (DocumentoTramite doc : documentos) {
+              if (doc.getRequisito() != null) {
+                  todosRequisitosIds.add(doc.getRequisito().getId());
+                  System.out.println("[Seguimiento] Documento id=" + doc.getIdDocumento() + 
+                                    ", requisitoId=" + doc.getRequisito().getId() + 
+                                    ", instanciaId=" + (doc.getInstanciaTramite() != null ? doc.getInstanciaTramite().getIdInstancia() : "null"));
+              }
+          }
+          
+          // Desde inscripciones
+          System.out.println("[Seguimiento] Inscripciones después de filtrar por instancia: " + inscripciones.size());
+          for (InscripcionExamen ins : inscripciones) {
+              if (ins.getGrupoPresentacion() != null && ins.getGrupoPresentacion().getRequisitoExamen() != null) {
+                  Long reqId = ins.getGrupoPresentacion().getRequisitoExamen().getId();
+                  todosRequisitosIds.add(reqId);
+                  System.out.println("[Seguimiento] Inscripcion id=" + ins.getIdInscripcion() + 
+                                    ", requisitoExamenId=" + reqId + 
+                                    ", instanciaId=" + (ins.getInstanciaTramite() != null ? ins.getInstanciaTramite().getIdInstancia() : "null"));
+              }
+          }
+          
+          System.out.println("[Seguimiento] Total IDs de requisitos a buscar: " + todosRequisitosIds);
+
+          // Si no se encontraron IDs de requisitos desde el tipo de trámite, documentos o inscripciones,
+          // intentar obtener todos los requisitos activos del TUPAC asociado al tipo de trámite
+          if (todosRequisitosIds.isEmpty() && tramite.getTipoTramite() != null && tramite.getTipoTramite().getTupac() != null) {
+              List<RequisitoTUPAC> requisitosPorTupac = requisitoService.listarPorTupac(tramite.getTipoTramite().getTupac().getIdTupac());
+              for (RequisitoTUPAC r : requisitosPorTupac) {
+                  if (Boolean.TRUE.equals(r.getActivo())) {
+                      todosRequisitosIds.add(r.getId());
+                  }
+              }
+              System.out.println("[Seguimiento] Fallback: using all active requisitos from TUPAC: " + todosRequisitosIds);
+          }
+
+          // Obtener los requisitos correspondientes
+          List<RequisitoTUPAC> requisitos = requisitoService.listarPorIds(new ArrayList<>(todosRequisitosIds));
+          System.out.println("[Seguimiento] Requisitos obtenidos: " + requisitos.size());
+          
+          // Ordenar por código para presentación consistente
+          requisitos.sort(Comparator.comparing(RequisitoTUPAC::getCodigo));
+
+          // Mapa de requisitoId a DocumentoTramite (evitar duplicados)
+          Map<Long, DocumentoTramite> docMap = documentos.stream()
+                  .filter(d -> d.getRequisito() != null)
+                  .collect(Collectors.toMap(
+                      d -> d.getRequisito().getId(),
+                      d -> d,
+                      (existing, replacement) -> existing // keep first if duplicate
+                  ));
+
+          // Mapa de requisitoId a InscripcionExamen
+          Map<Long, InscripcionExamen> inscripcionesMap = new HashMap<>();
+          for (InscripcionExamen ins : inscripciones) {
+              if (ins.getGrupoPresentacion() != null && ins.getGrupoPresentacion().getRequisitoExamen() != null) {
+                  Long reqId = ins.getGrupoPresentacion().getRequisitoExamen().getId();
+                  // Si ya existe una inscripción para este reqId, se mantiene la primera
+                  inscripcionesMap.putIfAbsent(reqId, ins);
+              }
+          }
+
+          // Combinar requisitos con documentos e inscripciones para generar revisiones
+          List<Map<String, Object>> revisiones = requisitos.stream().map(req -> {
+              DocumentoTramite doc = docMap.get(req.getId());
+              InscripcionExamen ins = inscripcionesMap.get(req.getId());
+              Map<String, Object> rev = new HashMap<>();
+              rev.put("id", doc != null ? doc.getIdDocumento() : 0);
+              rev.put("tramiteId", tramite.getIdTramite());
+              rev.put("requisitoId", req.getId());
+              rev.put("esExamen", req.getEsExamen());
+              rev.put("codigo", req.getCodigo());
+              rev.put("descripcion", req.getDescripcion());
+              rev.put("requisitoNombre", req.getDescripcion());
+              rev.put("tipoDocumento", req.getTipoDocumento());
+              rev.put("obligatorio", req.getObligatorio());
+
+              if (doc != null) {
+                  rev.put("estado", doc.getEstado());
+                  rev.put("estadoFormateado", formatearEstado(doc.getEstado()));
+                  rev.put("colorEstado", getColorEstado(doc.getEstado()));
+                  rev.put("fechaPresentacion", doc.getFechaPresentacion());
+                  rev.put("fechaRevision", doc.getFechaRevision());
+                  rev.put("observaciones", doc.getObservaciones());
+                  rev.put("revisionUsuarioNombre", doc.getUsuarioRevisa() != null ? doc.getUsuarioRevisa().getUsername() : null);
+              } else if (ins != null) {
+                  rev.put("estado", ins.getEstado());
+                  rev.put("estadoFormateado", formatearEstado(ins.getEstado()));
+                  rev.put("colorEstado", getColorEstado(ins.getEstado()));
+                  rev.put("fechaPresentacion", ins.getFechaInscripcion());
+                  rev.put("fechaRevision", null);
+                  rev.put("observaciones", ins.getObservaciones());
+                  rev.put("revisionUsuarioNombre", null);
+                  rev.put("inscripcionId", ins.getIdInscripcion());
+                  rev.put("pagado", ins.getPagado());
+                  rev.put("resultado", ins.getResultado());
+                  rev.put("nota", ins.getNota());
+                  rev.put("grupoPresentacion", ins.getGrupoPresentacion());
+              } else {
+                  rev.put("estado", "PENDIENTE");
+                  rev.put("estadoFormateado", "Pendiente");
+                  rev.put("colorEstado", "warning");
+                  rev.put("fechaPresentacion", null);
+                  rev.put("fechaRevision", null);
+                  rev.put("observaciones", null);
+                  rev.put("revisionUsuarioNombre", null);
+              }
+              return rev;
+          }).collect(Collectors.toList());
+          
+          System.out.println("[Seguimiento] Total revisiones generadas: " + revisiones.size());
+
+          // Construir respuesta
+          Map<String, Object> response = new HashMap<>();
+          response.put("tramite", tramite);
+          response.put("historial", historial);
+          response.put("documentos", documentos);
+          response.put("revisiones", revisiones);
+          response.put("inscripciones", inscripciones);
+
+          // Agregar información de instancias
+          List<Map<String, Object>> instanciasSimplificadas = instancias.stream()
+              .map(i -> {
+                  Map<String, Object> map = new HashMap<>();
+                  map.put("idInstancia", i.getIdInstancia() != null ? i.getIdInstancia().toString() : null);
+                  // Limpiar identificador: quitar fecha si está en formato "texto (dd/MM/yyyy)"
+                  String ident = i.getIdentificador();
+                  if (ident != null && ident.matches(".*\\(\\d{2}/\\d{2}/\\d{4}\\)")) {
+                      ident = ident.replaceAll("\\s*\\(\\d{2}/\\d{2}/\\d{4}\\)$", "").trim();
+                  }
+                  map.put("identificador", ident);
+                  map.put("estado", i.getEstado());
+                  map.put("fechaCreacion", i.getFechaCreacion());
+                  return map;
+              })
+              .collect(Collectors.toList());
+          response.put("instancias", instanciasSimplificadas);
+          response.put("instanciaSeleccionadaId", instanciaSeleccionada != null && instanciaSeleccionada.getIdInstancia() != null
+              ? instanciaSeleccionada.getIdInstancia().toString()
+              : null);
+
+          // Agregar warning si la instancia solicitada no fue encontrada
+          if (warningInstancia != null) {
+              response.put("warning", warningInstancia);
+          }
 
          return response;
      }

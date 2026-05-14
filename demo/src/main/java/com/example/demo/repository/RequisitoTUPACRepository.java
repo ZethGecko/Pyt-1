@@ -20,5 +20,8 @@ public interface RequisitoTUPACRepository extends JpaRepository<RequisitoTUPAC, 
 
     @Query("SELECT DISTINCT r.tipoDocumento FROM RequisitoTUPAC r WHERE r.activo = true")
     List<String> findDistinctTipoDocumentoByActivoTrue();
+
+    @Query("SELECT r FROM RequisitoTUPAC r LEFT JOIN FETCH r.tupac LEFT JOIN FETCH r.formato WHERE r.id IN :ids")
+    List<RequisitoTUPAC> findByIdsWithFetch(@Param("ids") List<Long> ids);
 }
 

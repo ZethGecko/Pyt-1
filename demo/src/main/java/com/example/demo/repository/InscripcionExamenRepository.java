@@ -19,4 +19,11 @@ public interface InscripcionExamenRepository extends JpaRepository<InscripcionEx
     
     @Query("SELECT i FROM InscripcionExamen i LEFT JOIN FETCH i.grupoPresentacion LEFT JOIN FETCH i.persona LEFT JOIN FETCH i.instanciaTramite WHERE i.tramiteId = :tramiteId")
     List<InscripcionExamen> findByTramiteId(@Param("tramiteId") Long tramiteId);
+
+    @Query("SELECT i FROM InscripcionExamen i " +
+           "LEFT JOIN FETCH i.grupoPresentacion " +
+           "LEFT JOIN FETCH i.persona " +
+           "LEFT JOIN FETCH i.instanciaTramite " +
+           "WHERE i.tramiteId = :tramiteId AND (i.instanciaTramite.idInstancia = :instanciaId OR i.instanciaTramite IS NULL)")
+    List<InscripcionExamen> findByTramiteIdAndInstanciaOrGlobal(@Param("tramiteId") Long tramiteId, @Param("instanciaId") Long instanciaId);
 }
