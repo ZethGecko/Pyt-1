@@ -1,0 +1,161 @@
+<div class="inspecciones-publicas-container">
+  <h1>Inspecciones</h1>
+  <p class="subtitulo">Consulta la lista de inspecciones programadas</p>
+
+  <!-- Filtros -->
+  <div class="filtros-card">
+    <form [formGroup]="filtrosForm" class="filtros-form">
+      <div class="filtros-grid">
+        <div class="filtro-field">
+          <label for="fechaDesde">Fecha Desde</label>
+          <input
+            type="date"
+            id="fechaDesde"
+            formControlName="fechaDesde"
+            class="form-control"
+          />
+        </div>
+
+        <div class="filtro-field">
+          <label for="fechaHasta">Fecha Hasta</label>
+          <input
+            type="date"
+            id="fechaHasta"
+            formControlName="fechaHasta"
+            class="form-control"
+          />
+        </div>
+
+        <div class="filtro-field">
+          <label for="empresa">Empresa</label>
+          <input
+            type="text"
+            id="empresa"
+            formControlName="empresa"
+            class="form-control"
+            placeholder="Nombre de empresa"
+          />
+        </div>
+      </div>
+
+      <div class="filtros-acciones">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="buscar()"
+          [disabled]="cargando"
+        >
+          <i class="fas fa-search" *ngIf="!cargando"></i>
+          {{ cargando ? 'Buscando...' : 'Buscar' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="limpiarFiltros()"
+        >
+          <i class="fas fa-times"></i> Limpiar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Resultados -->
+  <div class="resultados-card">
+    <div class="card-header">
+      <h2>Resultados</h2>
+      <span class="badge bg-primary" *ngIf="inspecciones.length > 0">
+        {{ inspecciones.length }} registro(s)
+      </span>
+    </div>
+
+    <div class="table-responsive" *ngIf="inspecciones.length > 0">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Lugar</th>
+            <th>Empresa</th>
+            <th class="text-center">N° Unidades</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inspeccion of inspecciones">
+            <td>{{ formatFecha(inspeccion.fechaProgramada) }}</td>
+            <td>{{ inspeccion.hora }}</td>
+            <td>{{ inspeccion.lugar }}</td>
+            <td>{{ inspeccion.empresaNombre }}</td>
+            <td class="text-center">
+              <span class="badge bg-info">{{ inspeccion.numeroUnidades }}</span>
+            </td>
+            <td class="text-center">
+              <button
+                class="btn btn-sm btn-outline-primary"
+                (click)="verVehiculos(inspeccion)"
+              >
+                <i class="fas fa-car"></i> Ver vehículos de inspección
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!cargando && inspecciones.length === 0">
+      <i class="fas fa-clipboard-list"></i>
+      <p>No se encontraron inspecciones con los filtros aplicados</p>
+    </div>
+
+    <div class="loading-state" *ngIf="cargando">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p>Cargando inspecciones...</p>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="error">
+      {{ error }}
+    </div>
+  </div>
+
+  <!-- Modal de Vehículos (overlay simple) -->
+  <div class="modal-overlay" *ngIf="mostrarModalVehiculos" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ inspeccionSeleccionada ? 'Vehículos - ' + inspeccionSeleccionada.codigo : 'Vehículos de Inspección' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="vehiculos.length > 0">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Identificador / Placa</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let vehiculo of vehiculos; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ vehiculo.placa || vehiculo.identificador }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="empty-state" *ngIf="vehiculos.length === 0 && !cargando">
+          <i class="fas fa-car"></i>
+          <p>No hay vehículos registrados para esta inspección</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

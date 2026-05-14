@@ -161,48 +161,53 @@
 
          <div class="table-responsive">
            <table class="resultado-table">
-               <thead>
-                 <tr>
-                   <th>Código RUT</th>
-                   <th>Estado</th>
-                   <th>Instancias</th>
-                   <th>Acción</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 @for (tramite of tramites; track tramite.id) {
-                   <tr [ngClass]="{
-                     'estado-aprobado': tramite.estado === 'aprobado',
-                     'estado-rechazado': tramite.estado === 'rechazado',
-                     'estado-observado': tramite.estado === 'observado',
-                     'estado-derivado': tramite.estado === 'derivado',
-                     'estado-registrado': tramite.estado === 'registrado'
-                   }">
-                     <td class="codigo" data-label="Código RUT">{{ tramite.codigoRUT }}</td>
-                     <td data-label="Estado">
-                       <span class="badge" [ngClass]="getBadgeClass(tramite.estado)">
-                         {{ formatEstado(tramite.estado) }}
-                       </span>
-                     </td>
-                     <td data-label="Instancias">
-                       @if (tramite.conteoInstancias && tramite.conteoInstancias > 0) {
-                         <span class="badge badge-info">{{ tramite.conteoInstancias }}</span>
-                       } @else {
-                         <span class="text-muted">-</span>
-                       }
-                     </td>
-                     <td data-label="Acción">
-                       <button (click)="verDetalle(tramite)" class="btn-detail"
-                               [disabled]="!tramite.conteoInstancias || tramite.conteoInstancias === 0">
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                         </svg>
-                         Ver
-                       </button>
-                     </td>
-                   </tr>
-                 }
+              <thead>
+                <tr>
+                  <th>Código RUT</th>
+                  <th>Estado</th>
+                  <th>Departamento</th>
+                  <th>Fecha Registro</th>
+                  <th>Última Actualización</th>
+                  <th>Instancias</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tramite of tramites; track tramite.id) {
+                  <tr [ngClass]="{
+                    'estado-aprobado': tramite.estado === 'aprobado',
+                    'estado-rechazado': tramite.estado === 'rechazado',
+                    'estado-observado': tramite.estado === 'observado',
+                    'estado-derivado': tramite.estado === 'derivado',
+                    'estado-registrado': tramite.estado === 'registrado'
+                  }">
+                    <td class="codigo" data-label="Código RUT">{{ tramite.codigoRUT }}</td>
+                    <td data-label="Estado">
+                      <span class="badge" [ngClass]="getBadgeClass(tramite.estado)">
+                        {{ formatEstado(tramite.estado) }}
+                      </span>
+                    </td>
+                    <td data-label="Departamento">{{ tramite.departamentoActualNombre || 'Sin asignar' }}</td>
+                    <td data-label="Fecha Registro">{{ formatDate(tramite.fechaRegistro) }}</td>
+                    <td data-label="Última Actualización">{{ formatDate(tramite.fechaActualizacion) }}</td>
+                    <td data-label="Instancias">
+                      @if (tramite.conteoInstancias && tramite.conteoInstancias > 1) {
+                        <span class="badge badge-info">{{ tramite.conteoInstancias }}</span>
+                      } @else {
+                        <span class="text-muted">-</span>
+                      }
+                    </td>
+                    <td data-label="Acciones">
+                      <button (click)="verDetalle(tramite)" class="btn-detail">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        Ver Detalle
+                      </button>
+                    </td>
+                  </tr>
+                }
              </tbody>
            </table>
          </div>
@@ -252,36 +257,23 @@
                </svg>
              </div>
              <div>
-          <h2>Detalle del Trámite</h2>
-          <p class="modal-subtitle">
-            {{ tramiteDetalle.tramite.codigoRUT }} - {{ formatEstado(tramiteDetalle.tramite.estado) }}
-          </p>
-          @if (tramiteDetalle?.instancias && tramiteDetalle.instancias.length > 1) {
-            <div class="instancia-controls" style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-              <span style="font-size: 0.875rem; font-weight: 500; color: #374151;">Instancia:</span>
-              <div class="instancia-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                @for (inst of tramiteDetalle.instancias; track inst.idInstancia) {
-                  <button class="btn-instancia"
-                          [class.active]="inst.idInstancia === instanciaSeleccionadaId"
-                          (click)="cambiarInstancia(inst.idInstancia)"
-                          style="padding: 0.375rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background: {{ inst.idInstancia === instanciaSeleccionadaId ? '#0284c7' : 'white' }}; color: {{ inst.idInstancia === instanciaSeleccionadaId ? 'white' : '#374151' }}; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.375rem;">
-                    {{ inst.identificador }}
-                    <span style="font-size: 0.75rem; opacity: 0.8;">({{ formatDate(inst.fechaCreacion) }})</span>
-                  </button>
-                }
-              </div>
-              <button (click)="recargarDatosInstancia()" 
-                      style="padding: 0.375rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background: #f8fafc; color: #374151; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.25rem;"
-                      [title]="'Recargar datos de instancia'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M23 4v6h-6"></path>
-                  <path d="M1 20v-6h6"></path>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-                Recargar
-              </button>
-            </div>
-          }
+               <h2>Detalle del Trámite</h2>
+               <p class="modal-subtitle">
+                 {{ tramiteDetalle.tramite.codigoRUT }} - {{ formatEstado(tramiteDetalle.tramite.estado) }}
+               </p>
+               @if (tramiteDetalle?.instancias && tramiteDetalle.instancias.length > 1) {
+                 <div class="instancia-selector" style="margin-top: 0.75rem; padding: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.375rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                   <label for="instancia-select" style="font-size: 0.875rem; font-weight: 500; color: #374151;">Instancia:</label>
+                   <select id="instancia-select" [value]="instanciaSeleccionadaId" (change)="onInstanciaChange($event)" 
+                           style="padding: 0.25rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem;">
+                     @for (inst of tramiteDetalle.instancias; track inst.idInstancia) {
+                       <option [value]="inst.idInstancia">
+                         {{ inst.identificador }} ({{ formatDate(inst.fechaCreacion) }})
+                       </option>
+                     }
+                   </select>
+                 </div>
+               }
              </div>
            </div>
            <button class="modal-close" (click)="cerrarDetalle()">
@@ -291,34 +283,42 @@
           </button>
         </div>
         <div class="modal-body">
-           <!-- Información General -->
-           <div class="detail-section">
-             <h3>📋 Información General</h3>
-             <div class="detail-grid">
+          <!-- Información General -->
+          <div class="detail-section">
+            <h3>📋 Información General</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Código RUT:</span>
+                <span class="detail-value">{{ tramiteDetalle.tramite.codigoRUT }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Estado:</span>
+                <span class="badge" [ngClass]="getBadgeClass(tramiteDetalle.tramite.estado)">
+                  {{ formatEstado(tramiteDetalle.tramite.estado) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Prioridad:</span>
+                <span class="badge" [ngClass]="tramiteDetalle.tramite.prioridad === 'urgente' ? 'badge-danger' : 
+                                                      tramiteDetalle.tramite.prioridad === 'alta' ? 'badge-warning' : 
+                                                      tramiteDetalle.tramite.prioridad === 'baja' ? 'badge-success' : 'badge-primary'">
+                  {{ tramiteDetalle.tramite.prioridad | titlecase }}
+                </span>
+              </div>
                <div class="detail-item">
-                 <span class="detail-label">Estado:</span>
-                 <span class="badge" [ngClass]="getBadgeClass(tramiteDetalle.tramite.estado)">
-                   {{ formatEstado(tramiteDetalle.tramite.estado) }}
-                 </span>
+                 <span class="detail-label">Departamento:</span>
+                 <span class="detail-value">{{ tramiteDetalle.tramite.departamentoActual?.nombre || 'Sin asignar' }}</span>
                </div>
-               <div class="detail-item">
-                 <span class="detail-label">Prioridad:</span>
-                 <span class="badge" [ngClass]="tramiteDetalle.tramite.prioridad === 'urgente' ? 'badge-danger' : 
-                                                       tramiteDetalle.tramite.prioridad === 'alta' ? 'badge-warning' : 
-                                                       tramiteDetalle.tramite.prioridad === 'baja' ? 'badge-success' : 'badge-primary'">
-                   {{ tramiteDetalle.tramite.prioridad | titlecase }}
-                 </span>
-               </div>
-               <div class="detail-item">
-                 <span class="detail-label">Fecha Registro:</span>
-                 <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaRegistro) }}</span>
-               </div>
-               <div class="detail-item">
-                 <span class="detail-label">Última Actualización:</span>
-                 <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaActualizacion) }}</span>
-               </div>
-             </div>
-           </div>
+              <div class="detail-item">
+                <span class="detail-label">Fecha Registro:</span>
+                <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaRegistro) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Última Actualización:</span>
+                <span class="detail-value">{{ formatDate(tramiteDetalle.tramite.fechaActualizacion) }}</span>
+              </div>
+            </div>
+          </div>
 
           <!-- Historial -->
           @if (tramiteDetalle.historial && tramiteDetalle.historial.length > 0) {

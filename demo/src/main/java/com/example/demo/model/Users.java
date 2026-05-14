@@ -81,14 +81,6 @@ public class Users {
     @JsonIgnore
     private List<Inspeccion> inspecciones;
 
-    @OneToMany(mappedBy = "usuarioObservador", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<ObservacionSolicitud> observacionesSolicitudes;
-
-    @OneToMany(mappedBy = "usuarioSubsana", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<ObservacionSolicitud> observacionesSubsanadas;
-
     @OneToMany(mappedBy = "usuarioAprobado", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Solicitud> solicitudesAprobadas;
@@ -220,22 +212,6 @@ public class Users {
 
     public void setInspecciones(List<Inspeccion> inspecciones) {
         this.inspecciones = inspecciones;
-    }
-
-    public List<ObservacionSolicitud> getObservacionesSolicitudes() {
-        return observacionesSolicitudes;
-    }
-
-    public void setObservacionesSolicitudes(List<ObservacionSolicitud> observacionesSolicitudes) {
-        this.observacionesSolicitudes = observacionesSolicitudes;
-    }
-
-    public List<ObservacionSolicitud> getObservacionesSubsanadas() {
-        return observacionesSubsanadas;
-    }
-
-    public void setObservacionesSubsanadas(List<ObservacionSolicitud> observacionesSubsanadas) {
-        this.observacionesSubsanadas = observacionesSubsanadas;
     }
 
     public List<Solicitud> getSolicitudesAprobadas() {

@@ -24,6 +24,7 @@ import com.example.demo.dto.InspeccionCreateRequestDTO;
 import com.example.demo.dto.InspeccionIniciarRequest;
 import com.example.demo.dto.InspeccionInstanciaInspeccionarRequest;
 import com.example.demo.dto.InspeccionInstanciaResponse;
+import com.example.demo.dto.InspeccionPublicaDTO;
 import com.example.demo.dto.InspeccionResponse;
 import com.example.demo.dto.InspeccionRezagadaRequest;
 import com.example.demo.dto.InspeccionTerminarRequest;
@@ -32,8 +33,13 @@ import com.example.demo.dto.InstanciasIdsRequest;
 import com.example.demo.dto.ParametroInspeccionDTO;
 import com.example.demo.dto.ParametroInspeccionResponseDTO;
 import com.example.demo.dto.SiguienteInstanciaPendienteResponse;
+import com.example.demo.dto.VehiculoDTO;
 import com.example.demo.model.Inspeccion;
 import com.example.demo.service.InspeccionService;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inspecciones")
@@ -57,6 +63,41 @@ public class InspeccionController {
     @GetMapping("/por-bloque")
     public List<BloqueInspeccionDTO> listarPorBloque() {
         return inspeccionService.listarPorBloques();
+    }
+
+    /**
+     * Endpoint público para listar inspecciones con filtros simples.
+     * Accesible sin autenticación.
+     */
+    @GetMapping("/publico")
+    public List<InspeccionPublicaDTO> listarPublico(
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta,
+            @RequestParam(required = false) String empresa) {
+
+        LocalDate desde = null;
+        LocalDate hasta = null;
+
+        if (fechaDesde != null && !fechaDesde.trim().isEmpty()) {
+            desde = LocalDate.parse(fechaDesde);
+        }
+        if (fechaHasta != null && !fechaHasta.trim().isEmpty()) {
+            hasta = LocalDate.parse(fechaHasta);
+        }
+
+        String empresaNombre = (empresa != null && !empresa.trim().isEmpty()) ? empresa.trim() : null;
+
+        return inspeccionService.listarInspeccionesPublicas(desde, hasta, empresaNombre);
+    }
+
+
+    /**
+     * Endpoint público para obtener los vehículos (identificador/placa) de una inspección.
+     * No requiere autenticación.
+     */
+    @GetMapping("/{inspeccionId}/vehiculos")
+    public List<VehiculoDTO> listarVehiculosInspeccion(@PathVariable Long inspeccionId) {
+        return inspeccionService.obtenerVehiculosPorInspeccion(inspeccionId);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")

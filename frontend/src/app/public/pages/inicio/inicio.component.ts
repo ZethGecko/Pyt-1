@@ -5,6 +5,7 @@ import { IconComponent } from '../../../shared/components/ui/icon.component';
 import { AuthStateService } from '../../../core/auth/state/auth.state';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 import { Subscription } from 'rxjs';
+import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
 
 interface MenuItem {
   title: string;
@@ -17,7 +18,7 @@ interface MenuItem {
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent],
+  imports: [CommonModule, RouterLink, IconComponent, PublicNavbarComponent],
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.scss']
 })

@@ -816,11 +816,11 @@
 
     <!-- Modal: Seleccionar Departamento para Derivación -->
     @if (mostrandoModalDerivacion && tramiteParaDerivar) {
-      <app-seleccionar-departamento-modal
-        [tramiteCodigo]="tramiteParaDerivar.codigoRUT"
-        (derivar)="onDerivarDesdeModal($event.departamentoId, $event.instrucciones)"
-        (cerrarModal)="cerrarModalDerivacion()">
-      </app-seleccionar-departamento-modal>
+        <app-seleccionar-departamento-modal
+          [tramiteCodigo]="tramiteParaDerivar.codigoRUT"
+          (derivar)="onDerivarDesdeModal($event.departamentoId, $event.instrucciones, $event.usuarioResponsableId)"
+          (cerrarModal)="cerrarModalDerivacion()">
+        </app-seleccionar-departamento-modal>
     }
 
      <!-- Modal: Revisión de Requisitos TUPAC -->

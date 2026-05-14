@@ -4,6 +4,7 @@ import com.example.demo.model.Inspeccion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +35,11 @@ public interface InspeccionRepository extends JpaRepository<Inspeccion, Long> {
 
     @Query("SELECT i FROM Inspeccion i WHERE i.tramite.idTramite = :tramiteId")
     List<Inspeccion> findByTramiteId(@Param("tramiteId") Long tramiteId);
+
+    @Query("SELECT i FROM Inspeccion i WHERE i.fechaProgramada BETWEEN :fechaDesde AND :fechaHasta")
+    List<Inspeccion> findByFechaProgramadaBetween(@Param("fechaDesde") LocalDate fechaDesde,
+                                                   @Param("fechaHasta") LocalDate fechaHasta);
+
+    @Query("SELECT i FROM Inspeccion i WHERE LOWER(i.tramite.empresa.nombre) LIKE LOWER(CONCAT('%', :empresaNombre, '%'))")
+    List<Inspeccion> findByEmpresaNombreContainingIgnoreCase(@Param("empresaNombre") String empresaNombre);
 }

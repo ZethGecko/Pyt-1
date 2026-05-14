@@ -16,13 +16,16 @@ public interface InstanciaTramiteRepository extends JpaRepository<InstanciaTrami
     long countByTramite_IdTramite(Long tramiteId);
     InstanciaTramite findTopByTramite_IdTramiteOrderByFechaCreacionDesc(Long tramiteId);
 
+    @Query("SELECT i FROM InstanciaTramite i LEFT JOIN FETCH i.documentos WHERE i.tramite.idTramite = :tramiteId")
+    List<InstanciaTramite> findByTramiteIdWithDocumentos(@Param("tramiteId") Long tramiteId);
+
     @Query("SELECT i FROM InstanciaTramite i LEFT JOIN FETCH i.tramite t LEFT JOIN FETCH t.tipoTramite LEFT JOIN FETCH t.empresa")
     List<InstanciaTramite> findAllWithTramiteAndTipoTramite();
 
     @Query("SELECT i FROM InstanciaTramite i LEFT JOIN FETCH i.tramite t LEFT JOIN FETCH t.empresa WHERE t.empresa.ruc = :ruc")
     List<InstanciaTramite> findByEmpresaRuc(@Param("ruc") String ruc);
 
-  @Query("SELECT i FROM InstanciaTramite i LEFT JOIN FETCH i.tramite t LEFT JOIN FETCH t.tipoTramite LEFT JOIN FETCH t.empresa WHERE t.empresa.idEmpresa = :empresaId")
+  @Query("SELECT i FROM InstanciaTramite i LEFT JOIN FETCH i.tramite t LEFT JOIN FETCH t.empresa WHERE t.empresa.idEmpresa = :empresaId")
   List<InstanciaTramite> findByEmpresaId(@Param("empresaId") Long empresaId);
 
   @Modifying

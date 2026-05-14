@@ -193,7 +193,11 @@ public class FormatoInspeccionService {
                 .orElseThrow(() -> new RuntimeException("Inspección no encontrada"));
         FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
         if (formato == null) {
-            throw new RuntimeException("Formato no encontrado para la inspección");
+            FormatoInspeccionResponseDTO global = obtenerFormatoGlobal();
+            if (global == null) {
+                throw new RuntimeException("No hay formatos disponibles para la inspección");
+            }
+            return global;
         }
         return convertirAResponseDTO(formato);
     }

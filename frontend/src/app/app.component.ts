@@ -78,8 +78,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.tokenCheckSubscription?.unsubscribe();
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/auth/login']);
-  }
+   logout(): void {
+     this.authService.logout();
+     this.router.navigate(['/']);
+   }
 }

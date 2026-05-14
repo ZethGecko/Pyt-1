@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { environment } from 'src/environments/environment';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
+import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
 
 export interface RequisitoTUPCDTO {
   id: number;
@@ -32,7 +33,7 @@ export interface TipoTramitePublicoDTO {
 @Component({
   selector: 'app-tramites-publicos',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PublicNavbarComponent],
   templateUrl: './tramites-publicos.component.html',
   styleUrls: ['./tramites-publicos.component.scss']
 })

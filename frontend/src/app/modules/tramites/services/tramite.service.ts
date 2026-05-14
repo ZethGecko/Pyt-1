@@ -136,25 +136,25 @@ export class TramiteService {
     );
   }
 
-  listarTramitesPorUsuarioResponsable(usuarioResponsableId: number, params: any = {}): Observable<any> {
-    let httpParams = new HttpParams();
-    httpParams = httpParams.set('usuarioResponsableId', usuarioResponsableId.toString());
-    Object.keys(params).forEach(key => {
-      httpParams = httpParams.set(key, params[key].toString());
-    });
-    return this.http.get<any>(`${this.apiUrl}/dashboard/mis-tramites`, { params: httpParams }).pipe(
-      map((response: any) => {
-        const tramites = response.content || response;
-        return {
-          content: (tramites as any[]).map(t => this.enriquecerTramite(t)),
-          totalElements: response.totalElements || 0,
-          totalPages: response.totalPages || 0,
-          size: response.size || 0,
-          number: response.number || 0
-        };
-      })
-    );
-  }
+   listarTramitesPorUsuarioResponsable(usuarioResponsableId: number, params: any = {}): Observable<any> {
+     // El backend usa el usuario autenticado, este parámetro se ignora
+     let httpParams = new HttpParams();
+     Object.keys(params).forEach(key => {
+       httpParams = httpParams.set(key, params[key].toString());
+     });
+     return this.http.get<any>(`${this.apiUrl}/dashboard/mis-tramites`, { params: httpParams }).pipe(
+       map((response: any) => {
+         const tramites = response.content || response;
+         return {
+           content: (tramites as any[]).map(t => this.enriquecerTramite(t)),
+           totalElements: response.totalElements || 0,
+           totalPages: response.totalPages || 0,
+           size: response.size || 0,
+           number: response.number || 0
+         };
+       })
+     );
+   }
 
   // ========== DATOS PARA FORMULARIOS ==========
   listarTiposTramite(): Observable<TipoTramiteOption[]> {
@@ -251,9 +251,13 @@ export class TramiteService {
     });
   }
 
-   derivar(id: number, departamentoId: number, motivo?: string): Observable<Tramite> {
-     let params = new HttpParams().set('departamentoId', departamentoId.toString());
+   derivar(id: number, departamentoId: number, motivo?: string, usuarioResponsableId?: number): Observable<Tramite> {
+     let params = new HttpParams();
      if (motivo) params = params.set('motivo', motivo);
+     params = params.set('departamentoId', departamentoId.toString());
+     if (usuarioResponsableId !== undefined) {
+       params = params.set('usuarioResponsableId', usuarioResponsableId.toString());
+     }
      return this.http.put<Tramite>(`${this.apiUrl}/${id}/derivar`, null, { params });
    }
 

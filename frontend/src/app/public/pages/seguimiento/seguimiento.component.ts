@@ -1,15 +1,16 @@
 import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { SeguimientoService, TramiteListado, SeguimientoCompleto } from '../../services/seguimiento.service';
 import { Subject } from 'rxjs';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
+import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
 
 @Component({
   selector: 'app-seguimiento',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, PublicNavbarComponent],
   templateUrl: './seguimiento.component.html',
   styleUrls: ['./seguimiento.component.scss']
 })
@@ -25,9 +26,13 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   tramiteDetalle: SeguimientoCompleto | null = null;
   cargandoDetalle: boolean = false;
 
+  // Instancias
+  instancias: Array<{ idInstancia: number; identificador: string; estado: string; fechaCreacion: string }> = [];
+  instanciaSeleccionadaId: number | null = null;
+
   // Destroy subject para limpiar subscriptions
   private destroy$ = new Subject<void>();
-  
+
   // Imágenes del sitio
   imagenes: Map<string, ImagenSitio> = new Map();
 
@@ -35,7 +40,8 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private seguimientoService: SeguimientoService,
     private changeDetectorRef: ChangeDetectorRef,
-    private imagenSitioService: ImagenSitioService
+    private imagenSitioService: ImagenSitioService,
+    private router: Router
   ) {
     this.seguimientoForm = this.fb.group({
       codigo: ['', [Validators.required, Validators.minLength(2)]]
@@ -124,12 +130,17 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     this.seguimientoForm.reset();
   }
 
+  // Método para retroceder
+  goBack(): void {
+    this.router.navigate(['/']);
+  }
+
   // Método para formatear fechas en el template
   formatDate(date: string | Date | null | undefined): string {
     return this.seguimientoService.formatDate(date);
   }
 
-  // Método para formatear el estado (similar a getEstadoFormateado de la proyección)
+  // Método para formatear el estado
   formatEstado(estado: string): string {
     if (!estado) return 'Desconocido';
     const estadoLower = estado.toLowerCase();
@@ -149,31 +160,31 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     return estados[estadoLower] || estado;
   }
 
-   // Método para obtener la clase de badge según estado
-   getBadgeClass(estado: string): string {
-     if (!estado) return 'badge-secondary';
-     const estadoLower = estado.toLowerCase();
-     switch (estadoLower) {
-       case 'aprobado':
-       case 'finalizado':
-         return 'badge-success';
-       case 'rechazado':
-       case 'cancelado':
-         return 'badge-danger';
-       case 'observado':
-       case 'pendiente':
-         return 'badge-warning';
-       case 'en_revision':
-       case 'derivado':
-       case 'revisado':
-       case 'programado':
-         return 'badge-info';
-       case 'registrado':
-         return 'badge-primary';
-       default:
-         return 'badge-secondary';
-     }
-   }
+  // Método para obtener la clase de badge según estado
+  getBadgeClass(estado: string): string {
+    if (!estado) return 'badge-secondary';
+    const estadoLower = estado.toLowerCase();
+    switch (estadoLower) {
+      case 'aprobado':
+      case 'finalizado':
+        return 'badge-success';
+      case 'rechazado':
+      case 'cancelado':
+        return 'badge-danger';
+      case 'observado':
+      case 'pendiente':
+        return 'badge-warning';
+      case 'en_revision':
+      case 'derivado':
+      case 'revisado':
+      case 'programado':
+        return 'badge-info';
+      case 'registrado':
+        return 'badge-primary';
+      default:
+        return 'badge-secondary';
+    }
+  }
 
   // ========== MÉTODOS PARA EL MODAL DE DETALLE ==========
 
@@ -184,12 +195,15 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     this.tramiteDetalle = null;
     this.mostrarDetalle = true;
     this.cargandoDetalle = true;
+    this.instancias = [];
+    this.instanciaSeleccionadaId = null;
 
     this.seguimientoService.obtenerSeguimientoCompleto(tramite.codigoRUT).subscribe({
       next: (data) => {
         this.tramiteDetalle = data;
+        this.instancias = data.instancias || [];
+        this.instanciaSeleccionadaId = data.instanciaSeleccionadaId || null;
         this.cargandoDetalle = false;
-        // Forzar detección de cambios para asegurar que el modal se actualice inmediatamente
         this.changeDetectorRef.detectChanges();
       },
       error: (err) => {
@@ -197,6 +211,51 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
         this.error = 'Error al cargar el detalle del trámite';
         this.cargandoDetalle = false;
         this.mostrarDetalle = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Cambia a una instancia específica del trámite
+   */
+  /**
+   * Cambia a una instancia específica del trámite
+   */
+  cambiarInstancia(instanciaId: number): void {
+    this.cargarDatosInstancia(instanciaId);
+  }
+
+  /**
+   * Recarga los datos de la instancia actualmente seleccionada
+   */
+  recargarDatosInstancia(): void {
+    if (this.instanciaSeleccionadaId) {
+      this.cargarDatosInstancia(this.instanciaSeleccionadaId);
+    }
+  }
+
+  /**
+   * Método privado para cargar datos de una instancia
+   */
+  private cargarDatosInstancia(instanciaId: number): void {
+    if (!this.tramiteDetalle) return;
+    const codigoRUT = this.tramiteDetalle.tramite?.codigoRUT;
+    if (!codigoRUT) return;
+
+    this.cargandoDetalle = true;
+    this.seguimientoService.obtenerSeguimientoCompleto(codigoRUT, instanciaId).subscribe({
+      next: (data) => {
+        this.tramiteDetalle = data;
+        this.instancias = data.instancias || [];
+        this.instanciaSeleccionadaId = data.instanciaSeleccionadaId || instanciaId;
+        this.cargandoDetalle = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar instancia:', err);
+        this.error = 'Error al cargar los datos de la instancia';
+        this.cargandoDetalle = false;
         this.changeDetectorRef.detectChanges();
       }
     });
@@ -217,7 +276,6 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     if (!this.tramiteDetalle?.revisiones || this.tramiteDetalle.revisiones.length === 0) {
       return true;
     }
-    // Estados que consideramos como "pendientes de revisar" (no finalizados)
     const estadosPendientes = ['PENDIENTE', 'PRESENTADO', 'EN_REVISION'];
     return this.tramiteDetalle.revisiones.every(r => estadosPendientes.includes(r.estado));
   }
@@ -276,21 +334,34 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   /**
    * Gets inscription by exam code
    */
-   getInscripcionPorCodigo(codigo: string): any {
-     if (!this.tramiteDetalle?.inscripciones) return null;
-     return this.tramiteDetalle.inscripciones.find((ins: any) => {
-       const codigoExamen = ins.grupoPresentacion?.requisitoExamen?.codigo || '';
-       return codigoExamen?.toUpperCase() === codigo?.toUpperCase();
-     }) || null;
-   }
-   
-   // ========== IMÁGENES DEL SITIO ==========
-   
-   getImagenUrl(ubicacion: string): string | null {
-     return this.imagenes.get(ubicacion)?.url || null;
-   }
-   
-   tieneImagen(ubicacion: string): boolean {
-     return !!this.imagenes.get(ubicacion);
-   }
- }
+  getInscripcionPorCodigo(codigo: string): any {
+    if (!this.tramiteDetalle?.inscripciones) return null;
+    return this.tramiteDetalle.inscripciones.find((ins: any) => {
+      const codigoExamen = ins.grupoPresentacion?.requisitoExamen?.codigo || '';
+      return codigoExamen?.toUpperCase() === codigo?.toUpperCase();
+    }) || null;
+  }
+
+  // ========== IMÁGENES DEL SITIO ==========
+
+  cargarImagenes(): void {
+    this.imagenSitioService.listarTodas().subscribe({
+      next: (data) => {
+        this.imagenes.clear();
+        data.forEach(img => {
+          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
+        });
+      },
+      error: (err) => console.error('Error cargando imágenes:', err)
+    });
+  }
+
+  getImagenUrl(ubicacion: string): string | null {
+    return this.imagenes.get(ubicacion)?.url || null;
+  }
+
+  tieneImagen(ubicacion: string): boolean {
+    return !!this.imagenes.get(ubicacion);
+  }
+}

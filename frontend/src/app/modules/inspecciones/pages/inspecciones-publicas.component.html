@@ -1,0 +1,164 @@
+<div class="inspecciones-publicas-container">
+  <!-- Navbar Público -->
+  <app-public-navbar></app-public-navbar>
+
+  <div class="page-content">
+    <!-- Header de página con botón volver -->
+    <div class="page-header">
+      <div class="header-left">
+        <a (click)="goBack()" class="header-back-btn" title="Volver">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          <span class="back-btn-text">Volver</span>
+        </a>
+        <div class="header-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Inspecciones Programadas</h1>
+          <p class="page-subtitle">Consulta las inspecciones vehiculares programadas</p>
+        </div>
+      </div>
+    </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label for="fechaDesde">Fecha Desde:</label>
+      <input
+        type="date"
+        id="fechaDesde"
+        [(ngModel)]="fechaDesde"
+        (change)="onFechaDesdeChange()"
+        class="filter-input"
+      />
+    </div>
+    <div class="filter-group">
+      <label for="fechaHasta">Fecha Hasta:</label>
+      <input
+        type="date"
+        id="fechaHasta"
+        [(ngModel)]="fechaHasta"
+        (change)="onFechaHastaChange()"
+        class="filter-input"
+      />
+    </div>
+    <div class="filter-group">
+      <label for="empresa">Empresa:</label>
+      <input
+        type="text"
+        id="empresa"
+        [(ngModel)]="empresaFiltro"
+        (input)="onEmpresaChange()"
+        placeholder="Nombre de empresa"
+        class="filter-input"
+      />
+    </div>
+    <button class="btn btn-outline" (click)="limpiarFiltros()">
+      Limpiar Filtros
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="cargando">
+    <div class="spinner"></div>
+    <span class="loading-text">Cargando inspecciones...</span>
+  </div>
+
+  <!-- Lista de Inspecciones -->
+  <div class="inspecciones-table" *ngIf="!cargando">
+    <table class="data-table" *ngIf="filteredInspecciones.length > 0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Lugar</th>
+          <th>Empresa</th>
+          <th>Unidades</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let inspeccion of filteredInspecciones">
+          <td>{{ formatoFecha(inspeccion.fechaProgramada) }}</td>
+          <td>{{ inspeccion.lugar || '-' }}</td>
+          <td>{{ inspeccion.empresaNombre }}</td>
+          <td>{{ inspeccion.numeroUnidades }}</td>
+          <td>
+            <button class="btn btn-primary btn-sm"
+                    (click)="verVehiculos(inspeccion)"
+                    title="Ver vehículos de la inspección">
+              Ver Vehículos
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Sin resultados -->
+    <div class="empty-container" *ngIf="filteredInspecciones.length === 0">
+      <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <p>No se encontraron inspecciones</p>
+        <span class="empty-hint">Intenta con otros filtros</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de vehículos -->
+  <div *ngIf="mostrarModalVehiculos" class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+      <!-- Overlay -->
+      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="cerrarModalVehiculos()"></div>
+      <!-- Content -->
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="sm:flex sm:items-start">
+            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+              <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+            </div>
+            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Vehículos - Inspección {{ inspeccionSeleccionada?.codigo }}
+              </h3>
+              <div class="mt-4">
+                <div *ngIf="cargandoVehiculos" class="text-center py-4">
+                  <span class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></span>
+                  <p class="text-sm text-gray-500 mt-2">Cargando vehículos...</p>
+                </div>
+                <div *ngIf="!cargandoVehiculos && vehiculos.length > 0" class="border rounded-md max-h-60 overflow-y-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Vehículo</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <tr *ngFor="let vehiculo of vehiculos">
+                        <td class="px-4 py-2 text-sm text-gray-900">
+                          {{ vehiculo.identificador || vehiculo.placa }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div *ngIf="!cargandoVehiculos && vehiculos.length === 0" class="text-center py-4 text-gray-500">
+                  No hay vehículos asignados a esta inspección.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button type="button" class="btn btn-outline" (click)="cerrarModalVehiculos()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

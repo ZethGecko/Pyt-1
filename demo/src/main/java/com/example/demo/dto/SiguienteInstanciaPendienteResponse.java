@@ -1,7 +1,5 @@
 package com.example.demo.dto;
 
-import java.time.LocalDateTime;
-
 public class SiguienteInstanciaPendienteResponse {
     private Long idInspeccionInstancia;
     private Long idInstancia;

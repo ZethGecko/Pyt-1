@@ -33,6 +33,10 @@ public class UsersService {
         return repo.findAll();
     }
 
+    public List<Users> listarPorDepartamento(Long departamentoId) {
+        return repo.findByDepartamentoId(departamentoId);
+    }
+
     public Optional<Users> buscarPorId(Long id) {
         return repo.findById(id);
     }

@@ -23,13 +23,17 @@ export const routes: Routes = [
     canActivate: [publicGuard],
     loadComponent: () => import('./public/pages/busqueda-rutas/busqueda-rutas.component').then(m => m.BusquedaRutasComponent)
   },
-  {
-    path: 'seguimiento',
-    canActivate: [publicGuard],
-    loadComponent: () => import('./public/pages/seguimiento/seguimiento.component').then(m => m.SeguimientoComponent)
-  },
+   {
+     path: 'seguimiento',
+     canActivate: [publicGuard],
+     loadComponent: () => import('./public/pages/seguimiento/seguimiento.component').then(m => m.SeguimientoComponent)
+   },
+    {
+      path: 'inspecciones-publicas',
+      loadComponent: () => import('./public/pages/inspecciones-publicas/inspecciones-publicas.component').then(m => m.InspeccionesPublicasComponent)
+    },
 
-  // Privadas - Dashboard
+   // Privadas - Dashboard
   {
     path: 'dashboard',
     canActivate: [authGuard],

@@ -1,26 +1,40 @@
 package com.example.demo.controller;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.TramiteCreateRequest;
 import com.example.demo.dto.TramiteListadoDTO;
 import com.example.demo.dto.TramiteUpdateRequest;
 import com.example.demo.model.Tramite;
+import com.example.demo.model.Users;
+import com.example.demo.repository.UsersRepository;
 import com.example.demo.service.TramiteService;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tramites")
 public class TramiteController {
 
     private final TramiteService service;
+    private final UsersRepository usersRepo;
 
-    public TramiteController(TramiteService service) {
+    public TramiteController(TramiteService service, UsersRepository usersRepo) {
         this.service = service;
+        this.usersRepo = usersRepo;
     }
 
     @GetMapping
@@ -48,10 +62,11 @@ public class TramiteController {
         return service.buscarPorCodigoRUT(codigoRut).orElse(null);
     }
 
-    @GetMapping("/publico/seguimiento/{codigoRUT}")
-    public Map<String, Object> obtenerSeguimientoCompletoPublico(@PathVariable String codigoRUT) {
-        return service.obtenerSeguimientoCompleto(codigoRUT);
-    }
+     @GetMapping("/publico/seguimiento/{codigoRUT}")
+     public Map<String, Object> obtenerSeguimientoCompletoPublico(@PathVariable String codigoRUT, 
+         @RequestParam(required = false) Long instanciaId) {
+         return service.obtenerSeguimientoCompleto(codigoRUT, instanciaId);
+     }
 
     @GetMapping("/usuario/{usuarioId}")
     public List<Tramite> listarPorUsuario(@PathVariable Long usuarioId) {
@@ -112,8 +127,32 @@ public class TramiteController {
     }
 
     @GetMapping("/departamento/{departamentoId}")
-    public List<TramiteListadoDTO> listarPorDepartamento(@PathVariable Long departamentoId) {
-        return service.listarPorDepartamento(departamentoId);
+    public List<TramiteListadoDTO> listarPorDepartamento(@PathVariable Long departamentoId, Authentication authentication) {
+        // Verificar si el usuario es ADMIN o SUPER_ADMIN
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+        
+        if (isAdmin) {
+            // Admin ve todos los trámites del departamento
+            return service.listarPorDepartamento(departamentoId);
+        }
+        
+        // Usuario normal: solo trámites asignados a él en su departamento
+        Long usuarioId = null;
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserDetails) {
+                String username = ((UserDetails) principal).getUsername();
+                Users user = usersRepo.findByUsername(username);
+                if (user != null) {
+                    usuarioId = user.getIdUsuarios();
+                }
+            } else if (principal instanceof Users) {
+                usuarioId = ((Users) principal).getIdUsuarios();
+            }
+        }
+        
+        return service.listarPorDepartamentoYUsuario(departamentoId, usuarioId);
     }
 
     @GetMapping("/departamento/{departamentoId}/pendientes")
@@ -128,9 +167,10 @@ public class TramiteController {
         return service.cambiarEstado(id, nuevoEstado, motivo);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/{id}/derivar")
-    public Tramite derivar(@PathVariable Long id, @RequestParam Long departamentoId, @RequestParam(required = false) String motivo) {
-        return service.derivar(id, departamentoId, motivo);
+    public Tramite derivar(@PathVariable Long id, @RequestParam Long departamentoId, @RequestParam(required = false) String motivo, @RequestParam(required = false) Long usuarioResponsableId) {
+        return service.derivar(id, departamentoId, motivo, usuarioResponsableId);
     }
 
     @PutMapping("/{id}/aprobar")
@@ -190,8 +230,25 @@ public class TramiteController {
     }
 
     @GetMapping("/dashboard/mis-tramites")
-    public Map<String, Object> obtenerDashboardTramites(@RequestParam Long usuarioResponsableId) {
-        List<TramiteListadoDTO> tramites = service.listarPorUsuarioResponsable(usuarioResponsableId);
+    public Map<String, Object> obtenerDashboardTramites(Authentication authentication) {
+        // Obtener ID del usuario autenticado
+        Long usuarioId = null;
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserDetails) {
+                String username = ((UserDetails) principal).getUsername();
+                Users user = usersRepo.findByUsername(username);
+                if (user != null) {
+                    usuarioId = user.getIdUsuarios();
+                }
+            } else if (principal instanceof Users) {
+                usuarioId = ((Users) principal).getIdUsuarios();
+            }
+        }
+        if (usuarioId == null) {
+            throw new SecurityException("Usuario no autenticado");
+        }
+        List<TramiteListadoDTO> tramites = service.listarPorUsuarioResponsable(usuarioId);
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("content", tramites);
         response.put("totalElements", tramites.size());

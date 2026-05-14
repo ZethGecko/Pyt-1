@@ -1,4 +1,7 @@
 <div class="busqueda-rutas">
+  <!-- Navbar Público -->
+  <app-public-navbar></app-public-navbar>
+
   <!-- Header -->
   <div class="page-header">
    <div class="header-left">
@@ -43,9 +46,11 @@
         Limpiar
       </button>
     </div>
-  </div>
+    </div>
 
-  <!-- Instrucción de modo origen -->
+    <!-- Contenido principal -->
+    <div class="page-content">
+     <!-- Instrucción de modo origen -->
   <div class="mode-hint" *ngIf="isSettingOrigin">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -203,11 +208,12 @@
     </svg>
     <h3>No hay rutas disponibles</h3>
     <p>Selecciona un origen y un destino en el mapa para encontrar rutas</p>
-  </div>
+   </div>
 
-  <!-- Loading -->
-  <div class="loading-container" *ngIf="isLoading && rutas.length === 0">
-    <div class="spinner"></div>
-    <span class="loading-text">Buscando rutas disponibles...</span>
-  </div>
-</div>
+   <!-- Loading -->
+   <div class="loading-container" *ngIf="isLoading && rutas.length === 0">
+     <div class="spinner"></div>
+     <span class="loading-text">Buscando rutas disponibles...</span>
+   </div>
+  </div> <!-- Cierre page-content -->
+</div> <!-- Cierre .busqueda-rutas -->

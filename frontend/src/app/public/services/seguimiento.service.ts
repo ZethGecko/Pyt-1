@@ -10,16 +10,26 @@ export interface TramiteListado {
   prioridad: string;
   fechaRegistro: string | Date;
   fechaActualizacion: string | Date;
-  departamentoActualNombre?: string; // Campo plano desde la proyección
+  departamentoActualNombre?: string;
   usuarioRegistraNombre?: string;
+  conteoInstancias?: number;
+}
+
+export interface InstanciaTramitePublic {
+  idInstancia: number;
+  identificador: string;
+  estado: string;
+  fechaCreacion: string;
 }
 
 export interface SeguimientoCompleto {
   tramite: any;
   historial: any[];
   documentos: any[];
-  revisiones: any[]; // Revisiones de requisitos (incluye documentos y exámenes)
-  inscripciones: any[]; // Lista de inscripciones de exámenes asociadas al trámite
+  revisiones: any[];
+  inscripciones: any[];
+  instancias?: InstanciaTramitePublic[];
+  instanciaSeleccionadaId?: number;
 }
 
 @Injectable({
@@ -30,24 +40,31 @@ export class SeguimientoService {
 
   constructor(private http: HttpClient) {}
 
-  // Buscar trámites enriquecidos por término (incluye departamento)
+  // Buscar trámites enriquecidos por término
   buscarTramites(termino: string): Observable<TramiteListado[]> {
     return this.http.get<TramiteListado[]>(
       `${this.apiUrl}/tramites/buscar/enriquecidos?termino=${encodeURIComponent(termino)}`
     );
   }
 
-   // Obtener todos los trámites enriquecidos
-   listarTodos(): Observable<TramiteListado[]> {
-     return this.http.get<TramiteListado[]>(`${this.apiUrl}/tramites/enriquecidos`);
-   }
+  // Obtener todos los trámites enriquecidos
+  listarTodos(): Observable<TramiteListado[]> {
+    return this.http.get<TramiteListado[]>(`${this.apiUrl}/tramites/enriquecidos`);
+  }
 
-   // Obtener seguimiento completo por código RUT (incluye revisiones)
-   obtenerSeguimientoCompleto(codigoRUT: string): Observable<SeguimientoCompleto> {
-     return this.http.get<SeguimientoCompleto>(`${this.apiUrl}/tramites/publico/seguimiento/${encodeURIComponent(codigoRUT)}`);
-   }
+  // Obtener seguimiento completo por código RUT (incluye instancias)
+  obtenerSeguimientoCompleto(codigoRUT: string, instanciaId?: number): Observable<SeguimientoCompleto> {
+    let params = {};
+    if (instanciaId !== undefined && instanciaId !== null) {
+      params = { instanciaId: instanciaId.toString() };
+    }
+    return this.http.get<SeguimientoCompleto>(
+      `${this.apiUrl}/tramites/publico/seguimiento/${encodeURIComponent(codigoRUT)}`,
+      { params }
+    );
+  }
 
-   // Formatear fecha para mostrar
+  // Formatear fecha
   formatDate(date: string | Date | null | undefined): string {
     if (!date) return 'No disponible';
     const dateObj = typeof date === 'string' ? new Date(date) : date;

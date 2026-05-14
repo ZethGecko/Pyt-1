@@ -57,11 +57,6 @@ public class RequisitoTUPAC {
     @OneToMany(mappedBy = "requisitoExamen", cascade = CascadeType.ALL)
     private java.util.List<GrupoPresentacion> gruposPresentacion;
 
-    // Relación con ObservacionSolicitud
-    @JsonIgnore
-    @OneToMany(mappedBy = "requisito", cascade = CascadeType.ALL)
-    private java.util.List<ObservacionSolicitud> observacionesSolicitudes;
-
     // Getters y setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -102,6 +97,4 @@ public class RequisitoTUPAC {
     public java.util.List<GrupoPresentacion> getGruposPresentacion() { return gruposPresentacion; }
     public void setGruposPresentacion(java.util.List<GrupoPresentacion> gruposPresentacion) { this.gruposPresentacion = gruposPresentacion; }
 
-    public java.util.List<ObservacionSolicitud> getObservacionesSolicitudes() { return observacionesSolicitudes; }
-    public void setObservacionesSolicitudes(java.util.List<ObservacionSolicitud> observacionesSolicitudes) { this.observacionesSolicitudes = observacionesSolicitudes; }
 }

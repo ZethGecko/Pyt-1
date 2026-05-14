@@ -1,14 +1,15 @@
 import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterModule } from '@angular/router';
 import * as L from 'leaflet';
 import { BusquedaRutasService, RutaBusqueda, BusquedaRutasRequest } from '../../../shared/services/busqueda-rutas.service';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
+import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
 
 @Component({
   selector: 'app-busqueda-rutas',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterModule, PublicNavbarComponent],
   templateUrl: './busqueda-rutas.component.html',
   styleUrls: ['./busqueda-rutas.component.scss']
 })

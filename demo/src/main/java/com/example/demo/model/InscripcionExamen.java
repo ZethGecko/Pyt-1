@@ -15,17 +15,20 @@ public class InscripcionExamen {
     @Column(name = "id_inscripcion")
     private Long idInscripcion;
 
-    @Column(name = "grupo_presentacion_id", nullable = false)
-    private Long grupoPresentacionId;
+     @Column(name = "grupo_presentacion_id", nullable = false)
+     private Long grupoPresentacionId;
 
-    @Column(name = "persona_id", nullable = false)
-    private Long personaId;
+     @Column(name = "persona_id", nullable = false)
+     private Long personaId;
 
-    @Column(name = "tramite_id")
-    private Long tramiteId;
+     @Column(name = "tramite_id")
+     private Long tramiteId;
 
-    @Column(name = "fecha_inscripcion")
-    private LocalDateTime fechaInscripcion;
+     @Column(name = "instancia_tramite_id")
+     private Long instanciaTramiteId;
+
+     @Column(name = "fecha_inscripcion")
+     private LocalDateTime fechaInscripcion;
 
     @Column(name = "estado", length = 20)
     private String estado;
@@ -60,11 +63,15 @@ public class InscripcionExamen {
     @JoinColumn(name = "tramite_id", insertable = false, updatable = false)
     private Tramite tramite;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "grupo_presentacion_id", insertable = false, updatable = false)
-    private GrupoPresentacion grupoPresentacion;
+     @ManyToOne(fetch = FetchType.EAGER)
+     @JoinColumn(name = "grupo_presentacion_id", insertable = false, updatable = false)
+     private GrupoPresentacion grupoPresentacion;
 
-    // Getters y setters
+     @ManyToOne(fetch = FetchType.LAZY)
+     @JoinColumn(name = "instancia_tramite_id", insertable = false, updatable = false)
+     private InstanciaTramite instanciaTramite;
+
+     // Getters y setters
     @JsonProperty("id")
     public Long getIdInscripcion() { return idInscripcion; }
     public void setIdInscripcion(Long idInscripcion) { this.idInscripcion = idInscripcion; }
@@ -75,10 +82,13 @@ public class InscripcionExamen {
     public Long getPersonaId() { return personaId; }
     public void setPersonaId(Long personaId) { this.personaId = personaId; }
 
-    public Long getTramiteId() { return tramiteId; }
-    public void setTramiteId(Long tramiteId) { this.tramiteId = tramiteId; }
+     public Long getTramiteId() { return tramiteId; }
+     public void setTramiteId(Long tramiteId) { this.tramiteId = tramiteId; }
 
-    public LocalDateTime getFechaInscripcion() { return fechaInscripcion; }
+     public Long getInstanciaTramiteId() { return instanciaTramiteId; }
+     public void setInstanciaTramiteId(Long instanciaTramiteId) { this.instanciaTramiteId = instanciaTramiteId; }
+
+     public LocalDateTime getFechaInscripcion() { return fechaInscripcion; }
     public void setFechaInscripcion(LocalDateTime fechaInscripcion) { this.fechaInscripcion = fechaInscripcion; }
 
     public String getEstado() { return estado; }
@@ -111,6 +121,9 @@ public class InscripcionExamen {
     public Tramite getTramite() { return tramite; }
     public void setTramite(Tramite tramite) { this.tramite = tramite; }
 
-    public GrupoPresentacion getGrupoPresentacion() { return grupoPresentacion; }
-    public void setGrupoPresentacion(GrupoPresentacion grupoPresentacion) { this.grupoPresentacion = grupoPresentacion; }
-}
+     public GrupoPresentacion getGrupoPresentacion() { return grupoPresentacion; }
+     public void setGrupoPresentacion(GrupoPresentacion grupoPresentacion) { this.grupoPresentacion = grupoPresentacion; }
+
+     public InstanciaTramite getInstanciaTramite() { return instanciaTramite; }
+     public void setInstanciaTramite(InstanciaTramite instanciaTramite) { this.instanciaTramite = instanciaTramite; }
+ }

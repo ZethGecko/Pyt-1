@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,11 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.dto.TramiteCreateRequest;
 import com.example.demo.dto.TramiteListadoDTO;
 import com.example.demo.dto.TramiteUpdateRequest;
+import com.example.demo.model.Departamento;
 import com.example.demo.model.DocumentoTramite;
 import com.example.demo.model.Empresa;
 import com.example.demo.model.Gerente;
 import com.example.demo.model.HistorialTramite;
 import com.example.demo.model.InscripcionExamen;
+import com.example.demo.model.InstanciaTramite;
 import com.example.demo.model.PersonaNatural;
 import com.example.demo.model.RequisitoTUPAC;
 import com.example.demo.model.TipoTramite;
@@ -94,14 +97,28 @@ public class TramiteService {
     }
 
     public List<TramiteListadoDTO> listarTodosEnriquecidos() {
-        return repo.findAllEnriquecidos();
+        List<TramiteListadoDTO> dtos = repo.findAllEnriquecidos();
+        // Agregar conteo de instancias a cada DTO
+        dtos.forEach(dto -> {
+            Long tramiteId = dto.getId();
+            long count = instanciaRepository.countByTramite_IdTramite(tramiteId);
+            dto.setConteoInstancias(count);
+        });
+        return dtos;
     }
 
     public List<TramiteListadoDTO> buscarEnriquecidos(String termino) {
-        return repo.findEnriquecidosByTermino(termino);
+        List<TramiteListadoDTO> dtos = repo.findEnriquecidosByTermino(termino);
+        // Agregar conteo de instancias a cada DTO
+        dtos.forEach(dto -> {
+            Long tramiteId = dto.getId();
+            long count = instanciaRepository.countByTramite_IdTramite(tramiteId);
+            dto.setConteoInstancias(count);
+        });
+        return dtos;
     }
 
-     public Map<String, Object> obtenerSeguimientoCompleto(String codigoRUT) {
+     public Map<String, Object> obtenerSeguimientoCompleto(String codigoRUT, Long instanciaId) {
          Tramite tramite = repo.findByCodigoRutEnriquecido(codigoRUT);
          if (tramite == null) {
              return null;
@@ -110,14 +127,12 @@ public class TramiteService {
          // Limpiar colecciones del tramite para evitar recursión
          tramite.setDocumentos(null);
          tramite.setHistorialTramites(null);
-         tramite.setObservacionesSolicitudes(null);
-          // Limpiar referencias en relaciones útiles para evitar ciclos
-          if (tramite.getDepartamentoActual() != null) {
-              tramite.getDepartamentoActual().setTramites(null);
-          }
-          if (tramite.getTipoTramite() != null) {
-              tramite.getTipoTramite().setTramites(null);
-          }
+         if (tramite.getDepartamentoActual() != null) {
+             tramite.getDepartamentoActual().setTramites(null);
+         }
+         if (tramite.getTipoTramite() != null) {
+             tramite.getTipoTramite().setTramites(null);
+         }
 
          // Obtener historial con todas las relaciones
          List<HistorialTramite> historial = historialRepo.findByTramiteIdWithFetch(tramite.getIdTramite());
@@ -132,7 +147,6 @@ public class TramiteService {
              if (d.getRequisito() != null) {
                  d.getRequisito().setDocumentos(null);
                  d.getRequisito().setGruposPresentacion(null);
-                 d.getRequisito().setObservacionesSolicitudes(null);
              }
          });
 
@@ -143,45 +157,75 @@ public class TramiteService {
          inscripciones.forEach(ins -> {
              ins.setTramite(null);
              if (ins.getGrupoPresentacion() != null) {
-                 ins.getGrupoPresentacion().setDocumentosTramite(null); // Limpiar solo documentos, no inscripciones
+                 ins.getGrupoPresentacion().setDocumentosTramite(null);
              }
              if (ins.getPersona() != null) {
                  ins.getPersona().setInscripciones(null);
              }
          });
 
-          // Obtener requisitos del tipo de trámite (incluye exámenes)
-          // Usar la lista de requisitosIds del tipo de trámite
-          List<RequisitoTUPAC> requisitosTipo = new ArrayList<>();
-          if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
-              List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
-              requisitosTipo = requisitoService.listarActivos().stream()
-                      .filter(r -> r.getId() != null && requisitosIds.contains(r.getId()))
-                      .collect(Collectors.toList());
+         // Obtener instancias del trámite
+         List<InstanciaTramite> instancias = instanciaRepository.findByTramite_IdTramiteOrderByFechaCreacionDesc(tramite.getIdTramite());
+
+         // Determinar instancia seleccionada
+         InstanciaTramite instanciaSeleccionada = null;
+         if (instanciaId != null) {
+             instanciaSeleccionada = instancias.stream()
+                 .filter(i -> instanciaId.equals(i.getIdInstancia()))
+                 .findFirst()
+                 .orElse(null);
+         }
+         if (instanciaSeleccionada == null && !instancias.isEmpty()) {
+             // Buscar instancia ACTIVA, si no, la más reciente
+             instanciaSeleccionada = instancias.stream()
+                 .filter(i -> "ACTIVO".equalsIgnoreCase(i.getEstado()))
+                 .findFirst()
+                 .orElse(instancias.get(0));
+         }
+
+          // Filtrar documentos e inscripciones por instanciaSeleccionada (si existe)
+          if (instanciaSeleccionada != null) {
+              final Long instanciaIdFiltro = instanciaSeleccionada.getIdInstancia();
+              documentos = documentos.stream()
+                  .filter(d -> d.getInstanciaTramite() == null || 
+                               d.getInstanciaTramite().getIdInstancia().equals(instanciaIdFiltro))
+                  .collect(Collectors.toList());
+              inscripciones = inscripciones.stream()
+                  .filter(i -> i.getInstanciaTramite() == null || 
+                               i.getInstanciaTramite().getIdInstancia().equals(instanciaIdFiltro))
+                  .collect(Collectors.toList());
           }
 
-         // Mapa de requisitoId a DocumentoTramite para rápida búsqueda
+         // Obtener requisitos del tipo de trámite (incluye exámenes)
+         List<RequisitoTUPAC> requisitosTipo = new ArrayList<>();
+         if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
+             List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
+             requisitosTipo = requisitoService.listarActivos().stream()
+                     .filter(r -> r.getId() != null && requisitosIds.contains(r.getId()))
+                     .collect(Collectors.toList());
+         }
+
+         // Mapa de requisitoId a DocumentoTramite
          Map<Long, DocumentoTramite> docMap = documentos.stream()
                  .filter(d -> d.getRequisito() != null)
-                 .collect(java.util.stream.Collectors.toMap(d -> d.getRequisito().getId(), d -> d));
+                 .collect(Collectors.toMap(d -> d.getRequisito().getId(), d -> d));
 
-         // Mapa de requisitoId a InscripcionExamen para exámenes (un examen por requisito)
-         Map<Long, InscripcionExamen> inscripcionesMap = new java.util.HashMap<>();
+         // Mapa de requisitoId a InscripcionExamen
+         Map<Long, InscripcionExamen> inscripcionesMap = new HashMap<>();
          for (InscripcionExamen ins : inscripciones) {
              if (ins.getGrupoPresentacion() != null && ins.getGrupoPresentacion().getRequisitoExamen() != null) {
                  Long reqId = ins.getGrupoPresentacion().getRequisitoExamen().getId();
-                 // Solo guardar la primera inscripción si hay múltiples (no debería ocurrir)
                  if (!inscripcionesMap.containsKey(reqId)) {
                      inscripcionesMap.put(reqId, ins);
                  }
              }
          }
 
-         // Combinar requisitos con documentos e inscripciones (si existen) para generar revisiones
+         // Combinar requisitos con documentos e inscripciones para generar revisiones
          List<Map<String, Object>> revisiones = requisitosTipo.stream().map(req -> {
              DocumentoTramite doc = docMap.get(req.getId());
              InscripcionExamen ins = inscripcionesMap.get(req.getId());
-             Map<String, Object> rev = new java.util.HashMap<>();
+             Map<String, Object> rev = new HashMap<>();
              rev.put("id", doc != null ? doc.getIdDocumento() : 0);
              rev.put("tramiteId", tramite.getIdTramite());
              rev.put("requisitoId", req.getId());
@@ -201,7 +245,6 @@ public class TramiteService {
                  rev.put("observaciones", doc.getObservaciones());
                  rev.put("revisionUsuarioNombre", doc.getUsuarioRevisa() != null ? doc.getUsuarioRevisa().getUsername() : null);
              } else if (ins != null) {
-                 // Mostrar datos del examen/inscripción
                  rev.put("estado", ins.getEstado());
                  rev.put("estadoFormateado", formatearEstado(ins.getEstado()));
                  rev.put("colorEstado", getColorEstado(ins.getEstado()));
@@ -224,14 +267,30 @@ public class TramiteService {
                  rev.put("revisionUsuarioNombre", null);
              }
              return rev;
-         }).collect(java.util.stream.Collectors.toList());
+         }).collect(Collectors.toList());
 
-         Map<String, Object> response = new java.util.HashMap<>();
+         // Construir respuesta
+         Map<String, Object> response = new HashMap<>();
          response.put("tramite", tramite);
          response.put("historial", historial);
          response.put("documentos", documentos);
          response.put("revisiones", revisiones);
          response.put("inscripciones", inscripciones);
+
+         // Agregar información de instancias
+         List<Map<String, Object>> instanciasSimplificadas = instancias.stream()
+             .map(i -> {
+                 Map<String, Object> map = new HashMap<>();
+                 map.put("idInstancia", i.getIdInstancia());
+                 map.put("identificador", i.getIdentificador());
+                 map.put("estado", i.getEstado());
+                 map.put("fechaCreacion", i.getFechaCreacion());
+                 return map;
+             })
+             .collect(Collectors.toList());
+         response.put("instancias", instanciasSimplificadas);
+         response.put("instanciaSeleccionadaId", instanciaSeleccionada != null ? instanciaSeleccionada.getIdInstancia() : null);
+
          return response;
      }
 
@@ -376,13 +435,15 @@ public class TramiteService {
             } else {
                 switch (tipoSolicitante.trim().toLowerCase()) {
                     case "empresa":
-                        Empresa empresa = empresaRepo.findById(Math.toIntExact(request.getSolicitanteId())).orElse(null);
+                        Empresa empresa = request.getSolicitanteId() != null ? 
+                            empresaRepo.findById(request.getSolicitanteId().intValue()).orElse(null) : null;
                         tramite.setEmpresa(empresa);
                         System.out.println("[TramiteService] Empresa asignada: " + empresa);
                         break;
                     case "gerente":
                     case "vehiculo":
-                        Gerente gerente = gerenteRepo.findById(Math.toIntExact(request.getSolicitanteId())).orElse(null);
+                        Gerente gerente = request.getSolicitanteId() != null ?
+                            gerenteRepo.findById(request.getSolicitanteId().intValue()).orElse(null) : null;
                         tramite.setGerente(gerente);
                         System.out.println("[TramiteService] Gerente asignado: " + gerente);
                         break;
@@ -486,13 +547,15 @@ public class TramiteService {
                 
                 switch (tipoSolicitante) {
                     case "empresa":
-                        Empresa empresa = empresaRepo.findById(Math.toIntExact(request.getSolicitanteId())).orElse(null);
+                        Empresa empresa = request.getSolicitanteId() != null ?
+                            empresaRepo.findById(request.getSolicitanteId().intValue()).orElse(null) : null;
                         tramite.setEmpresa(empresa);
                         System.out.println("[TramiteService] Empresa actualizada: " + empresa);
                         break;
                     case "gerente":
                     case "vehiculo":
-                        Gerente gerente = gerenteRepo.findById(Math.toIntExact(request.getSolicitanteId())).orElse(null);
+                        Gerente gerente = request.getSolicitanteId() != null ?
+                            gerenteRepo.findById(request.getSolicitanteId().intValue()).orElse(null) : null;
                         tramite.setGerente(gerente);
                         System.out.println("[TramiteService] Gerente actualizado: " + gerente);
                         break;
@@ -544,8 +607,9 @@ public class TramiteService {
          }
         historialRepo.save(historial);
 
-        // 2. Eliminar instancias asociadas
-        instanciaRepository.deleteByTramiteId(id);
+        // 2. Eliminar instancias asociadas (cascade eliminará documentos_tramite)
+        List<InstanciaTramite> instancias = instanciaRepository.findByTramiteIdWithDocumentos(id);
+        instanciaRepository.deleteAll(instancias);
 
         // 3. Eliminar trámite
         repo.deleteById(id);
@@ -554,20 +618,23 @@ public class TramiteService {
     @Transactional
     public Tramite cambiarEstado(Long id, String nuevoEstado, String motivo) {
         return repo.findById(id).map(tramite -> {
+            Users usuarioActual = obtenerUsuarioActual();
+            validarPermisoEdicion(tramite, usuarioActual);
+
             String estadoActual = tramite.getEstado();
             String estadoUpper = nuevoEstado.toUpperCase();
-            
+
             // Validación: Solo se puede cambiar a FINALIZADO desde APROBADO
             if (estadoUpper.equals("FINALIZADO") && !"APROBADO".equals(estadoActual)) {
                 throw new IllegalStateException("Solo se pueden finalizar trámites en estado APROBADO. Estado actual: " + estadoActual);
             }
-            
+
             // Validación: No se puede cambiar desde estados finales (FINALIZADO, CANCELADO, RECHAZADO)
             List<String> estadosFinales = java.util.Arrays.asList("FINALIZADO", "CANCELADO", "RECHAZADO");
             if (estadosFinales.contains(estadoActual)) {
                 throw new IllegalStateException("No se puede cambiar el estado de un trámite " + estadoActual);
             }
-            
+
             tramite.setEstado(estadoUpper);
             if (motivo != null && !motivo.trim().isEmpty()) {
                 // Para estados finales aprobatorios u observacionales, guardar en observaciones
@@ -578,7 +645,6 @@ public class TramiteService {
                 else if (estadoUpper.equals("RECHAZADO") || estadoUpper.equals("CANCELADO") || estadoUpper.equals("DERIVADO")) {
                     tramite.setMotivoRechazo(motivo);
                 }
-                // Para EN_REVISION u otros, no se guarda nada (ignorar)
             }
             // Set default tipoTramite if null
             if (tramite.getTipoTramite() == null) {
@@ -596,18 +662,35 @@ public class TramiteService {
     }
 
     @Transactional
-    public Tramite derivar(Long id, Long departamentoId, String motivo) {
-        return repo.findById(id).map(tramite -> {
-            tramite.setEstado("DERIVADO");
-            if (departamentoId != null) {
-                departamentoRepo.findById(departamentoId).ifPresent(dept -> tramite.setDepartamentoActual(dept));
-            }
-            if (motivo != null && !motivo.trim().isEmpty()) {
-                tramite.setMotivoRechazo(motivo);
-            }
-            tramite.setFechaActualizacion(java.time.LocalDateTime.now());
-            return repo.save(tramite);
-        }).orElse(null);
+    public Tramite derivar(Long id, Long departamentoId, String motivo, Long usuarioResponsableId) {
+        System.out.println("[TramiteService] derivar - id: " + id + ", departamentoId: " + departamentoId + ", motivo: " + motivo + ", usuarioResponsableId: " + usuarioResponsableId);
+        
+        Tramite tramite = repo.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Trámite no encontrado con id: " + id));
+        
+        // Validar y asignar departamento si se proporciona
+        if (departamentoId != null) {
+            Departamento departamento = departamentoRepo.findById(departamentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Departamento no encontrado con id: " + departamentoId));
+            tramite.setDepartamentoActual(departamento);
+        }
+        
+        // Asignar nuevo usuario responsable si se proporciona
+        if (usuarioResponsableId != null) {
+            Users usuarioResponsable = usersRepo.findById(usuarioResponsableId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario responsable no encontrado con id: " + usuarioResponsableId));
+            tramite.setUsuarioResponsableId(usuarioResponsable);
+        }
+        
+        // Cambiar estado a EN_REVISION para que el destinatario pueda revisar inmediatamente
+        tramite.setEstado("EN_REVISION");
+        if (motivo != null && !motivo.trim().isEmpty()) {
+            tramite.setObservaciones(motivo);
+        }
+        tramite.setFechaActualizacion(LocalDateTime.now());
+        
+        return repo.save(tramite);
+        // return repo.save(tramite);
     }
 
     @Transactional
@@ -621,6 +704,8 @@ public class TramiteService {
         if (currentUser == null) {
             throw new SecurityException("Usuario no autenticado");
         }
+        // Validar permiso de edición
+        validarPermisoEdicion(tramite, currentUser);
 
         // Obtener todos los documentos del trámite (con datos de requisito)
         List<DocumentoTramite> documentos = documentoRepo.findByTramiteIdWithRequisito(id);
@@ -672,6 +757,24 @@ public class TramiteService {
             }
         }
         return null;
+    }
+
+    private void validarPermisoEdicion(Tramite tramite, Users usuarioActual) {
+        if (usuarioActual == null) {
+            throw new SecurityException("Usuario no autenticado");
+        }
+        // ADMIN y SUPER_ADMIN pueden editar cualquier trámite
+        if (usuarioActual.getRole() != null) {
+            String roleName = usuarioActual.getRole().getName();
+            if ("ADMIN".equals(roleName) || "SUPER_ADMIN".equals(roleName)) {
+                return;
+            }
+        }
+        // Usuarios normales: solo si son responsables
+        if (tramite.getUsuarioResponsableId() == null ||
+            !tramite.getUsuarioResponsableId().getIdUsuarios().equals(usuarioActual.getIdUsuarios())) {
+            throw new SecurityException("No tiene permiso para modificar este trámite");
+        }
     }
 
     @Transactional
@@ -756,24 +859,12 @@ public class TramiteService {
         }
     }
 
-    private List<Long> parseRequisitosIds(String requisitosIdsCsv) {
-        List<Long> ids = new ArrayList<>();
-        if (requisitosIdsCsv == null || requisitosIdsCsv.trim().isEmpty()) {
-            return ids;
-        }
-        String[] parts = requisitosIdsCsv.split(",");
-        for (String part : parts) {
-            try {
-                ids.add(Long.parseLong(part.trim()));
-            } catch (NumberFormatException e) {
-                // ignorar IDs inválidos
-            }
-        }
-        return ids;
+    public List<TramiteListadoDTO> listarPorDepartamentoYUsuario(Long departamentoId, Long usuarioId) {
+        return repo.findByDepartamentoIdAndUsuarioResponsableId(departamentoId, usuarioId);
     }
 
     public List<TramiteListadoDTO> listarPorDepartamento(Long departamentoId) {
-        return repo.findByDepartamentoId(departamentoId);
+        return repo.findByDepartamentoIdAndUsuarioResponsableId(departamentoId, null);
     }
 
     // Método para actualizar trámites existentes que no tienen relaciones correctas
@@ -859,5 +950,21 @@ public class TramiteService {
                     return dto;
                 })
                 .toList();
+    }
+
+    private List<Long> parseRequisitosIds(String requisitosIdsCsv) {
+        List<Long> ids = new ArrayList<>();
+        if (requisitosIdsCsv == null || requisitosIdsCsv.trim().isEmpty()) {
+            return ids;
+        }
+        String[] parts = requisitosIdsCsv.split(",");
+        for (String part : parts) {
+            try {
+                ids.add(Long.parseLong(part.trim()));
+            } catch (NumberFormatException e) {
+                // ignorar IDs inválidos
+            }
+        }
+        return ids;
     }
 }

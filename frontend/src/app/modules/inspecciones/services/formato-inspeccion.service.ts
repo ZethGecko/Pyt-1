@@ -20,6 +20,7 @@ export interface FormatoInspeccion {
   fechaCreacion?: string;
   tituloPrincipal: string;
   subtituloPrincipal: string;
+  subtitulo2?: string;
   tituloSeccionDatosGenerales: string;
   tituloSeccionPlaca: string;
   tituloSeccionPlanLunca: string;

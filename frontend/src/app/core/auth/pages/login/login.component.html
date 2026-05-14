@@ -1,8 +1,15 @@
 <!-- core/auth/pages/login/login.component.html -->
-<div class="login-container">
-  <!-- Elementos decorativos de fondo -->
-  <div class="decorative-circle decorative-circle-1"></div>
-  <div class="decorative-circle decorative-circle-2"></div>
+ <!-- Botón volver al inicio (esquina superior izquierda) -->
+ <a routerLink="/" class="back-button-top" title="Volver al inicio">
+   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+   </svg>
+ </a>
+
+ <div class="login-container">
+   <!-- Elementos decorativos de fondo -->
+   <div class="decorative-circle decorative-circle-1"></div>
+   <div class="decorative-circle decorative-circle-2"></div>
   
   <div class="login-card">
     <!-- Header -->
@@ -107,14 +114,24 @@
       </form>
     </div>
 
-    <!-- Footer -->
-    <div class="login-footer">
-      <p>
-        ¿Problemas para iniciar sesión? 
-        <a href="#" class="support-link">
-          Contactar soporte
-        </a>
-      </p>
-    </div>
+   <!-- Footer -->
+   <div class="login-footer">
+     <p>
+       ¿Problemas para iniciar sesión? 
+       <a href="#" class="support-link">
+         Contactar soporte
+       </a>
+     </p>
+   </div>
+
+   <!-- Volver al inicio -->
+   <div class="back-to-home">
+     <a routerLink="/" class="back-link">
+       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+       </svg>
+       Volver al inicio
+     </a>
+   </div>
   </div>
 </div>

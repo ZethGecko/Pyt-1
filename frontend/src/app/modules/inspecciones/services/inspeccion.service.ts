@@ -3,6 +3,22 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
+// DTOs públicos
+export interface InspeccionPublicaDTO {
+  idInspeccion: number;
+  codigo: string;
+  fechaProgramada: string | Date;
+  hora: string;
+  lugar: string;
+  empresaNombre: string;
+  numeroUnidades: number;
+}
+
+export interface VehiculoDTO {
+  identificador?: string;
+  placa?: string;
+}
+
 export interface InspeccionResponse {
   idInspeccion: number;
   codigo: string;
@@ -22,6 +38,7 @@ export interface InspeccionResponse {
   empresaDireccion?: string;
   empresaTelefono?: string;
   gerenteNombre?: string;
+  gerenteDni?: string; // DNI del gerente
   inspectorId?: number;
   inspectorNombre?: string;
   vehiculoId?: number;
@@ -297,11 +314,29 @@ export class InspeccionService {
     }
 
     // ========== INSTANCIAS DISPONIBLES ==========
-    listarInstanciasDisponibles(tramiteId: number, inspeccionId?: number): Observable<InspeccionInstanciaResponse[]> {
+   listarInstanciasDisponibles(tramiteId: number, inspeccionId?: number): Observable<InspeccionInstanciaResponse[]> {
       const params: any = {};
       if (inspeccionId !== undefined) {
         params.inspeccionId = inspeccionId;
       }
       return this.http.get<InspeccionInstanciaResponse[]>(`${this.apiUrl}/tramite/${tramiteId}/instancias-disponibles`, { params });
+    }
+
+    // ========== PÚBLICO ==========
+    listarInspeccionesPublicas(
+      fechaDesde?: string,
+      fechaHasta?: string,
+      empresa?: string
+    ): Observable<InspeccionPublicaDTO[]> {
+      const params: any = {};
+      if (fechaDesde) params.fechaDesde = fechaDesde;
+      if (fechaHasta) params.fechaHasta = fechaHasta;
+      if (empresa) params.empresa = empresa;
+
+      return this.http.get<InspeccionPublicaDTO[]>(`${this.apiUrl}/publico`, { params });
+    }
+
+    obtenerVehiculosPorInspeccion(inspeccionId: number): Observable<VehiculoDTO[]> {
+      return this.http.get<VehiculoDTO[]>(`${this.apiUrl}/${inspeccionId}/vehiculos`);
     }
   }

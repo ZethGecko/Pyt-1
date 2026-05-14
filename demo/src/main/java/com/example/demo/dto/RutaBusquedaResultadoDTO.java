@@ -1,6 +1,5 @@
 package com.example.demo.dto;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class RutaBusquedaResultadoDTO {

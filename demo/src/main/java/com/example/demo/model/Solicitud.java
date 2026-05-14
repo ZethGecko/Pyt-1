@@ -75,10 +75,6 @@ public class Solicitud {
     @JoinColumn(name = "usuario_rechaza")
     private Users usuarioRechaza;
 
-    // Relación con ObservacionSolicitud (una solicitud puede tener muchas observaciones)
-    @OneToMany(mappedBy = "solicitud", cascade = CascadeType.ALL)
-    private List<ObservacionSolicitud> observacionesSolicitudes;
-
     // Getters and setters
     public Long getIdSolicitud() {
         return idSolicitud;
@@ -208,11 +204,4 @@ public class Solicitud {
         this.usuarioRechaza = usuarioRechaza;
     }
 
-    public List<ObservacionSolicitud> getObservacionesSolicitudes() {
-        return observacionesSolicitudes;
-    }
-
-    public void setObservacionesSolicitudes(List<ObservacionSolicitud> observacionesSolicitudes) {
-        this.observacionesSolicitudes = observacionesSolicitudes;
-    }
 }

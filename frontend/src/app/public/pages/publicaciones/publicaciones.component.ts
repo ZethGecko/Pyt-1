@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
+import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
 
 interface Publicacion {
   id: number;
@@ -17,7 +18,7 @@ interface Publicacion {
 @Component({
   selector: 'app-publicaciones',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, PublicNavbarComponent],
   templateUrl: './publicaciones.component.html',
   styleUrls: ['./publicaciones.component.scss']
 })

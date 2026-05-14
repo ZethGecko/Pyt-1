@@ -1,52 +1,8 @@
-<!-- Navbar - AHORA USANDO CLASES SCSS -->
-<nav class="navbar">
-  <div class="navbar-container">
-    <div class="navbar-content">
-      <div class="navbar-brand">
-        <div class="logo-wrapper">
-          @if (tieneImagen('HEADER_LOGO_LEFT')) {
-            <img [src]="getImagenUrl('HEADER_LOGO_LEFT')" alt="Logo" class="navbar-logo-img" />
-          } @else {
-            <app-icon name="truck" size="md" customClass="text-white"></app-icon>
-          }
-        </div>
-        <div class="brand-text">
-          <h1 class="text-lg font-bold text-slate-800">{{title}}</h1>
-          <p class="text-xs text-slate-500 -mt-0.5">Gestión Integral</p>
-        </div>
-      </div>
-      
-      <!-- Menu de navegación -->
-      <div class="navbar-menu">
-        <a routerLink="/busqueda-rutas" class="navbar-menu-item">
-          <app-icon name="route" size="sm"></app-icon>
-          Rutas
-        </a>
-        <a routerLink="/publicaciones" class="navbar-menu-item">
-          <app-icon name="megaphone" size="sm"></app-icon>
-          Publicaciones
-        </a>
-        <a routerLink="/tramites" class="navbar-menu-item">
-          <app-icon name="file-text" size="sm"></app-icon>
-          Trámites
-        </a>
-        <a routerLink="/seguimiento" class="navbar-menu-item">
-          <app-icon name="search" size="sm"></app-icon>
-          Seguimiento
-        </a>
-      </div>
-      <div class="navbar-actions">
-        <a routerLink="/auth/login" class="btn-primary">
-          <app-icon name="login" size="sm"></app-icon>
-          Iniciar Sesión
-        </a>
-      </div>
-    </div>
-  </div>
-</nav>
+<!-- Navbar Público -->
+<app-public-navbar></app-public-navbar>
 
-  <!-- Hero Section - AHORA USANDO CLASES SCSS -->
-  <div class="hero">
+<!-- Hero Section - AHORA USANDO CLASES SCSS -->
+<div class="hero">
     <div class="hero-container">
       <div class="hero-content">
         @if (tieneImagen('HERO_TITLE_LEFT')) {
@@ -165,15 +121,17 @@
         <p>Sistema desarrollado para la gestión integral del sector transporte.</p>
       </div>
       
-      <div class="footer-links">
-        <h4>Enlaces Rápidos</h4>
-        <ul>
-          <li><a routerLink="/">Inicio</a></li>
-          <li><a routerLink="/publicaciones">Publicaciones</a></li>
-          <li><a routerLink="/busqueda-rutas">Rutas</a></li>
-          <li><a routerLink="/auth/login">Iniciar Sesión</a></li>
-        </ul>
-      </div>
+       <div class="footer-links">
+         <h4>Enlaces Rápidos</h4>
+         <ul>
+           <li><a routerLink="/">Inicio</a></li>
+           <li><a routerLink="/publicaciones">Publicaciones</a></li>
+           <li><a routerLink="/busqueda-rutas">Rutas</a></li>
+           <li><a routerLink="/seguimiento">Seguimiento</a></li>
+           <li><a routerLink="/inspecciones">Inspecciones</a></li>
+           <li><a routerLink="/auth/login">Iniciar Sesión</a></li>
+         </ul>
+       </div>
       
       <div class="footer-contact">
         <h4>Contacto</h4>

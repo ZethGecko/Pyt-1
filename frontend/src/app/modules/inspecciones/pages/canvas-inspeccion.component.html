@@ -139,57 +139,85 @@
       <!-- Certificado Container -->
       <div class="certificado-box bg-white p-8 md:p-10 print:shadow-none max-w-4xl">
 
-        <!-- Encabezado Principal (solo editable en modo diseño) -->
-        <div class="certificado-section text-center mb-8 border-b-2 border-gray-800 pb-6">
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-900 uppercase tracking-wider mb-2" style="font-family: 'Times New Roman', serif;">
-            <span *ngIf="!editandoTituloPrincipal"
-                  (click)="modoDiseno && iniciarEdicionTituloPrincipal()"
-                  [class.editable-title]="modoDiseno">
-              {{ tituloPrincipal }}
-            </span>
-            <input *ngIf="editandoTituloPrincipal"
-                   type="text"
-                   class="editable-title-input large"
-                   [(ngModel)]="tituloPrincipalTemp"
-                   (blur)="guardarEdicionTituloPrincipal()"
-                   (keydown.enter)="guardarEdicionTituloPrincipal()"
-                   (keydown.escape)="cancelarEdicionTituloPrincipal()">
-          </h1>
-          <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
-            <span *ngIf="!editandoSubtituloPrincipal"
-                  (click)="modoDiseno && iniciarEdicionSubtituloPrincipal()"
-                  [class.editable-title]="modoDiseno">
-              {{ subtituloPrincipal }}
-            </span>
-          </h2>
-        </div>
+         <!-- Encabezado Principal (solo editable en modo diseño) -->
+          <div class="certificado-section border-b-2 border-gray-800 pb-6 mb-8">
+            
+            <!-- Fila superior: Título a la izquierda, Código a la derecha -->
+            <div class="flex justify-between items-start">
+              <div class="flex-1 text-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 uppercase tracking-wider" style="font-family: 'Times New Roman', serif;">
+                 <span *ngIf="!editandoTituloPrincipal"
+                       (click)="modoDiseno && iniciarEdicionTituloPrincipal()"
+                       [class.editable-title]="modoDiseno">
+                   {{ tituloPrincipal }}
+                 </span>
+                 <input *ngIf="editandoTituloPrincipal"
+                        type="text"
+                        class="editable-title-input large"
+                        [(ngModel)]="tituloPrincipalTemp"
+                        (blur)="guardarEdicionTituloPrincipal()"
+                        (keydown.enter)="guardarEdicionTituloPrincipal()"
+                        (keydown.escape)="cancelarEdicionTituloPrincipal()">
+               </h1>
+               <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide">
+                 <span *ngIf="!editandoSubtituloPrincipal"
+                       (click)="modoDiseno && iniciarEdicionSubtituloPrincipal()"
+                       [class.editable-title]="modoDiseno">
+                   {{ subtituloPrincipal }}
+                 </span>
+                 <input *ngIf="editandoSubtituloPrincipal"
+                        type="text"
+                        class="editable-title-input large"
+                        [(ngModel)]="subtituloPrincipalTemp"
+                        (blur)="guardarEdicionSubtituloPrincipal()"
+                        (keydown.enter)="guardarEdicionSubtituloPrincipal()"
+                        (keydown.escape)="cancelarEdicionSubtituloPrincipal()">
+               </h2>
 
-        <!-- Sección de Datos Generales -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            <span *ngIf="!editandoTitulo['DATOS GENERALES']"
-                  (click)="modoDiseno && iniciarEdicionTitulo('DATOS GENERALES')"
-                  [class.editable-title]="modoDiseno">
-              {{ titulosSecciones['DATOS GENERALES'] }}
-            </span>
-            <input *ngIf="editandoTitulo['DATOS GENERALES']"
-                   type="text"
-                   class="editable-title-input"
-                   [(ngModel)]="tituloTemp['DATOS GENERALES']"
-                   (blur)="guardarEdicionTitulo('DATOS GENERALES')"
-                   (keydown.enter)="guardarEdicionTitulo('DATOS GENERALES')"
-                   (keydown.escape)="cancelarEdicionTitulo('DATOS GENERALES')"
-                   >
-            <button *ngIf="modoDiseno"
-                    type="button"
-                    (click)="agregarCampoSeccion('DATOS GENERALES')"
-                    class="btn-add-section"
-                    title="Agregar campo a esta sección">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-            </button>
-          </h3>
+               <h2 class="text-lg md:text-xl font-semibold text-gray-700 uppercase tracking-wide mt-2">
+                 <span *ngIf="!editandoSubtitulo2"
+                       (click)="modoDiseno && iniciarEdicionSubtitulo2()"
+                       [class.editable-title]="modoDiseno">
+                   {{ subtitulo2 }}
+                 </span>
+                 <input *ngIf="editandoSubtitulo2"
+                        type="text"
+                        class="editable-title-input large"
+                        [(ngModel)]="subtitulo2Temp"
+                        (blur)="guardarEdicionSubtitulo2()"
+                        (keydown.enter)="guardarEdicionSubtitulo2()"
+                        (keydown.escape)="cancelarEdicionSubtitulo2()">
+               </h2>
+             </div>
+           </div>
+          </div>
+
+          <!-- Sección de Datos Generales -->
+         <div class="certificado-section mb-8">
+           <div class="flex justify-between items-center mb-2">
+             <h3 class="section-header text-lg mb-0">
+               <span *ngIf="!editandoTitulo['DATOS GENERALES']"
+                     (click)="modoDiseno && iniciarEdicionTitulo('DATOS GENERALES')"
+                     [class.editable-title]="modoDiseno">
+                 {{ titulosSecciones['DATOS GENERALES'] }}
+               </span>
+                <input *ngIf="editandoTitulo['DATOS GENERALES']"
+                       type="text"
+                       class="editable-title-input"
+                       [(ngModel)]="tituloTemp['DATOS GENERALES']"
+                       (blur)="guardarEdicionTitulo('DATOS GENERALES')"
+                       (keydown.enter)="guardarEdicionTitulo('DATOS GENERALES')"
+                       (keydown.escape)="cancelarEdicionTitulo('DATOS GENERALES')"
+                       >
+              </h3>
+             <!-- Código de Ficha al lado de DATOS GENERALES -->
+             <div class="text-right">
+               <div class="text-xs text-gray-500 font-medium">CÓDIGO</div>
+               <div class="text-lg font-bold text-gray-700 tracking-wider" style="font-family: 'Courier New', monospace;">
+                 {{ getCodigoFicha() }}
+               </div>
+             </div>
+           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ng-container *ngFor="let param of secciones['DATOS GENERALES']">
               <div class="flex items-start">
@@ -233,51 +261,28 @@
                 <span>Agregar nuevo campo a DATOS GENERALES</span>
               </button>
             </div>
-          </div>
-        </div>
+           </div>
+         </div>
 
-        <!-- Sección Placa -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            <span *ngIf="!editandoTitulo['PLACA']"
-                  (click)="modoDiseno && iniciarEdicionTitulo('PLACA')"
-                  [class.editable-title]="modoDiseno">
-              {{ titulosSecciones['PLACA'] }}
-            </span>
-            <input *ngIf="editandoTitulo['PLACA']"
-                   type="text"
-                   class="editable-title-input"
-                   [(ngModel)]="tituloTemp['PLACA']"
-                   (blur)="guardarEdicionTitulo('PLACA')"
-                   (keydown.enter)="guardarEdicionTitulo('PLACA')"
-                   (keydown.escape)="cancelarEdicionTitulo('PLACA')"
-                   >
-            <button *ngIf="modoDiseno"
-                    type="button"
-                    (click)="agregarCampoSeccion('PLACA')"
-                    class="btn-add-section"
-                    title="Agregar campo a esta sección">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-            </button>
-          </h3>
-          <div class="space-y-3">
-            <ng-container *ngFor="let param of secciones['PLACA']">
-              <div class="flex items-center">
-                <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
-                       [class.editable-label]="modoDiseno && !param._editando"
-                       (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
-                  <span *ngIf="!param._editando">{{ param.parametro }}:</span>
-                  <input *ngIf="param._editando"
-                         type="text"
-                         class="inline-edit-input"
-                         [(ngModel)]="param._valorTemp"
-                         (blur)="guardarEdicionCampo(param)"
-                         (keydown.enter)="guardarEdicionCampo(param)"
-                         (keydown.escape)="cancelarEdicionCampo(param)"
-                         #inputEdit>
-                </label>
+         <!-- Sección Unidad Vehicular -->
+         <div class="certificado-section mb-8">
+           <h3 class="section-header text-lg">UNIDAD VEHICULAR</h3>
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <ng-container *ngFor="let param of secciones['UNIDAD VEHICULAR']">
+               <div class="flex items-start">
+                 <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
+                        [class.editable-label]="modoDiseno && !param._editando"
+                        (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                   <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                   <input *ngIf="param._editando"
+                          type="text"
+                          class="inline-edit-input"
+                          [(ngModel)]="param._valorTemp"
+                          (blur)="guardarEdicionCampo(param)"
+                          (keydown.enter)="guardarEdicionCampo(param)"
+                          (keydown.escape)="cancelarEdicionCampo(param)"
+                          #inputEdit>
+                 </label>
                  <div class="flex-1 flex items-center gap-2">
                    <input type="text"
                           class="editable-input flex-1"
@@ -297,16 +302,19 @@
                </div>
              </ng-container>
              <!-- Botón para agregar campo al final de la sección -->
-             <div *ngIf="modoDiseno">
-               <button (click)="agregarCampoSeccion('PLACA')" class="btn-add-field-full">
+             <div class="col-span-2" *ngIf="modoDiseno">
+               <button (click)="agregarCampoSeccion('UNIDAD VEHICULAR')" class="btn-add-field-full">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>Agregar nuevo campo</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                <span>Agregar nuevo campo a UNIDAD VEHICULAR</span>
+               </button>
+             </div>
+           </div>
+         </div>
+
+         <!-- Sección Placa -->
+
 
         <!-- Sección Plan Lunca de Rodale -->
         <div class="certificado-section mb-8">
@@ -316,24 +324,15 @@
                   [class.editable-title]="modoDiseno">
               {{ titulosSecciones['PLAN LUNCA DE RODALE'] }}
             </span>
-            <input *ngIf="editandoTitulo['PLAN LUNCA DE RODALE']"
-                   type="text"
-                   class="editable-title-input"
-                   [(ngModel)]="tituloTemp['PLAN LUNCA DE RODALE']"
-                   (blur)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
-                   (keydown.enter)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
-                   (keydown.escape)="cancelarEdicionTitulo('PLAN LUNCA DE RODALE')"
-                   >
-            <button *ngIf="modoDiseno"
-                    type="button"
-                    (click)="agregarCampoSeccion('PLAN LUNCA DE RODALE')"
-                    class="btn-add-section"
-                    title="Agregar campo a esta sección">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-            </button>
-          </h3>
+             <input *ngIf="editandoTitulo['PLAN LUNCA DE RODALE']"
+                    type="text"
+                    class="editable-title-input"
+                    [(ngModel)]="tituloTemp['PLAN LUNCA DE RODALE']"
+                    (blur)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                    (keydown.enter)="guardarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                    (keydown.escape)="cancelarEdicionTitulo('PLAN LUNCA DE RODALE')"
+                    >
+           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <ng-container *ngFor="let param of secciones['PLAN LUNCA DE RODALE']">
               <div class="flex items-center">
@@ -349,23 +348,35 @@
                          (keydown.enter)="guardarEdicionCampo(param)"
                          (keydown.escape)="cancelarEdicionCampo(param)"
                          >
-                </label>
-                <div class="flex-1 flex items-center gap-2">
-                   <input type="text"
-                          class="editable-input flex-1"
-                          [(ngModel)]="param.valor"
-                          placeholder="( )">
-                   <div *ngIf="modoDiseno" class="flex gap-1">
-                     <button type="button"
-                             (click)="eliminarCampo(param)"
-                             class="btn-icon delete"
-                             title="Eliminar campo">
-                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                       </svg>
-                     </button>
-                   </div>
-                 </div>
+                 </label>
+                  <div class="flex-1 flex items-center gap-2">
+                     <div class="flex gap-2">
+                       <button type="button"
+                               class="btn-opcion btn-bien"
+                               [class.active]="param.valorOpcion === 'BIEN'"
+                               (click)="seleccionarOpcion(param, 'BIEN')"
+                               title="Marcar como Bien">
+                         Bien
+                       </button>
+                       <button type="button"
+                               class="btn-opcion btn-mal"
+                               [class.active]="param.valorOpcion === 'MAL'"
+                               (click)="seleccionarOpcion(param, 'MAL')"
+                               title="Marcar como Mal">
+                         Mal
+                       </button>
+                     </div>
+                    <div *ngIf="modoDiseno" class="flex gap-1">
+                      <button type="button"
+                              (click)="eliminarCampo(param)"
+                              class="btn-icon delete"
+                              title="Eliminar campo">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                </div>
              </ng-container>
              <!-- Botón para agregar campo al final de la sección -->
@@ -380,54 +391,45 @@
           </div>
         </div>
 
-        <!-- Sección Laboratorio -->
-        <div class="certificado-section mb-8">
-          <h3 class="section-header text-lg">
-            <span *ngIf="!editandoTitulo['LABORATORIO']"
-                  (click)="modoDiseno && iniciarEdicionTitulo('LABORATORIO')"
-                  [class.editable-title]="modoDiseno">
-              {{ titulosSecciones['LABORATORIO'] }}
-            </span>
-            <input *ngIf="editandoTitulo['LABORATORIO']"
-                   type="text"
-                   class="editable-title-input"
-                   [(ngModel)]="tituloTemp['LABORATORIO']"
-                   (blur)="guardarEdicionTitulo('LABORATORIO')"
-                   (keydown.enter)="guardarEdicionTitulo('LABORATORIO')"
-                   (keydown.escape)="cancelarEdicionTitulo('LABORATORIO')"
-                   >
-            <button *ngIf="modoDiseno"
-                    type="button"
-                    (click)="agregarCampoSeccion('LABORATORIO')"
-                    class="btn-add-section"
-                    title="Agregar campo a esta sección">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-            </button>
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <ng-container *ngFor="let param of secciones['LABORATORIO']">
-              <div class="flex items-center">
-                <label class="certificado-label text-sm text-gray-700 w-80 md:w-64"
-                       [class.editable-label]="modoDiseno && !param._editando"
-                       (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
-                  <span *ngIf="!param._editando">{{ param.parametro }}:</span>
-                  <input *ngIf="param._editando"
-                         type="text"
-                         class="inline-edit-input"
-                         [(ngModel)]="param._valorTemp"
-                         (blur)="guardarEdicionCampo(param)"
-                         (keydown.enter)="guardarEdicionCampo(param)"
-                         (keydown.escape)="cancelarEdicionCampo(param)"
-                         >
-                </label>
-                <div class="flex-1 flex items-center gap-2">
-                  <input type="text"
-                         class="editable-input flex-1"
-                         [(ngModel)]="param.valor"
-                          placeholder="( )">
-                   <div *ngIf="modoDiseno" class="flex gap-1">
+         <!-- Sección Observaciones -->
+         <div class="certificado-section mb-8">
+           <h3 class="section-header text-lg">
+             <span *ngIf="!editandoTitulo['OBSERVACIONES']"
+                   (click)="modoDiseno && iniciarEdicionTitulo('OBSERVACIONES')"
+                   [class.editable-title]="modoDiseno">
+               {{ titulosSecciones['OBSERVACIONES'] || 'OBSERVACIONES' }}
+             </span>
+             <input *ngIf="editandoTitulo['OBSERVACIONES']"
+                    type="text"
+                    class="editable-title-input"
+                    [(ngModel)]="tituloTemp['OBSERVACIONES']"
+                     (blur)="guardarEdicionTitulo('OBSERVACIONES')"
+                     (keydown.enter)="guardarEdicionTitulo('OBSERVACIONES')"
+                     (keydown.escape)="cancelarEdicionTitulo('OBSERVACIONES')"
+                     >
+           </h3>
+           <div class="grid grid-cols-1 gap-4">
+             <ng-container *ngFor="let param of secciones['OBSERVACIONES']">
+               <div class="flex flex-col">
+                 <label class="certificado-label text-sm font-medium text-gray-700 mb-1"
+                        [class.editable-label]="modoDiseno && !param._editando"
+                        (click)="modoDiseno && !param._editando && iniciarEdicionCampo(param)">
+                   <span *ngIf="!param._editando">{{ param.parametro }}:</span>
+                   <input *ngIf="param._editando"
+                          type="text"
+                          class="inline-edit-input"
+                          [(ngModel)]="param._valorTemp"
+                          (blur)="guardarEdicionCampo(param)"
+                          (keydown.enter)="guardarEdicionCampo(param)"
+                          (keydown.escape)="cancelarEdicionCampo(param)"
+                          #inputEdit>
+                 </label>
+                 <div class="flex-1 flex flex-col">
+                   <textarea class="editable-input flex-1"
+                             [(ngModel)]="param.valor"
+                             placeholder="( )"
+                             rows="4"></textarea>
+                   <div *ngIf="modoDiseno" class="flex gap-1 mt-1">
                      <button type="button"
                              (click)="eliminarCampo(param)"
                              class="btn-icon delete"
@@ -440,19 +442,19 @@
                  </div>
                </div>
              </ng-container>
-             <!-- Botón para agregar campo al final de la sección -->
-             <div class="col-span-2" *ngIf="modoDiseno">
-               <button (click)="agregarCampoSeccion('LABORATORIO')" class="btn-add-field-full">
+             <!-- Botón para agregar nuevo campo de observación -->
+             <div class="col-span-1" *ngIf="modoDiseno">
+               <button (click)="agregarCampoSeccion('OBSERVACIONES')" class="btn-add-field-full">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>Agregar nuevo campo</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                <span>Agregar nuevo campo de observación</span>
+               </button>
+             </div>
+           </div>
+         </div>
 
-        <!-- Pie de página / Firma (solo en modo ejecución) -->
+         <!-- Pie de página / Firma (solo en modo ejecución) -->
         <div class="certificado-section mt-12 pt-8 border-t border-gray-300" *ngIf="!modoDiseno">
           <div class="flex flex-col md:flex-row justify-between items-center gap-6">
             <div class="text-center md:text-left w-full md:w-1/2">

@@ -424,26 +424,27 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
     this.mostrandoModalDerivacion = true;
   }
 
-  derivarTramite(departamentoId: number, observaciones?: string): void {
-    if (!this.tramiteParaDerivar) return;
+   derivarTramite(departamentoId: number, observaciones?: string, usuarioResponsableId?: number): void {
+     if (!this.tramiteParaDerivar) return;
 
-    this.tramiteService.derivar(
-      this.tramiteParaDerivar.id,
-      departamentoId,
-      observaciones || ''
-    ).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('Trámite derivado exitosamente');
-        this.mostrandoModalDerivacion = false;
-        this.tramiteParaDerivar = null;
-        this.cargarTramites();
-      },
-      error: (err) => {
-        this.notificationService.showError('Error al derivar trámite: ' + (err.message || 'Error desconocido'));
-        console.error('Error derivando trámite:', err);
-      }
-    });
-  }
+     this.tramiteService.derivar(
+       this.tramiteParaDerivar.id,
+       departamentoId,
+       observaciones || '',
+       usuarioResponsableId
+     ).subscribe({
+       next: () => {
+         this.notificationService.showSuccess('Trámite derivado exitosamente');
+         this.mostrandoModalDerivacion = false;
+         this.tramiteParaDerivar = null;
+         this.cargarTramites();
+       },
+       error: (err) => {
+         this.notificationService.showError('Error al derivar trámite: ' + (err.message || 'Error desconocido'));
+         console.error('Error derivando trámite:', err);
+       }
+     });
+   }
 
   abrirModalEditar(tramite: TramiteEnriquecido): void {
     if (!this.puedeEditar(tramite)) {
@@ -955,10 +956,10 @@ export class GestionTramitesComponent implements OnInit, OnDestroy {
     this.cerrarModalFormulario();
   }
 
-  // Derivar desde modal
-  onDerivarDesdeModal(departamentoId: number, observaciones?: string): void {
-    this.derivarTramite(departamentoId, observaciones);
-  }
+   // Derivar desde modal
+   onDerivarDesdeModal(departamentoId: number, observaciones?: string, usuarioResponsableId?: number): void {
+     this.derivarTramite(departamentoId, observaciones, usuarioResponsableId);
+   }
 
   // Cerrar modal derivación
   cerrarModalDerivacion(): void {

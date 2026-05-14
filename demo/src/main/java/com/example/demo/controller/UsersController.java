@@ -131,22 +131,34 @@ public class UsersController {
         return ResponseEntity.ok(service.convertirAResponse(toggled));
     }
 
-    @PatchMapping("/{id}/role/{roleId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<Map<String, Object>> changeUserRole(@PathVariable Long id, @PathVariable Long roleId) {
-        Optional<Users> user = service.buscarPorId(id);
-        if (user.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+     @PatchMapping("/{id}/role/{roleId}")
+     @PreAuthorize("hasRole('SUPER_ADMIN')")
+     public ResponseEntity<Map<String, Object>> changeUserRole(@PathVariable Long id, @PathVariable Long roleId) {
+         Optional<Users> user = service.buscarPorId(id);
+         if (user.isEmpty()) {
+             return ResponseEntity.notFound().build();
+         }
 
-        Optional<Roles> roleOpt = rolesService.buscarPorId(roleId);
-        if (roleOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+         Optional<Roles> roleOpt = rolesService.buscarPorId(roleId);
+         if (roleOpt.isEmpty()) {
+             return ResponseEntity.notFound().build();
+         }
 
-        Users current = user.get();
-        current.setRole(roleOpt.get());
-        Users updated = service.actualizar(id, current);
-        return ResponseEntity.ok(service.convertirAResponse(updated));
-    }
+         Users current = user.get();
+         current.setRole(roleOpt.get());
+         Users updated = service.actualizar(id, current);
+         return ResponseEntity.ok(service.convertirAResponse(updated));
+     }
+
+     @GetMapping("/departamento/{departamentoId}")
+     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+     public ResponseEntity<Map<String, Object>> listarPorDepartamento(@PathVariable Long departamentoId) {
+         System.out.println("[UsersController] GET /departamento/" + departamentoId + " llamado");
+         List<Users> usuarios = service.listarPorDepartamento(departamentoId);
+         System.out.println("[UsersController] Usuarios encontrados: " + usuarios.size());
+         Map<String, Object> response = new java.util.HashMap<>();
+         response.put("users", usuarios);
+         response.put("count", usuarios.size());
+         return ResponseEntity.ok(response);
+     }
 }

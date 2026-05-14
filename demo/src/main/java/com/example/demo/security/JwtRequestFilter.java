@@ -99,33 +99,35 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-      @Override
-      protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-          String path = request.getServletPath();
-          String method = request.getMethod();
-          System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + method);
-          // Permitir acceso a endpoints públicos, preflight OPTIONS y recursos estáticos
-          if ("OPTIONS".equalsIgnoreCase(method) ||
-              path.startsWith("/actuator") ||
-              path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
-              // Públicos
-              path.startsWith("/api/auth/") ||
-              path.startsWith("/api/tipos-tramite/publico") ||
-              path.startsWith("/api/tramites/publico/") ||
-              path.startsWith("/api/tramites/buscar/enriquecidos") ||
-              path.startsWith("/api/tramites/enriquecidos") ||
-              path.startsWith("/api/rutas/buscar") ||
-              path.startsWith("/api/empresas") ||
-              path.startsWith("/api/puntos") ||
-              path.startsWith("/api/grupos-presentacion/") ||
+       @Override
+       protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+           String path = request.getServletPath();
+           String method = request.getMethod();
+           System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + method);
+           // Permitir acceso a endpoints públicos, preflight OPTIONS y recursos estáticos
+           if ("OPTIONS".equalsIgnoreCase(method) ||
+               path.startsWith("/actuator") ||
+               path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
+               // Públicos
+               path.startsWith("/api/auth/") ||
+               path.startsWith("/api/tipos-tramite/publico") ||
+               path.startsWith("/api/tramites/publico/") ||
+               path.startsWith("/api/tramites/buscar/enriquecidos") ||
+               path.startsWith("/api/tramites/enriquecidos") ||
+               path.startsWith("/api/rutas/buscar") ||
+               path.startsWith("/api/empresas") ||
+               path.startsWith("/api/puntos") ||
+               path.startsWith("/api/grupos-presentacion/") ||
                path.startsWith("/api/parametros-inspeccion/") ||
+               path.startsWith("/api/inspecciones/publico") ||
+               path.startsWith("/api/inspecciones/") && path.endsWith("/vehiculos") ||
                // Recursos estáticos
                path.equals("/") || path.startsWith("/index.html") || path.startsWith("/assets/") ||
                path.startsWith("/manifest.json") || path.startsWith("/favicon.ico")) {
-              System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered");
-              return true;
-          }
-          System.out.println("[JwtRequestFilter] Path " + path + " SHOULD be filtered");
-          return false;
-      }
+               System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered");
+               return true;
+           }
+           System.out.println("[JwtRequestFilter] Path " + path + " SHOULD be filtered");
+           return false;
+       }
 }

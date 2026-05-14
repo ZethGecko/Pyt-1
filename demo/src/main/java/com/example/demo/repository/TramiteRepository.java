@@ -1,13 +1,14 @@
 package com.example.demo.repository;
 
-import com.example.demo.dto.TramiteListadoDTO;
-import com.example.demo.model.Tramite;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.example.demo.dto.TramiteListadoDTO;
+import com.example.demo.model.Tramite;
 
 @Repository
 public interface TramiteRepository extends JpaRepository<Tramite, Long> {
@@ -342,49 +343,50 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COALESCE(CONCAT('', pn.dni), e.ruc, CONCAT('', g.dni))")
     List<TramiteListadoDTO> findByUsuarioRegistraId(@Param("usuarioId") Long usuarioId);
 
-    @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
-           "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
-           "t.fechaRegistro, t.fechaActualizacion, " +
-           "d.nombre, u.username, " +
-           "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
-           "tt.descripcion, tt.idTipoTramite, " +
-           "COALESCE(pn.idPersonaNatural, e.idEmpresa, g.idGerente), " +
-           "CASE " +
-           "  WHEN pn.idPersonaNatural IS NOT NULL THEN 'PersonaNatural' " +
-           "  WHEN e.idEmpresa IS NOT NULL THEN 'Empresa' " +
-           "  WHEN g.idGerente IS NOT NULL THEN 'Gerente' " +
-           "  ELSE null " +
-           "END, " +
-           "COALESCE(CONCAT('', pn.dni), e.ruc, CONCAT('', g.dni)), " +
-           "COUNT(DISTINCT doc.idDocumento), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
-           "FROM Tramite t " +
-           "LEFT JOIN t.departamentoActual d " +
-           "LEFT JOIN t.usuarioRegistra u " +
-           "LEFT JOIN t.personaNatural pn " +
-           "LEFT JOIN t.empresa e " +
-           "LEFT JOIN t.gerente g " +
-           "LEFT JOIN e.subtipoTransporte st " +
-           "LEFT JOIN t.tipoTramite tt " +
-           "LEFT JOIN t.documentos doc " +
-           "WHERE d.idDepartamento = :departamentoId " +
-           "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
-           "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
-           "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
-           "tt.descripcion, tt.idTipoTramite, " +
-           "COALESCE(pn.idPersonaNatural, e.idEmpresa, g.idGerente), " +
-           "CASE " +
-           "  WHEN pn.idPersonaNatural IS NOT NULL THEN 'PersonaNatural' " +
-           "  WHEN e.idEmpresa IS NOT NULL THEN 'Empresa' " +
-           "  WHEN g.idGerente IS NOT NULL THEN 'Gerente' " +
-           "  ELSE null " +
-           "END, " +
-           "COALESCE(CONCAT('', pn.dni), e.ruc, CONCAT('', g.dni))")
-    List<TramiteListadoDTO> findByDepartamentoId(@Param("departamentoId") Long departamentoId);
+     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
+            "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
+            "t.fechaRegistro, t.fechaActualizacion, " +
+            "d.nombre, u.username, " +
+            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
+            "tt.descripcion, tt.idTipoTramite, " +
+            "COALESCE(pn.idPersonaNatural, e.idEmpresa, g.idGerente), " +
+            "CASE " +
+            "  WHEN pn.idPersonaNatural IS NOT NULL THEN 'PersonaNatural' " +
+            "  WHEN e.idEmpresa IS NOT NULL THEN 'Empresa' " +
+            "  WHEN g.idGerente IS NOT NULL THEN 'Gerente' " +
+            "  ELSE null " +
+            "END, " +
+            "COALESCE(CONCAT('', pn.dni), e.ruc, CONCAT('', g.dni)), " +
+            "COUNT(DISTINCT doc.idDocumento), " +
+            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
+            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
+            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
+            "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
+            ") " +
+            "FROM Tramite t " +
+            "LEFT JOIN t.departamentoActual d " +
+            "LEFT JOIN t.usuarioRegistra u " +
+            "LEFT JOIN t.personaNatural pn " +
+            "LEFT JOIN t.empresa e " +
+            "LEFT JOIN t.gerente g " +
+            "LEFT JOIN e.subtipoTransporte st " +
+            "LEFT JOIN t.tipoTramite tt " +
+            "LEFT JOIN t.documentos doc " +
+            "WHERE d.idDepartamento = :departamentoId " +
+            "  AND (:usuarioId IS NULL OR t.usuarioResponsableId.idUsuarios = :usuarioId) " +
+            "GROUP BY t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +
+            "t.fechaRegistro, t.fechaActualizacion, d.nombre, u.username, " +
+            "COALESCE(CONCAT(pn.nombres, ' ', pn.apellidos), e.nombre, g.nombre, 'N/A'), " +
+            "tt.descripcion, tt.idTipoTramite, " +
+            "COALESCE(pn.idPersonaNatural, e.idEmpresa, g.idGerente), " +
+            "CASE " +
+            "  WHEN pn.idPersonaNatural IS NOT NULL THEN 'PersonaNatural' " +
+            "  WHEN e.idEmpresa IS NOT NULL THEN 'Empresa' " +
+            "  WHEN g.idGerente IS NOT NULL THEN 'Gerente' " +
+            "  ELSE null " +
+            "END, " +
+            "COALESCE(CONCAT('', pn.dni), e.ruc, CONCAT('', g.dni))")
+    List<TramiteListadoDTO> findByDepartamentoIdAndUsuarioResponsableId(@Param("departamentoId") Long departamentoId, @Param("usuarioId") Long usuarioId);
 
     @Query("SELECT NEW com.example.demo.dto.TramiteListadoDTO(" +
            "t.idTramite, t.codigoRut, LOWER(t.estado), t.prioridad, " +

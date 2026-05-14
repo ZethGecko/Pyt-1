@@ -6,6 +6,8 @@ import { environment } from 'src/environments/environment';
  export interface ParametroInspeccion {
    idParametros?: number;
    parametro: string;
+   valor?: string;
+   valorOpcion?: 'BIEN' | 'MAL' | null;
    observacion?: string;
    tipoEvaluacion?: string;
    fichaInspeccionId?: number;
@@ -26,6 +28,7 @@ import { environment } from 'src/environments/environment';
    // Títulos del formato
    tituloPrincipal?: string;
    subtituloPrincipal?: string;
+   subtitulo2?: string;
    tituloSeccionDatosGenerales?: string;
    tituloSeccionPlaca?: string;
    tituloSeccionPlanLunca?: string;

@@ -66,26 +66,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  cargarTramites(): void {
-    this.cargando = true;
-    const usuarioActual = this.usuarioActual;
-    const esSuperAdmin = usuarioActual?.role?.name === 'SUPER_ADMIN';
-    const departamentoId = this.departamentoActual?.idDepartamento || this.departamentoActual?.id;
-    const puedeVerTodos = esSuperAdmin || usuarioActual?.role?.canViewAllData === true;
+   cargarTramites(): void {
+     this.cargando = true;
+     const usuarioActual = this.authState.currentUser();
+     
+     if (!usuarioActual?.id) {
+       this.cargando = false;
+       this.notificationService.showWarning('Usuario no autenticado');
+       this.tramites = [];
+       this.tramitesFiltrados = [];
+       this.actualizarPaginacion();
+       return;
+     }
 
-    let observable: Observable<TramiteEnriquecido[]>;
-    if (!departamentoId && !puedeVerTodos) {
-      this.cargando = false;
-      this.notificationService.showWarning('El usuario no tiene departamento asignado');
-      this.tramites = [];
-      this.tramitesFiltrados = [];
-      this.actualizarPaginacion();
-      return;
-    } else if (puedeVerTodos) {
-      observable = this.tramiteService.listarTodosEnriquecidos();
-    } else {
-      observable = this.tramiteService.listarPorDepartamento(departamentoId);
-    }
+     const usuarioId = usuarioActual.id;
+    
+    // MOSTRAR SOLO TRÁMITES ASIGNADOS AL USUARIO ACTUAL ( Mis Trámites )
+    const observable = this.tramiteService.listarTramitesPorUsuarioResponsable(usuarioId);
 
     observable.pipe(
       takeUntil(this.destroy$),

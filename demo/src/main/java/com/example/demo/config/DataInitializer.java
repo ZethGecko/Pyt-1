@@ -49,23 +49,22 @@ import com.example.demo.repository.UsersRepository;
 @Component
 public class DataInitializer {
 
-      @Autowired private RolesRepository rolesRepository;
-       @Autowired private DepartamentoRepository departamentoRepository;
-        @Autowired private UsersRepository usersRepository;
-        @Autowired private EmpresaRepository empresaRepository;
-        @Autowired private GerenteRepository gerenteRepository;
-        @Autowired private PersonaNaturalRepository personaNaturalRepository;
-      @Autowired private PasswordEncoder passwordEncoder;
-      @Autowired private TUPACRepository tupacRepository;
-      @Autowired private RequisitoTUPACRepository requisitoTUPACRepository;
-      @Autowired private FormatosRepository formatosRepository;
-      @Autowired private TipoTramiteRepository tipoTramiteRepository;
-       @Autowired private CategoriaTransporteRepository categoriaTransporteRepository;
-       @Autowired private TipoTransporteRepository tipoTransporteRepository;
-       @Autowired private SubtipoTransporteRepository subtipoTransporteRepository;
-  @Autowired private com.example.demo.service.TramiteService tramiteService;
-        @Autowired private TramiteRepository tramiteRepository;
-
+    @Autowired private RolesRepository rolesRepository;
+    @Autowired private DepartamentoRepository departamentoRepository;
+    @Autowired private UsersRepository usersRepository;
+    @Autowired private EmpresaRepository empresaRepository;
+    @Autowired private GerenteRepository gerenteRepository;
+    @Autowired private PersonaNaturalRepository personaNaturalRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private TUPACRepository tupacRepository;
+    @Autowired private RequisitoTUPACRepository requisitoTUPACRepository;
+    @Autowired private FormatosRepository formatosRepository;
+    @Autowired private TipoTramiteRepository tipoTramiteRepository;
+    @Autowired private CategoriaTransporteRepository categoriaTransporteRepository;
+    @Autowired private TipoTransporteRepository tipoTransporteRepository;
+    @Autowired private SubtipoTransporteRepository subtipoTransporteRepository;
+    @Autowired private com.example.demo.service.TramiteService tramiteService;
+    @Autowired private TramiteRepository tramiteRepository;
 
     @PostConstruct
     @Transactional
@@ -637,13 +636,13 @@ public class DataInitializer {
              }
          }
 
-         // Actualizar trámites existentes para corregir relaciones faltantes
-        try {
-            tramiteService.actualizarTramitesExistentes();
-            System.out.println("Trámites existentes actualizados");
-        } catch (Exception e) {
-            System.out.println("Error actualizando trámites existentes: " + e.getMessage());
-        }
+          // Actualizar trámites existentes para corregir relaciones faltantes
+         try {
+             this.tramiteService.actualizarTramitesExistentes();
+             System.out.println("Trámites existentes actualizados");
+         } catch (Exception e) {
+             System.out.println("Error actualizando trámites existentes: " + e.getMessage());
+         }
 
         // Crear trámite de ejemplo si no hay ninguno
         if (tramiteRepository.count() == 0) {

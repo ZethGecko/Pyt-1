@@ -24,7 +24,7 @@ export interface UbicacionConfig {
   providedIn: 'root'
 })
 export class ImagenSitioService {
-  private apiUrl = `${environment.apiUrl}/api/imagenes-sitio`;
+   private apiUrl = `${environment.apiUrl}/imagenes-sitio`;
   
   constructor(private http: HttpClient) {}
   
