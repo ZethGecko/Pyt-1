@@ -5,20 +5,10 @@
 <div class="hero">
     <div class="hero-container">
       <div class="hero-content">
-        @if (tieneImagen('HERO_TITLE_LEFT')) {
-          <div class="hero-side-image hero-side-left">
-            <img [src]="getImagenUrl('HERO_TITLE_LEFT')" alt="Imagen izquierda" />
-          </div>
-        }
         <h1 class="hero-title">
           <span class="block">Sistema Integral de</span>
           <span class="highlight block"> Gestión de Transporte</span>
         </h1>
-        @if (tieneImagen('HERO_TITLE_RIGHT')) {
-          <div class="hero-side-image hero-side-right">
-            <img [src]="getImagenUrl('HERO_TITLE_RIGHT')" alt="Imagen derecha" />
-          </div>
-        }
         <p class="hero-description">
           Plataforma centralizada para la gestión de empresas, vehículos, trámites y documentos del sector transporte.
         </p>

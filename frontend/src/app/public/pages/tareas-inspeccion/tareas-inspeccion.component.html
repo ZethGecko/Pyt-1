@@ -1,0 +1,82 @@
+<div class="tareas-inspeccion-container">
+  <!-- Header -->
+  <div class="page-header">
+    <button class="btn btn-back" (click)="volver()" title="Volver">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div>
+      <h1>Tareas de Inspección</h1>
+      <p class="breadcrumb">Inspección &raquo; Tareas<a *ngIf="inspeccionId"> (ID: {{ inspeccionId }})</a></p>
+    </div>
+  </div>
+
+  <!-- Alerta de error -->
+  <div class="alert alert-danger" *ngIf="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ error }}</span>
+    <button class="btn btn-sm btn-outline-danger ms-2" (click)="cargarTareas()">
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="cargando && !error">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando…</span>
+    </div>
+    <p>Cargando tareas…</p>
+  </div>
+
+  <!-- Contenido -->
+  <div class="resultados-card" *ngIf="!cargando && !error && columnas.length > 0">
+
+    <!-- Cabecera de la tabla -->
+    <div class="resultados-header">
+      <div>
+        <h2>Listado de Tareas — Inspección #{{ inspeccionId }}</h2>
+        <p class="subtitulo-resultados">Total registros: <strong>{{ cantidad }}</strong>
+          &nbsp;·&nbsp;
+          <span class="badge bg-info">Reposición Iluminación: {{ reposicionIluminacion }}</span>
+          <span class="badge bg-success">Activo: {{ activo }}</span>
+        </p>
+      </div>
+      <button class="btn btn-primary btn-sm" (click)="cargarTareas()">
+        <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- Tabla dinámica -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover tabla-tareas">
+        <thead>
+          <tr>
+            <th *ngFor="let col of columnas" [class.col-util]="esColumnaUtil(col)">
+              {{ col.header || col.field }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fila of filas; let i = index">
+            <!-- Columna índice (auto-number) -->
+            <td class="text-center">{{ i + 1 }}</td>
+            <td *ngFor="let col of columnas"
+                [ngClass]="{
+                  'text-success fw-bold': esColumnaUtil(col) && (fila[col.field] === 'true' || fila[col.field] === true),
+                  'text-danger': esColumnaUtil(col) && (fila[col.field] === 'false' || fila[col.field] === false)
+                }">
+              {{ renderValor(obtenerValor(fila, col)) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sin datos -->
+  <div class="empty-state" *ngIf="!cargando && !error && columnas.length === 0">
+    <i class="fas fa-clipboard-list"></i>
+    <p>No se encontraron tareas para esta inspección.</p>
+    <button class="btn btn-primary mt-2" (click)="cargarTareas()">Reintentar</button>
+  </div>
+</div>

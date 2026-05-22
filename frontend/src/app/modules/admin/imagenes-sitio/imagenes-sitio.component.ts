@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { environment } from 'src/environments/environment';
 import { ImagenSitioService, ImagenSitio as ImagenDto, UbicacionConfig } from '../../../shared/services/imagen-sitio.service';
 import { NotificationService } from '../../../shared/services/notification.service';
 
@@ -24,6 +25,7 @@ export class ImagenesSitioComponent implements OnInit {
   descripcion: string = '';
   archivo: File | null = null;
   archivoNombre: string = '';
+  imagenExistente: ImagenDto | null = null;
 
   ngOnInit(): void {
     this.cargarImagenes();
@@ -53,11 +55,31 @@ export class ImagenesSitioComponent implements OnInit {
     }
   }
 
+  verificarImagenExistente(): void {
+    if (!this.ubicacionSeleccionada) {
+      this.imagenExistente = null;
+      return;
+    }
+    this.imagenService.obtenerPorUbicacion(this.ubicacionSeleccionada).subscribe({
+      next: (img) => {
+        this.imagenExistente = img;
+      },
+      error: () => {
+        this.imagenExistente = null;
+      }
+    });
+  }
+
   subirImagen(): void {
     if (!this.ubicacionSeleccionada || !this.archivo) {
       this.notificationService.error('Seleccione una ubicación y un archivo', 'Validación');
       return;
     }
+
+    const esReemplazo = !!this.imagenExistente;
+    const mensajeExito = esReemplazo
+      ? 'Imagen reemplazada exitosamente'
+      : 'Imagen subida exitosamente';
 
     this.cargando = true;
     this.imagenService.uploadImagen(this.ubicacionSeleccionada, this.archivo, this.descripcion).subscribe({
@@ -65,7 +87,7 @@ export class ImagenesSitioComponent implements OnInit {
         this.cargando = false;
         this.limpiarFormulario();
         this.cargarImagenes();
-        this.notificationService.success('Imagen subida exitosamente', 'Éxito');
+        this.notificationService.success(mensajeExito, 'Éxito');
       },
       error: (err) => {
         this.cargando = false;
@@ -91,7 +113,7 @@ export class ImagenesSitioComponent implements OnInit {
   }
 
   getImagenUrl(imagen: ImagenDto): string {
-    return `/api/imagenes-sitio/${imagen.id}/download`;
+    return `${environment.apiUrl}/imagenes-sitio/${imagen.id}/download`;
   }
 
   getUbicacionLabel(ubicacionKey: string): string {
@@ -109,5 +131,6 @@ export class ImagenesSitioComponent implements OnInit {
     this.descripcion = '';
     this.archivo = null;
     this.archivoNombre = '';
+    this.imagenExistente = null;
   }
 }

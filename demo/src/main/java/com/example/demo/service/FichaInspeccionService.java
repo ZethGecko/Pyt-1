@@ -146,6 +146,61 @@ public class FichaInspeccionService {
     }
 
     /**
+     * Replica el formato de una ficha origen a todas las demás fichas de la misma inspección.
+     * Copia título, títulos de sección y crea valores vacíos con la misma estructura de campos.
+     */
+    @Transactional
+    public void replicarFormatoEnInspeccion(Long inspeccionId, Long fichaOrigenId) {
+        FichaInspeccion fichaOrigen = fichaRepository.findByIdWithAssociations(fichaOrigenId)
+                .orElseThrow(() -> new RuntimeException("Ficha origen no encontrada: " + fichaOrigenId));
+
+        FormatoInspeccion formatoOrigen = fichaOrigen.getFormatoInspeccion();
+        if (formatoOrigen == null) {
+            throw new RuntimeException("La ficha origen no tiene formato asociado");
+        }
+
+        Long formatoId = formatoOrigen.getIdFormatoInspeccion();
+
+        // Asignar el mismo formato a todas las fichas de la inspección que no lo tengan
+        List<FichaInspeccion> fichasDestino = fichaRepository.findByInspeccion(inspeccionId);
+
+        for (FichaInspeccion fichaDestino : fichasDestino) {
+            if (fichaDestino.getIdFichaInspeccion().equals(fichaOrigenId)) {
+                continue; // saltar la ficha origen
+            }
+
+            FormatoInspeccion formatoDest = fichaDestino.getFormatoInspeccion();
+
+            if (formatoDest == null || !formatoDest.getIdFormatoInspeccion().equals(formatoId)) {
+                // Asignar el formato origen
+                fichaDestino.setFormatoInspeccion(formatoOrigen);
+                fichaDestino = fichaRepository.save(fichaDestino);
+                formatoDest = formatoOrigen;
+            }
+
+            // Limpiar valores viejos (si la ficha ya tenía valores)
+            List<ValorCampo> valoresViejos = valorRepository.findByFichaInspeccion_IdFichaInspeccion(
+                    fichaDestino.getIdFichaInspeccion());
+            if (!valoresViejos.isEmpty()) {
+                valorRepository.deleteAll(valoresViejos);
+            }
+
+            // Recrear valores desde el formato origen
+            List<CampoFormato> campos = campoRepository
+                    .findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formatoDest.getIdFormatoInspeccion());
+            for (CampoFormato campo : campos) {
+                ValorCampo valor = new ValorCampo();
+                valor.setFichaInspeccion(fichaDestino);
+                valor.setCampoFormato(campo);
+                valor.setValor("");
+                valor.setObservacion("");
+                valorRepository.save(valor);
+            }
+        }
+    }
+
+
+    /**
      * Elimina una ficha
      */
     public void eliminar(Long id) {
@@ -423,11 +478,11 @@ public class FichaInspeccionService {
             dto.setTituloSeccionLaboratorio("LABORATORIO");
         }
 
-        // Parámetros (campos con valores)
+        // Parámetros (campos con valores) — cargar valores explícitamente (LAZY)
         List<ParametroInspeccionResponseDTO> parametrosDTO = new ArrayList<>();
-        if (formato != null && ficha.getValores() != null) {
-            // Crear mapa de campo -> valor
-            Map<Long, ValorCampo> valorPorCampo = ficha.getValores().stream()
+        if (formato != null) {
+            List<ValorCampo> valores = valorRepository.findByFichaInspeccion_IdFichaInspeccion(ficha.getIdFichaInspeccion());
+            Map<Long, ValorCampo> valorPorCampo = valores.stream()
                     .filter(v -> v.getCampoFormato() != null)
                     .collect(Collectors.toMap(
                             v -> v.getCampoFormato().getIdCampoFormato(),

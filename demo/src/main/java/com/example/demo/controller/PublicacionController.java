@@ -1,20 +1,25 @@
 package com.example.demo.controller;
 
-import org.springframework.web.bind.annotation.*;
-
-import com.example.demo.model.Publicacion;
-import com.example.demo.service.PublicacionService;
-
 import java.util.List;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+import com.example.demo.model.Publicacion;
+import com.example.demo.model.Users;
+import com.example.demo.repository.UsersRepository;
+import com.example.demo.service.PublicacionService;
 
 @RestController
 @RequestMapping("/api/publicaciones")
 public class PublicacionController {
 
     private final PublicacionService service;
+    private final UsersRepository usersRepository;
 
-    public PublicacionController(PublicacionService service) {
+    public PublicacionController(PublicacionService service, UsersRepository usersRepository) {
         this.service = service;
+        this.usersRepository = usersRepository;
     }
 
     @GetMapping
@@ -57,10 +62,24 @@ public class PublicacionController {
         return service.buscarPorId(id).orElse(null);
     }
 
-    @PostMapping
-    public Publicacion crear(@RequestBody Publicacion pub) {
-        return service.crear(pub);
-    }
+      @PostMapping
+      public Publicacion crear(@RequestBody Publicacion pub) {
+          // Obtener usuario autenticado desde SecurityContext
+          Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+          if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+              String username = ((UserDetails) authentication.getPrincipal()).getUsername();
+              Users creador = usersRepository.findByUsername(username);
+              if (creador != null) {
+                  pub.setUsuarioCreador(creador);
+              } else {
+                  throw new RuntimeException("Usuario autenticado no encontrado: " + username);
+              }
+          }
+          if (pub.getUsuarioCreador() == null) {
+              throw new RuntimeException("El campo usuarioCreador es obligatorio y no puede ser nulo");
+          }
+         return service.crear(pub);
+     }
 
     @PutMapping("/{id}")
     public Publicacion actualizar(@PathVariable Long id, @RequestBody Publicacion pub) {

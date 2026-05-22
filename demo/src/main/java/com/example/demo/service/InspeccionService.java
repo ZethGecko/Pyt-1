@@ -11,42 +11,44 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
- import com.example.demo.dto.FichaInspeccionCreateRequestDTO;
- import com.example.demo.dto.FichaInspeccionResponseDTO;
- import com.example.demo.dto.InspeccionCabeceraCreateDTO;
- import com.example.demo.dto.InspeccionConInstanciasCreateRequest;
- import com.example.demo.dto.InspeccionCreateRequestDTO;
- import com.example.demo.dto.InspeccionIniciarRequest;
- import com.example.demo.dto.InspeccionInstanciaInspeccionarRequest;
- import com.example.demo.dto.InspeccionInstanciaResponse;
-  import com.example.demo.dto.InspeccionRezagadaRequest;
-  import com.example.demo.dto.InspeccionResponse;
-  import com.example.demo.dto.InspeccionTerminarRequest;
-  import com.example.demo.dto.InspeccionUpdateRequestDTO;
-  import com.example.demo.dto.InspeccionPublicaDTO;
-  import com.example.demo.dto.VehiculoDTO;
-  import com.example.demo.model.InspeccionInstancia;
- import com.example.demo.dto.ParametroInspeccionDTO;
- import com.example.demo.dto.ParametroInspeccionResponseDTO;
- import com.example.demo.dto.SiguienteInstanciaPendienteResponse;
- import com.example.demo.dto.BloqueInspeccionDTO;
- import com.example.demo.dto.CrearInspeccionEnBloqueRequest;
- import com.example.demo.model.EstadoDocumental;
- import com.example.demo.model.FichaInspeccion;
- import com.example.demo.model.Inspeccion;
- import com.example.demo.model.InspeccionInstancia;
- import com.example.demo.model.ParametrosInspeccion;
- import com.example.demo.model.RequisitoTUPAC;
- import com.example.demo.model.Tramite;
- import com.example.demo.model.Users;
- import com.example.demo.model.Vehiculo;
- import com.example.demo.model.VehiculoApto;
- import com.example.demo.model.InstanciaTramite;
- import com.example.demo.model.Empresa;
- import com.example.demo.model.CampoFormato;
- import com.example.demo.model.FormatoInspeccion;
- import com.example.demo.model.ValorCampo;
+import com.example.demo.dto.FichaInspeccionCreateRequestDTO;
+import com.example.demo.dto.FichaInspeccionResponseDTO;
+import com.example.demo.dto.InspeccionCabeceraCreateDTO;
+import com.example.demo.dto.InspeccionConInstanciasCreateRequest;
+import com.example.demo.dto.InspeccionCreateRequestDTO;
+import com.example.demo.dto.InspeccionIniciarRequest;
+import com.example.demo.dto.InspeccionInstanciaInspeccionarRequest;
+import com.example.demo.dto.InspeccionInstanciaResponse;
+import com.example.demo.dto.InspeccionRezagadaRequest;
+import com.example.demo.dto.InspeccionResponse;
+import com.example.demo.dto.InspeccionTerminarRequest;
+import com.example.demo.dto.InspeccionUpdateRequestDTO;
+import com.example.demo.dto.InspeccionPublicaDTO;
+import com.example.demo.dto.VehiculoDTO;
+import com.example.demo.dto.TareaInspeccionColumnaDTO;
+import com.example.demo.dto.TareasInspeccionResponse;
+import com.example.demo.dto.ParametroInspeccionDTO;
+import com.example.demo.dto.ParametroInspeccionResponseDTO;
+import com.example.demo.dto.SiguienteInstanciaPendienteResponse;
+import com.example.demo.dto.BloqueInspeccionDTO;
+import com.example.demo.dto.CrearInspeccionEnBloqueRequest;
+import com.example.demo.model.EstadoDocumental;
+import com.example.demo.model.FichaInspeccion;
+import com.example.demo.model.Inspeccion;
+import com.example.demo.model.InspeccionInstancia;
+import com.example.demo.model.ParametrosInspeccion;
+import com.example.demo.model.RequisitoTUPAC;
+import com.example.demo.model.Tramite;
+import com.example.demo.model.Users;
+import com.example.demo.model.Vehiculo;
+import com.example.demo.model.VehiculoApto;
+import com.example.demo.model.InstanciaTramite;
+import com.example.demo.model.Empresa;
+import com.example.demo.model.CampoFormato;
+import com.example.demo.model.FormatoInspeccion;
+import com.example.demo.model.ValorCampo;
 import com.example.demo.repository.CampoFormatoRepository;
 import com.example.demo.repository.FichaInspeccionRepository;
 import com.example.demo.repository.FormatoInspeccionRepository;
@@ -60,8 +62,6 @@ import com.example.demo.repository.UsersRepository;
 import com.example.demo.repository.ValorCampoRepository;
 import com.example.demo.repository.VehiculoAptoRepository;
 import com.example.demo.repository.VehiculoRepository;
-
-import jakarta.transaction.Transactional;
 
 @Service
 public class InspeccionService {
@@ -79,6 +79,7 @@ public class InspeccionService {
     private final FormatoInspeccionRepository formatoInspeccionRepository;
     private final CampoFormatoRepository campoFormatoRepository;
     private final ValorCampoRepository valorCampoRepository;
+    private final FichaInspeccionService fichaInspeccionService;
 
     public InspeccionService(InspeccionRepository inspeccionRepository,
                              TramiteRepository tramiteRepository,
@@ -92,7 +93,8 @@ public class InspeccionService {
                              InspeccionInstanciaRepository inspeccionInstanciaRepository,
                              FormatoInspeccionRepository formatoInspeccionRepository,
                              CampoFormatoRepository campoFormatoRepository,
-                             ValorCampoRepository valorCampoRepository) {
+                             ValorCampoRepository valorCampoRepository,
+                             FichaInspeccionService fichaInspeccionService) {
         this.inspeccionRepository = inspeccionRepository;
         this.tramiteRepository = tramiteRepository;
         this.vehiculoRepository = vehiculoRepository;
@@ -106,6 +108,7 @@ public class InspeccionService {
         this.formatoInspeccionRepository = formatoInspeccionRepository;
         this.campoFormatoRepository = campoFormatoRepository;
         this.valorCampoRepository = valorCampoRepository;
+        this.fichaInspeccionService = fichaInspeccionService;
     }
 
     public List<Inspeccion> listarTodas() {
@@ -1618,5 +1621,129 @@ public class InspeccionService {
                 .filter(ii -> !instanciasAsignadas.contains(ii.getIdInstancia()))
                 .map(this::convertirInstanciaTramiteAInspeccionInstanciaResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Replica el formato (campos + títulos) de una ficha origen a todas las demás fichas de la inspección.
+     * Limpia valores previos y crea estructura nueva a partir del formato origen.
+     */
+    @Transactional
+    public void replicarFormatoEnInspeccion(Long inspeccionId, Long fichaOrigenId) {
+        fichaInspeccionService.replicarFormatoEnInspeccion(inspeccionId, fichaOrigenId);
+    }
+
+    // ========== TAREAS DE INSPECCIÓN ==========
+
+    /**
+     * Construye la respuesta para la vista de tareas de inspección, usando el modelo asociado
+     * al {@code formato_inspeccion} de la cabecera para definir las columnas y extrayendo el
+     * valor de cada celda desde la propiedad indicada en {@code TareaColumnaDTO.field}.
+     * <p>
+     * Cada <strong>fila</strong> de la tabla corresponde a una {@link InspeccionInstancia} (tarea o
+     * vehículo inspeccionado) vinculada a la inspección. Las columnas de cabecera (
+     * <code>inspeccion.*</code>) se repiten en cada fila para que el frontend pueda renderizarlas
+     * sin tener que cargar la cabecera por separado.
+     * <p>
+     * El flujo interno es:
+     * <ol>
+     *   <li>Traer la inspección y su formato (cabecera).</li>
+     *   <li>Validar que exista formato.</li>
+     *   <li><strong>Construir columnas</strong> a partir del formato asociado.</li>
+     *   <li>Traer las {@link InspeccionInstancia} hijas de la inspección (una fila por instancia).</li>
+     *   <li>Para cada instancia, armar un mapa <em>campo → valor</em> combinando columnas de cabecera
+     *       y columnas específicas de la instancia.</li>
+     * </ol>
+     *
+     * @param inspeccionId identificador de la inspeccion cuyas tareas se listan
+     * @return {@link TareasInspeccionResponse} con columnas, filas y cantidad total
+     */
+    @Transactional(readOnly = true)
+    public TareasInspeccionResponse listaTareasFormato(Long inspeccionId) {
+        // --- 1. Cargar entidad + formato de cabecera ---
+        Inspeccion inspeccionCabecera = inspeccionRepository.findById(inspeccionId).orElse(null);
+        if (inspeccionCabecera == null || inspeccionCabecera.getFormatoInspeccion() == null) {
+            return new TareasInspeccionResponse(List.of(), List.of(), 0);
+        }
+
+        FormatoInspeccion formato = inspeccionCabecera.getFormatoInspeccion();
+        String empresaNombre = inspeccionCabecera.getEmpresa() != null
+                ? inspeccionCabecera.getEmpresa().getNombre() : "";
+
+        // --- 2. Construir columnas desde el formato ---
+        List<TareaInspeccionColumnaDTO> columnas = new ArrayList<>();
+
+        // Columnas de cabecera (repetidas en cada fila)
+        columnas.add(new TareaInspeccionColumnaDTO("N°", "cabecera.contador", true));
+        columnas.add(new TareaInspeccionColumnaDTO("idInspeccion", "cabecera.idInspeccion", true));
+        columnas.add(new TareaInspeccionColumnaDTO("empresaNombre", "cabecera.empresaNombre", true));
+        columnas.add(new TareaInspeccionColumnaDTO("estado", "cabecera.estado", true));
+
+        // Columnas desde formato_inspeccion (por cada campo del formato)
+        List<CampoFormato> camposFormato = campoFormatoRepository
+                .findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formato.getIdFormatoInspeccion());
+        for (CampoFormato campo : camposFormato) {
+            // field se arma como "campo.<nombre del campo>" para que el frontend haga split y
+            // resuelva el Nombre → ValorCampo
+            columnas.add(new TareaInspeccionColumnaDTO(campo.getNombre(), "campo." + campo.getNombre(), true));
+        }
+
+        // Columna acciones (no es útil, es estructural)
+        columnas.add(new TareaInspeccionColumnaDTO(null, "acciones", false));
+
+        // --- 3. Cargar instancias (filas de tareas) ---
+        List<InspeccionInstancia> instancias = inspeccionInstanciaRepository
+                .findByInspeccion_IdInspeccion(inspeccionId);
+
+        List<Map<String, Object>> filas = new ArrayList<>();
+        int contador = 1;
+        for (InspeccionInstancia instancia : instancias) {
+            Map<String, Object> fila = new java.util.LinkedHashMap<>();
+
+            // Columnas de cabecera
+            fila.put("cabecera.contador", contador);
+            fila.put("cabecera.idInspeccion", inspeccionCabecera.getIdInspeccion());
+            fila.put("cabecera.empresaNombre", empresaNombre);
+            fila.put("cabecera.estado", inspeccionCabecera.getEstado());
+
+            // Columnas desde formato_inspeccion (valores por defecto vacíos; el frontend los rellena)
+            for (CampoFormato campo : camposFormato) {
+                fila.put("campo." + campo.getNombre(), "");
+            }
+
+            // Columna acciones
+            fila.put("acciones", "");
+
+            filas.add(fila);
+            contador++;
+        }
+
+        return new TareasInspeccionResponse(columnas, filas, filas.size());
+    }
+
+    /**
+     * Versión compacta de {@link #listaTareasFormato(Long)}: devuelve únicamente la cantidad
+     * total de filas para la inspección dada. Pensado para consultas rápidas sin traer todo el
+     * detalle de columnas y filas.
+     *
+     * @param inspeccionId identificador de la inspeccion
+     * @return {@link TareasInspeccionResponse} con columnas, una fila vacía y la cantidad poblada
+     */
+    @Transactional(readOnly = true)
+    public TareasInspeccionResponse inspeccionGetTareasInspeccionCantidad(Long inspeccionId) {
+        List<TareaInspeccionColumnaDTO> columnas = List.of(
+                new TareaInspeccionColumnaDTO("idInspeccion", "inspeccion.idInspeccion", true)
+        );
+
+        Inspeccion inspeccionEntity = inspeccionRepository.findById(inspeccionId).orElse(null);
+        long cantidad = (inspeccionEntity != null)
+                ? inspeccionInstanciaRepository.countByInspeccion_IdInspeccion(inspeccionId)
+                : 0;
+
+        java.util.Map<String, Object> fila = new java.util.LinkedHashMap<>();
+        fila.put("inspeccion.idInspeccion",
+                inspeccionEntity != null ? inspeccionEntity.getIdInspeccion() : null);
+        fila.put("cantidad", (int) cantidad);
+
+        return new TareasInspeccionResponse(columnas, List.of(fila), (int) cantidad);
     }
 }

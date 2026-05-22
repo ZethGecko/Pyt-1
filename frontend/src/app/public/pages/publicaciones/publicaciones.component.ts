@@ -2,14 +2,29 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../../environments/environment';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
+import { HttpClient } from '@angular/common/http';
+import { ModalComponent } from '../../../shared/components/ui/modal.component';
+
+interface ApiPublicacion {
+  id_publicacion: number;
+  tipo_publicacion: string;
+  titulo: string;
+  contenido: string;
+  estado: string;
+  fecha_publicacion: string | null;
+  fecha_creacion: string | null;
+  tipo_tramite: string | null;
+}
 
 interface Publicacion {
   id: number;
   titulo: string;
   fecha: string;
   resumen: string;
+  contenido: string;
   categoria: string;
   icono: string;
   color: string;
@@ -18,32 +33,87 @@ interface Publicacion {
 @Component({
   selector: 'app-publicaciones',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, PublicNavbarComponent],
+  imports: [CommonModule, RouterLink, FormsModule, PublicNavbarComponent, ModalComponent],
   templateUrl: './publicaciones.component.html',
   styleUrls: ['./publicaciones.component.scss']
 })
 export class PublicacionesComponent implements OnInit {
-  publicaciones: Publicacion[] = [/* ... existing data ... */];
-  publicacionesFiltradas: Publicacion[] = [...this.publicaciones];
+  publicaciones: Publicacion[] = [];
+  publicacionesFiltradas: Publicacion[] = [];
   filtroCategoria: string = '';
   cargando: boolean = false;
-  
-  imagenes: Map<string, ImagenSitio> = new Map();
 
-  constructor(private imagenSitioService: ImagenSitioService) {
-    this.publicacionesFiltradas = [...this.publicaciones];
-  }
-  
+  imagenes: Map<string, ImagenSitio> = new Map();
+  modalAbierto = false;
+  publicacionSeleccionada: Publicacion | null = null;
+
+  constructor(
+    private imagenSitioService: ImagenSitioService,
+    private http: HttpClient
+  ) {}
+
   ngOnInit(): void {
+    this.cargarPublicaciones();
     this.imagenSitioService.listarTodas().subscribe({
       next: (data) => {
         this.imagenes.clear();
+        const apiBase = environment.apiUrl;
         data.forEach(img => {
-          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          const downloadUrl = `${apiBase}/imagenes-sitio/${img.id}/download`;
           this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
         });
       },
       error: (err) => console.error('Error cargando imágenes:', err)
+    });
+  }
+
+  cargarPublicaciones(): void {
+    this.cargando = true;
+    this.http.get<any[]>(`${environment.apiUrl}/publicaciones/publicadas`).subscribe({
+      next: (data) => {
+        this.publicaciones = this.mapBackendToUI(data || []);
+        this.publicacionesFiltradas = [...this.publicaciones];
+        this.cargando = false;
+      },
+      error: (err) => {
+        console.error('[PublicacionesComponent] Error al cargar publicaciones:', err);
+        this.publicaciones = [];
+        this.publicacionesFiltradas = [];
+        this.cargando = false;
+      }
+    });
+  }
+
+  private mapBackendToUI(items: ApiPublicacion[]): Publicacion[] {
+    return items.map(p => {
+      const tipo = (p.tipo_publicacion || 'Comunicado').toLowerCase();
+      const mapping: Record<string, { categoria: string; icono: string; color: string }> = {
+        'normativa':    { categoria: 'Normativa', icono: 'file-text',      color: '#3b82f6' },
+        'comunicado':  { categoria: 'Comunicado', icono: 'megaphone',      color: '#8b5cf6' },
+        'evento':       { categoria: 'Evento',     icono: 'calendar',       color: '#10b981' },
+        'aviso':        { categoria: 'Aviso',      icono: 'alert-circle',   color: '#f97316' },
+        'anuncio':      { categoria: 'Anuncio',    icono: 'megaphone',      color: '#a855f7' },
+      };
+      const m = mapping[tipo] || { categoria: p.tipo_publicacion || 'Comunicado', icono: 'file-text', color: '#6b7280' };
+
+      const fechaRaw = p.fecha_publicacion || p.fecha_creacion || '';
+      const fecha = fechaRaw ? new Date(fechaRaw).toLocaleDateString('es-PE', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      }) : '';
+
+      const textoContenido = (p.contenido || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      const resumen = textoContenido.length > 180 ? textoContenido.slice(0, 180) + '...' : textoContenido;
+
+      return {
+        id: p.id_publicacion,
+        titulo: p.titulo,
+        fecha,
+        resumen: resumen || 'Sin descripción',
+        contenido: textoContenido,
+        categoria: m.categoria,
+        icono: m.icono,
+        color: m.color
+      };
     });
   }
 
@@ -78,20 +148,25 @@ export class PublicacionesComponent implements OnInit {
      };
      return iconos[icono] || iconos['file-text'];
    }
-   
-   leerMas(publicacion: Publicacion): void {
-     // Implementar navegación a detalle o modal
-     console.log('Leer más:', publicacion.titulo);
-     alert(`Detalles de: ${publicacion.titulo}\n\n${publicacion.resumen}`);
-   }
-   
-   // ========== IMÁGENES DEL SITIO ==========
-   
-   getImagenUrl(ubicacion: string): string | null {
-     return this.imagenes.get(ubicacion)?.url || null;
-   }
-   
+
+  verMas(publicacion: Publicacion): void {
+    const pubCompleta = this.publicaciones.find(p => p.id === publicacion.id);
+    if (pubCompleta) {
+      this.publicacionSeleccionada = pubCompleta;
+      this.modalAbierto = true;
+    }
+  }
+
+  cerrarModal(): void {
+    this.modalAbierto = false;
+    this.publicacionSeleccionada = null;
+  }
+
+  getImagenUrl(ubicacion: string): string | null {
+    return this.imagenes.get(ubicacion)?.url || null;
+  }
+
    tieneImagen(ubicacion: string): boolean {
      return !!this.imagenes.get(ubicacion);
    }
- }
+}

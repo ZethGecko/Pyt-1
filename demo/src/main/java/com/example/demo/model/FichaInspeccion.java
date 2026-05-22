@@ -90,7 +90,7 @@ public class FichaInspeccion {
     private VehiculoApto vehiculoApto;
 
     // Relación con ValorCampo (valores de los campos de esta ficha)
-    @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<ValorCampo> valores;
 

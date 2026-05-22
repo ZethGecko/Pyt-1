@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import { IconComponent } from '../../../shared/components/ui/icon.component';
 import { AuthStateService } from '../../../core/auth/state/auth.state';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
@@ -44,8 +45,9 @@ export class InicioComponent implements OnInit, OnDestroy {
     this.imagenSitioService.listarTodas().subscribe({
       next: (data) => {
         this.imagenes.clear();
+        const apiBase = environment.apiUrl;
         data.forEach(img => {
-          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          const downloadUrl = `${apiBase}/imagenes-sitio/${img.id}/download`;
           this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
         });
       },

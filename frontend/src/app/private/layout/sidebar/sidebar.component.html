@@ -129,12 +129,24 @@
                  <app-icon name="calendar" size="xs" class="submenu-icon"></app-icon>
                  <span class="submenu-text">Exámenes</span>
                </a>
-             </li>
-           </ul>
-         }
-       </li>
+              </li>
+             <li class="submenu-item">
+                <a routerLink="/admin/publicaciones" routerLinkActive="active" class="submenu-link">
+                  <app-icon name="newspaper" size="xs" class="submenu-icon"></app-icon>
+                  <span class="submenu-text">Publicaciones</span>
+                </a>
+              </li>
+              <li class="submenu-item">
+                <a routerLink="/admin/notificaciones" routerLinkActive="active" class="submenu-link">
+                  <app-icon name="bell" size="xs" class="submenu-icon"></app-icon>
+                  <span class="submenu-text">Notificaciones</span>
+                </a>
+              </li>
+            </ul>
+          }
+        </li>
 
-       <!-- Configuración (Expandible) -->
+        <!-- Configuración (Expandible) -->
        <li class="nav-item has-submenu">
          <button (click)="toggleMenu('configuracion')" class="nav-link" [class.active]="expandedMenus().configuracion">
            <div class="nav-icon-wrapper">
@@ -194,19 +206,13 @@
                 </a>
               </li>
                <li class="submenu-item">
-                 <a routerLink="/admin/roles" routerLinkActive="active" class="submenu-link">
-                   <app-icon name="shield" size="xs" class="submenu-icon"></app-icon>
-                   <span class="submenu-text">Roles</span>
-                 </a>
-               </li>
-               <li class="submenu-item">
-                 <a routerLink="/admin/imagenes" routerLinkActive="active" class="submenu-link">
-                   <app-icon name="image" size="xs" class="submenu-icon"></app-icon>
-                   <span class="submenu-text">Imágenes del Sitio</span>
-                 </a>
-               </li>
+                  <a routerLink="/admin/roles" routerLinkActive="active" class="submenu-link">
+                    <app-icon name="shield" size="xs" class="submenu-icon"></app-icon>
+                    <span class="submenu-text">Roles</span>
+                  </a>
+                </li>
              </ul>
-           }
+          }
         </li>
 
         <!-- Enlaces directos -->
@@ -293,13 +299,51 @@
        </div>
      </div>
 
-     <div class="user-actions">
-       <button class="action-btn settings" title="Configuración">
-         <app-icon name="settings" size="sm"></app-icon>
-       </button>
-       <button class="action-btn logout" title="Cerrar sesión">
-         <app-icon name="log-out" size="sm"></app-icon>
-       </button>
-     </div>
+      <div class="user-actions">
+        <button class="action-btn settings" title="Configuración">
+          <app-icon name="settings" size="sm"></app-icon>
+        </button>
+        <button class="action-btn bell-btn" (click)="toggleNotificationPanel()" title="Notificaciones">
+          <app-icon name="bell" size="sm"></app-icon>
+          @if (unreadCount() > 0) {
+            <span class="notification-badge">{{ unreadCount() }}</span>
+          }
+        </button>
+        <button class="action-btn logout" title="Cerrar sesión">
+          <app-icon name="log-out" size="sm"></app-icon>
+        </button>
+      </div>
+
+       <!-- Panel de notificaciones -->
+       @if (showNotificationPanel()) {
+         <div class="notification-panel">
+           <div class="notification-header">
+             <span class="notification-title">Notificaciones</span>
+             <button class="notification-close" (click)="toggleNotificationPanel()">
+               <app-icon name="x" size="xs"></app-icon>
+             </button>
+           </div>
+           <div class="notification-body">
+             @if (loadingNotificaciones()) {
+               <div class="notification-loading">Cargando...</div>
+             } @else {
+               @for (notif of (authNotificationService.notificaciones | async); track notif.id) {
+                 <div class="notification-item" [class.unread]="!notif.leido">
+                   <div class="notif-icon-wrapper" [class]="'notif-icon-' + notif.tipo">
+                     <app-icon [name]="getNotificacionIcono(notif)" size="xs"></app-icon>
+                   </div>
+                   <div class="notif-content">
+                     <p class="notif-titulo">{{ notif.titulo }}</p>
+                     <p class="notif-mensaje">{{ notif.mensaje }}</p>
+                     <span class="notif-fecha">{{ formatearFecha(notif.fechaPublicacion) }}</span>
+                   </div>
+                 </div>
+               } @empty {
+                 <div class="notification-empty">No hay notificaciones</div>
+               }
+             }
+           </div>
+         </div>
+       }
    </div>
 </aside>

@@ -265,6 +265,46 @@ $gradient-accent: linear-gradient(135deg, $blue-500 0%, $blue-600 100%);
         color: $white;
         font-size: 3rem;
       }
+  }
+
+  // Imagen principal del hero — ocupa todo el espacio del area azul
+  .hero-main-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    z-index: 2;
+  }
+
+  // Imagenes laterales del hero — ocupan todo el alto del area
+  .hero-side-image {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 35%;
+      overflow: hidden;
+      z-index: 3;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      &.hero-side-left {
+        left: 0;
+      }
+
+      &.hero-side-right {
+        right: 0;
+      }
+
+      @media (max-width: 1023px) {
+        display: none;
+      }
     }
   }
 }

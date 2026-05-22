@@ -44,7 +44,6 @@ public class SecurityConfig {
                 registry.addMapping("/api/**")
                         .allowedOrigins("http://localhost:4200", "http://localhost:3000")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-                        .allowCredentials(true)
                         .allowedHeaders("*")
                         .exposedHeaders("Authorization");
             }
@@ -58,8 +57,14 @@ public class SecurityConfig {
                .and()
                .csrf().disable()
                  .authorizeHttpRequests(auth -> auth
-                     .requestMatchers("/api/auth/**").permitAll()
-                     .requestMatchers("/api/tipos-tramite/publico").permitAll()
+                      .requestMatchers("/api/auth/login").permitAll()
+                      .requestMatchers("/api/auth/refresh").permitAll()
+                      .requestMatchers("/api/auth/logout").permitAll()
+                      .requestMatchers("/api/auth/validate").permitAll()
+                       .requestMatchers("/api/auth/notificaciones/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/publicaciones", "/api/publicaciones/**").permitAll()
+                       .requestMatchers(HttpMethod.POST, "/api/publicaciones").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                      .requestMatchers("/api/tipos-tramite/publico").permitAll()
                      .requestMatchers("/api/tramites/publico/**").permitAll()
                      .requestMatchers("/api/tramites/buscar/enriquecidos").permitAll()
                      .requestMatchers("/api/tramites/enriquecidos").permitAll()

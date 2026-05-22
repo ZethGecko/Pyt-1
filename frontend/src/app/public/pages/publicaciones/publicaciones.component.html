@@ -120,7 +120,7 @@
         </div>
 
         <div class="card-footer">
-          <button class="btn-link" (click)="leerMas(publicacion)">
+          <button class="btn-link" (click)="verMas(publicacion)">
             <span>Leer más</span>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -173,7 +173,27 @@
         </div>
       </div>
     </div>
-  </main>
+   </main>
+
+    <!-- Modal de contenido completo -->
+    @if (modalAbierto && publicacionSeleccionada) {
+      <app-modal
+        [isOpen]="modalAbierto"
+        [title]="publicacionSeleccionada.titulo"
+        [subtitle]="publicacionSeleccionada.categoria"
+        [maxWidth]="'56rem'"
+        [bodyMaxHeight]="'70vh'"
+        (close)="cerrarModal()"
+      >
+        <div class="modal-body-content">
+          <span class="modal-fecha">{{ publicacionSeleccionada.fecha }}</span>
+          <div class="modal-texto" [innerHTML]="publicacionSeleccionada.contenido"></div>
+        </div>
+        <div modal-footer class="modal-footer-content">
+          <button class="btn btn-primary" (click)="cerrarModal()">Cerrar</button>
+        </div>
+      </app-modal>
+    }
 
    <!-- Footer mejorado -->
    <footer class="footer">

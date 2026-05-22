@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/imagenes-sitio")
-@CrossOrigin(origins = "*")
 public class ImagenSitioController {
     
     @Autowired

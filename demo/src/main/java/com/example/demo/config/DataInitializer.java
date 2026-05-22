@@ -15,25 +15,28 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
- import com.example.demo.model.CategoriaTransporte;
- import com.example.demo.model.Departamento;
- import com.example.demo.model.Empresa;
- import com.example.demo.model.Formatos;
- import com.example.demo.model.Gerente;
- import com.example.demo.model.PersonaNatural;
- import com.example.demo.model.RequisitoTUPAC;
- import com.example.demo.model.Roles;
- import com.example.demo.model.SubtipoTransporte;
- import com.example.demo.model.TUPAC;
- import com.example.demo.model.TipoTramite;
- import com.example.demo.model.TipoTransporte;
- import com.example.demo.model.Tramite;
- import com.example.demo.model.Users;
+import com.example.demo.model.CategoriaTransporte;
+import com.example.demo.model.Departamento;
+import com.example.demo.model.Empresa;
+import com.example.demo.model.Formatos;
+import com.example.demo.model.Gerente;
+import com.example.demo.model.Notificacion;
+import com.example.demo.model.PersonaNatural;
+import com.example.demo.model.RequisitoTUPAC;
+import com.example.demo.model.Roles;
+import com.example.demo.model.SubtipoTransporte;
+import com.example.demo.model.TUPAC;
+import com.example.demo.model.TipoTramite;
+import com.example.demo.model.TipoTransporte;
+import com.example.demo.model.Tramite;
+import com.example.demo.model.Users;
+import com.example.demo.model.Notificacion.TipoNotificacion;
 import com.example.demo.repository.CategoriaTransporteRepository;
 import com.example.demo.repository.DepartamentoRepository;
 import com.example.demo.repository.EmpresaRepository;
 import com.example.demo.repository.FormatosRepository;
 import com.example.demo.repository.GerenteRepository;
+import com.example.demo.repository.NotificacionRepository;
 import com.example.demo.repository.PersonaNaturalRepository;
 import com.example.demo.repository.RequisitoTUPACRepository;
 import com.example.demo.repository.RolesRepository;
@@ -65,6 +68,7 @@ public class DataInitializer {
     @Autowired private SubtipoTransporteRepository subtipoTransporteRepository;
     @Autowired private com.example.demo.service.TramiteService tramiteService;
     @Autowired private TramiteRepository tramiteRepository;
+    @Autowired private NotificacionRepository notificacionRepository;
 
     @PostConstruct
     @Transactional
@@ -670,6 +674,73 @@ public class DataInitializer {
                 System.out.println("Trámite ejemplo creado con código: " + tramite.getCodigoRut() + " para usuario " + user.getUsername());
             }
         }
+
+        // 9. Crear notificaciones de ejemplo si no hay ninguna
+        if (notificacionRepository.count() == 0L) {
+            Users adminUser = usersRepository.findByUsername("admin");
+            Users superadminUser = usersRepository.findByUsername("superadmin");
+
+            System.out.println("[DataInitializer] Creando notificaciones de ejemplo...");
+            System.out.println("[DataInitializer] admin user: " + (adminUser != null ? adminUser.getIdUsuarios() : "null") + 
+                ", superadmin user: " + (superadminUser != null ? superadminUser .getIdUsuarios() : "null"));
+
+            // Notificación 1: ANUNCIO para todos los usuarios (paraTodos=true)
+            Notificacion n1 = new Notificacion();
+            n1.setTitulo("Nueva normativa de transporte 2025");
+            n1.setMensaje("Se ha actualizado la normativa para el sector transporte. Revisa los cambios en la sección de Publicaciones.");
+            n1.setTipo(TipoNotificacion.ANUNCIO);
+            n1.setParaTodos(true);
+            n1.setActivo(true);
+            n1.setPrioridad(3);
+            n1.setFechaCreacion(LocalDateTime.now().minusDays(2));
+            n1.setFechaPublicacion(LocalDateTime.now().minusDays(2));
+            n1.setUrlDestino("/publicaciones");
+            if (adminUser != null) n1.setUsuarioCreador(adminUser);
+            notificacionRepository.save(n1);
+            System.out.println("[DataInitializer] Notificación 1 creada: id=" + n1.getId() + 
+                ", paraTodos=" + n1.getParaTodos() + 
+                ", fechaPub=" + n1.getFechaPublicacion() +
+                ", activo=" + n1.getActivo());
+
+            // Notificación 2: INFO solo para usuario 2 (paraTodos=false)
+            Notificacion n2 = new Notificacion();
+            n2.setTitulo("Trámite pendiente de revisión");
+            n2.setMensaje("Tienes un trámite pendiente de revisión. Por favor, ingresar al sistema para continuar con el proceso.");
+            n2.setTipo(TipoNotificacion.INFO);
+            n2.setParaTodos(false);
+            n2.setActivo(true);
+            n2.setPrioridad(2);
+            n2.setFechaCreacion(LocalDateTime.now().minusDays(1));
+            n2.setFechaPublicacion(LocalDateTime.now().minusDays(1));
+            if (adminUser != null) n2.setUsuarioCreador(adminUser);
+            if (superadminUser != null) n2.setUsuarioDestino(superadminUser);
+            notificacionRepository.save(n2);
+            System.out.println("[DataInitializer] Notificación 2 creada: id=" + n2.getId() + 
+                ", paraTodos=" + n2.getParaTodos() + 
+                ", usuarioDestino_id=" + (n2.getUsuarioDestino() != null ? n2.getUsuarioDestino().getIdUsuarios() : "null") +
+                ", fechaPub=" + n2.getFechaPublicacion());
+
+            // Notificación 3: WARNING general
+            Notificacion n3 = new Notificacion();
+            n3.setTitulo("Recordatorio: Inspección programada");
+            n3.setMensaje("Recuerda que el día 30 de mayo se realizará una inspección vehicular general.");
+            n3.setTipo(TipoNotificacion.WARNING);
+            n3.setParaTodos(true);
+            n3.setActivo(true);
+            n3.setPrioridad(1);
+            n3.setFechaCreacion(LocalDateTime.now());
+            n3.setFechaPublicacion(LocalDateTime.now());
+            if (superadminUser != null) n3.setUsuarioCreador(superadminUser);
+            notificacionRepository.save(n3);
+            System.out.println("[DataInitializer] Notificación 3 creada: id=" + n3.getId() + 
+                ", paraTodos=" + n3.getParaTodos() + 
+                ", fechaPub=" + n3.getFechaPublicacion());
+
+            System.out.println("[DataInitializer] Notificaciones de ejemplo creadas (3 total)");
+        } else {
+            System.out.println("[DataInitializer] Ya existen notificaciones en la tabla (count=" + notificacionRepository.count() + "), no se crean nuevas.");
+        }
+
         System.out.println("Data initialization completada (datos mínimos)");
     }
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
@@ -338,5 +338,10 @@ export class InspeccionService {
 
     obtenerVehiculosPorInspeccion(inspeccionId: number): Observable<VehiculoDTO[]> {
       return this.http.get<VehiculoDTO[]>(`${this.apiUrl}/${inspeccionId}/vehiculos`);
+    }
+
+    replicarFormatoEnInspeccion(inspeccionId: number, fichaOrigenId: number): Observable<void> {
+      const params = new HttpParams().set('fichaOrigenId', fichaOrigenId.toString());
+      return this.http.post<void>(`${this.apiUrl}/${inspeccionId}/replicar-formato`, null, { params });
     }
   }

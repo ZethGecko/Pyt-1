@@ -99,35 +99,45 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-       @Override
-       protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-           String path = request.getServletPath();
-           String method = request.getMethod();
-           System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + method);
-           // Permitir acceso a endpoints públicos, preflight OPTIONS y recursos estáticos
-           if ("OPTIONS".equalsIgnoreCase(method) ||
-               path.startsWith("/actuator") ||
-               path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
-               // Públicos
-               path.startsWith("/api/auth/") ||
-               path.startsWith("/api/tipos-tramite/publico") ||
-               path.startsWith("/api/tramites/publico/") ||
-               path.startsWith("/api/tramites/buscar/enriquecidos") ||
-               path.startsWith("/api/tramites/enriquecidos") ||
-               path.startsWith("/api/rutas/buscar") ||
-               path.startsWith("/api/empresas") ||
-               path.startsWith("/api/puntos") ||
-               path.startsWith("/api/grupos-presentacion/") ||
-               path.startsWith("/api/parametros-inspeccion/") ||
-               path.startsWith("/api/inspecciones/publico") ||
-               path.startsWith("/api/inspecciones/") && path.endsWith("/vehiculos") ||
-               // Recursos estáticos
-               path.equals("/") || path.startsWith("/index.html") || path.startsWith("/assets/") ||
-               path.startsWith("/manifest.json") || path.startsWith("/favicon.ico")) {
-               System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered");
-               return true;
-           }
-           System.out.println("[JwtRequestFilter] Path " + path + " SHOULD be filtered");
-           return false;
-       }
+        @Override
+        protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+            String path = request.getServletPath();
+            String method = request.getMethod();
+            System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + method);
+            // Permitir acceso a endpoints públicos sin token, preflight OPTIONS y recursos estáticos.
+            // Importante: /api/auth/notificaciones/** NO se excluye aquí — si el cliente envía
+            // un token Bearer, el filtro JWT DEBE procesarlo para establecer Authentication.
+            if ("OPTIONS".equalsIgnoreCase(method) ||
+                path.startsWith("/actuator") ||
+                path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
+                // Auth público (NO incluye /notificaciones aquí para que el JWT se procese)
+                path.startsWith("/api/auth/login") ||
+                path.startsWith("/api/auth/register") ||
+                path.startsWith("/api/auth/refresh") ||
+                path.startsWith("/api/auth/logout") ||
+                path.startsWith("/api/auth/validate") ||
+                // Recursos públicos
+                path.startsWith("/api/tipos-tramite/publico") ||
+                path.startsWith("/api/tramites/publico/") ||
+                path.startsWith("/api/tramites/buscar/enriquecidos") ||
+                path.startsWith("/api/tramites/enriquecidos") ||
+                path.startsWith("/api/rutas/buscar") ||
+                path.startsWith("/api/empresas") ||
+                (path.startsWith("/api/empresas/") && !path.contains("/auth")) ||
+                path.startsWith("/api/puntos") ||
+                path.startsWith("/api/grupos-presentacion/") ||
+                path.startsWith("/api/parametros-inspeccion/") ||
+                path.startsWith("/api/inspecciones/publico") ||
+                (path.startsWith("/api/inspecciones/") && path.endsWith("/vehiculos")) ||
+                // Recursos públicos de publicaciones (GET público; POST protegido por SecurityConfig)
+                (path.startsWith("/api/publicaciones") && "GET".equalsIgnoreCase(method)) ||
+                // Recursos estáticos
+                path.equals("/") || path.startsWith("/index.html") || path.startsWith("/assets/") ||
+                path.startsWith("/manifest.json") || path.startsWith("/favicon.ico")) {
+                System.out.println("[JwtRequestFilter] Path " + path + " should NOT be filtered (public endpoint)");
+                return true;
+            }
+            System.out.println("[JwtRequestFilter] Path " + path + " SHOULD be filtered (JWT required or will be checked if token present)");
+            return false;
+        }
 }

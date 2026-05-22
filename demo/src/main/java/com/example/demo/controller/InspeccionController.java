@@ -34,6 +34,7 @@ import com.example.demo.dto.InstanciasIdsRequest;
 import com.example.demo.dto.ParametroInspeccionDTO;
 import com.example.demo.dto.ParametroInspeccionResponseDTO;
 import com.example.demo.dto.SiguienteInstanciaPendienteResponse;
+import com.example.demo.dto.TareasInspeccionResponse;
 import com.example.demo.dto.VehiculoDTO;
 import com.example.demo.model.Inspeccion;
 import com.example.demo.service.InspeccionService;
@@ -261,15 +262,26 @@ public class InspeccionController {
             return inspeccionService.obtenerSiguienteInstanciaPendiente(id);
         }
 
-         /**
-          * Registra la inspección de una instancia específica (placa, fecha, observaciones, parámetros).
-          * Este endpoint se usa para el flujo secuencial de inspección vehículo por vehículo.
-          */
-         @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-         @PostMapping("/instancias/{instanciaId}/inspeccionar")
-         public void inspeccionarInstancia(@PathVariable Long instanciaId, @RequestBody InspeccionInstanciaInspeccionarRequest request) {
-             inspeccionService.inspeccionarInstancia(instanciaId, request);
-         }
+          /**
+           * Registra la inspección de una instancia específica (placa, fecha, observaciones, parámetros).
+           * Este endpoint se usa para el flujo secuencial de inspección vehículo por vehículo.
+           */
+          @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+          @PostMapping("/instancias/{instanciaId}/inspeccionar")
+          public void inspeccionarInstancia(@PathVariable Long instanciaId, @RequestBody InspeccionInstanciaInspeccionarRequest request) {
+              inspeccionService.inspeccionarInstancia(instanciaId, request);
+          }
+
+          /**
+           * Replica el formato (campos + títulos) de una ficha origen a todas las demás fichas de la inspección.
+           * Limpia los valores previos y crea valores vacíos con la misma estructura.
+           */
+          @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+          @PostMapping("/{inspeccionId}/replicar-formato")
+          public void replicarFormato(@PathVariable Long inspeccionId,
+                                      @RequestParam Long fichaOrigenId) {
+              inspeccionService.replicarFormatoEnInspeccion(inspeccionId, fichaOrigenId);
+          }
 
          /**
           * Completa una instancia de inspección (marca como INSPECCIONADO y guarda datos).
@@ -335,4 +347,20 @@ public class InspeccionController {
                 @RequestParam(required = false) Long inspeccionId) {
             return inspeccionService.listarInstanciasDisponibles(tramiteId, inspeccionId);
         }
+
+    // ==================== TAREAS DE INSPECCIÓN ====================
+
+    /**
+     * Devuelve la definición de columnas + filas crudas para la tabla de tareas de inspección.
+     * Cada fila corresponde a una instancia asociada a la inspección indicada.
+     * <p>
+     * Accesible sin autenticación (ruta pública).
+     *
+     * @param inspeccionId identificador de la inspección cuyas tareas se consultan
+     * @return {@link TareasInspeccionResponse} con columnas, filas y cantidad total
+     */
+    @GetMapping("/tareas-inspeccion/{inspeccionId}")
+    public TareasInspeccionResponse obtenerTareasInspeccion(@PathVariable Long inspeccionId) {
+        return inspeccionService.listaTareasFormato(inspeccionId);
+    }
 }

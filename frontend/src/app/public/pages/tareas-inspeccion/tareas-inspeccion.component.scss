@@ -1,0 +1,171 @@
+.tareas-inspeccion-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    h1 {
+      margin: 0;
+      font-size: 1．6rem;
+      color: var(--color-primary, #2c3e50);
+    }
+
+    .breadcrumb {
+      margin: 0.25rem 0 0;
+      color: #6c757d;
+      font-size: 0.9rem;
+
+      a {
+        color: var(--color-primary, #3498db);
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .btn-back {
+    background: none;
+    border: 1px solid #dee2e6;
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #495057;
+    transition: background-color 0.15s, color 0.15s;
+
+    &:hover {
+      background-color: #f8f9fa;
+      color: var(--color-primary, #3498db);
+    }
+  }
+
+  .loading-state,
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+
+    i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    p {
+      font-size: 1.1rem;
+      margin: 0;
+    }
+  }
+
+  .loading-state .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .resultados-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1.25rem;
+
+    .resultados-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+
+      h2 {
+        margin: 0;
+        font-size: 1.15rem;
+        color: #333;
+      }
+
+      .subtitulo-resultados {
+        margin: 0.25rem 0 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+        strong {
+          color: #333;
+        }
+      }
+
+      .badge {
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-left: 0.4rem;
+      }
+    }
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+
+    .tabla-tareas {
+      width: 100%;
+      border-collapse: collapse;
+
+      th {
+        background: #2c3e50;
+        color: white;
+        font-size: 0.82rem;
+        padding: 0.65rem 0.75rem;
+        text-align: left;
+        white-space: nowrap;
+
+        &.col-util {
+          background: #1a252f;
+        }
+      }
+
+      td {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.88rem;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+
+      tbody tr:hover {
+        background-color: #eef2f7;
+      }
+
+      td.text-success.fw-bold {
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .tareas-inspeccion-container {
+    padding: 1rem;
+
+    .resultados-card {
+      padding: 0.75rem;
+
+      .tabla-tareas {
+        th, td {
+          padding: 0.4rem;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+}

@@ -452,6 +452,9 @@ $gradient-blue-light: linear-gradient(135deg, $blue-50 0%, $white 100%);
   padding: 1rem;
   border-top: 1px solid $blue-100;
   background: $gradient-blue-light;
+  position: relative;
+  overflow: visible;
+  z-index: 100;
 }
 
 .user-info {
@@ -511,47 +514,80 @@ $gradient-blue-light: linear-gradient(135deg, $blue-50 0%, $white 100%);
   gap: 0.5rem;
 }
 
-.action-btn {
-  flex: 1;
-  height: 2.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 0.813rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  .action-btn {
+   flex: 1;
+   height: 2.25rem;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 0.5rem;
+   border: none;
+   border-radius: 0.5rem;
+   font-size: 0.813rem;
+   font-weight: 500;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   position: relative;
 
-  &.settings {
-    background: $gray-100;
-    color: $gray-600;
+   &.settings {
+     background: $gray-100;
+     color: $gray-600;
 
-    &:hover {
-      background: $gray-200;
-      color: $gray-700;
-      transform: translateY(-1px);
-    }
-  }
+     &:hover {
+       background: $gray-200;
+       color: $gray-700;
+       transform: translateY(-1px);
+     }
+   }
 
-  &.logout {
-    background: #fee2e2;
-    color: #dc2626;
+   &.bell-btn {
+     background: $gray-100;
+     color: $gray-600;
+     position: relative;
 
-    &:hover {
-      background: #fecaca;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(#dc2626, 0.2);
-    }
-  }
+     &:hover {
+       background: $blue-100;
+       color: $blue-600;
+       transform: translateY(-1px);
+     }
 
-  app-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-}
+     .notification-badge {
+       position: absolute;
+       top: -5px;
+       right: -5px;
+       min-width: 1.125rem;
+       height: 1.125rem;
+       padding: 0 0.25rem;
+       background: #dc2626;
+       color: $white;
+       font-size: 0.625rem;
+       font-weight: 700;
+       border-radius: 9999px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       box-shadow: 0 1px 4px rgba(220, 38, 38, 0.5);
+       border: 2px solid $gradient-blue-light;
+       z-index: 10;
+     }
+   }
+
+   &.logout {
+     background: #fee2e2;
+     color: #dc2626;
+
+     &:hover {
+       background: #fecaca;
+       transform: translateY(-1px);
+       box-shadow: 0 2px 8px rgba(#dc2626, 0.2);
+     }
+   }
+
+   app-icon {
+     width: 1rem;
+     height: 1rem;
+   }
+ }
 
 // Efectos hover para items expandibles
 .has-submenu {
@@ -593,6 +629,158 @@ $gradient-blue-light: linear-gradient(135deg, $blue-50 0%, $white 100%);
 
 .sidebar {
   animation: fadeIn 0.4s ease forwards;
+}
+
+// ── Panel de notificaciones ──────────────────────────────────
+.notification-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: $white;
+  border-radius: 0.75rem;
+  box-shadow: $shadow-xl, 0 -4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid $blue-100;
+  z-index: 200;
+  overflow: hidden;
+  animation: slideUp 0.25s ease;
+
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.75rem;
+  background: $gray-50;
+  border-bottom: 1px solid $gray-200;
+
+  .notification-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: $gray-700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .notification-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: $gray-400;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+
+    &:hover {
+      background: $gray-200;
+      color: $gray-700;
+    }
+  }
+}
+
+.notification-body {
+  overflow-y: auto;
+  max-height: 280px;
+}
+
+.notification-loading,
+.notification-empty {
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.813rem;
+  color: $gray-400;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid $gray-100;
+  transition: background 0.15s ease;
+  cursor: pointer;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: $gray-50;
+  }
+
+  &.unread {
+    background: #eff6ff;
+  }
+
+  .notif-icon-wrapper {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &.notif-icon-SUCCESS,
+    &.notif-icon-INFO {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    &.notif-icon-WARNING {
+      background: #fef9c3;
+      color: #ca8a04;
+    }
+    &.notif-icon-ERROR {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    &.notif-icon-ANUNCIO {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+    &.notif-icon-bell {
+      background: $gray-100;
+      color: $gray-600;
+    }
+  }
+
+  .notif-content {
+    flex: 1;
+    min-width: 0;
+
+    .notif-titulo {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: $gray-800;
+      margin: 0 0 0.125rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .notif-mensaje {
+      font-size: 0.75rem;
+      color: $gray-500;
+      margin: 0 0 0.125rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .notif-fecha {
+      font-size: 0.6875rem;
+      color: $gray-400;
+    }
+  }
 }
 
 // Responsive

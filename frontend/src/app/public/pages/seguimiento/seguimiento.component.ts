@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import { SeguimientoService, TramiteListado, SeguimientoCompleto } from '../../services/seguimiento.service';
 import { Subject } from 'rxjs';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
@@ -53,19 +54,10 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Cargar imágenes del sitio
-    this.imagenSitioService.listarTodas().subscribe({
-      next: (data) => {
-        this.imagenes.clear();
-        data.forEach(img => {
-          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
-          this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
-        });
-      },
-      error: (err) => console.error('Error cargando imágenes:', err)
-    });
+    this.cargarImagenes();
   }
 
-   ngOnDestroy(): void {
+  ngOnDestroy(): void {
      this.destroy$.next();
      this.destroy$.complete();
      if (this.seguimientoSubscription) {
@@ -404,8 +396,9 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     this.imagenSitioService.listarTodas().subscribe({
       next: (data) => {
         this.imagenes.clear();
+        const apiBase = environment.apiUrl;
         data.forEach(img => {
-          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          const downloadUrl = `${apiBase}/imagenes-sitio/${img.id}/download`;
           this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
         });
       },

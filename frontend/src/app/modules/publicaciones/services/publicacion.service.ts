@@ -35,7 +35,7 @@ export interface PublicacionResponse {
   providedIn: 'root'
 })
 export class PublicacionService {
-  private apiUrl = `${environment.apiUrl}/publicacion`;
+  private apiUrl = `${environment.apiUrl}/publicaciones`;
 
   constructor(private http: HttpClient) {}
 

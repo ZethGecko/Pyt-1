@@ -22,7 +22,6 @@ public interface FichaInspeccionRepository extends JpaRepository<FichaInspeccion
         "vehiculoApto.tramite.empresa",
         "inspeccionEntity",
         "usuarioInspectorEntity",
-        "valores",
         "formatoInspeccion",
         "formatoInspeccion.campos"
     })
@@ -43,8 +42,7 @@ public interface FichaInspeccionRepository extends JpaRepository<FichaInspeccion
         "vehiculoApto",
         "vehiculoApto.vehiculo",
         "vehiculoApto.tramite",
-        "vehiculoApto.tramite.empresa",
-        "valores"
+        "vehiculoApto.tramite.empresa"
     })
     @Query("SELECT f FROM FichaInspeccion f JOIN f.vehiculoApto va WHERE va.tramite.idTramite = :tramiteId")
     List<FichaInspeccion> findByVehiculoApto_Tramite_IdTramite(@Param("tramiteId") Long tramiteId);

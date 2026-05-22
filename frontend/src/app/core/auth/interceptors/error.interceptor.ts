@@ -39,13 +39,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           authService.logout();
           router.navigate(['/auth/login']);
         }
-        return throwError(() => error);
       }
 
-      // Para cualquier otro error (400, 404, 500, etc.), propagar el error original
-      return throwError(() => error);
-
-      // Para cualquier otro error, propagar el error original (sin modificarlo)
+      // Propagar el error original sin modificarlo
       return throwError(() => error);
     })
   );

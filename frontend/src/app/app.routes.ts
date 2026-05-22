@@ -63,6 +63,16 @@ export const routes: Routes = [
     data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
     loadComponent: () => import('./modules/admin/imagenes-sitio/imagenes-sitio.component').then(m => m.ImagenesSitioComponent)
   },
+  {
+    path: 'admin/publicaciones',
+    canActivate: [authGuard],
+    loadComponent: () => import('./modules/admin/publicaciones/publicaciones-admin.component').then(m => m.PublicacionesAdminComponent)
+  },
+  {
+    path: 'admin/notificaciones',
+    canActivate: [authGuard],
+    loadComponent: () => import('./modules/admin/notificaciones/notificaciones-admin.component').then(m => m.NotificacionesAdminComponent)
+  },
 
   // Privadas - Empresas
   {
@@ -112,6 +122,10 @@ export const routes: Routes = [
       path: 'inspecciones/fichas',
       canActivate: [authGuard],
       loadComponent: () => import('./modules/inspecciones/pages/gestion-fichas-inspeccion.component').then(m => m.GestionFichasInspeccionComponent)
+    },
+    {
+      path: 'tareas-inspeccion/:idInspeccion',
+      loadComponent: () => import('./public/pages/tareas-inspeccion/tareas-inspeccion.component').then(m => m.TareasInspeccionComponent)
     },
     // Ruta general (debe ir al final para no interceptar subrutas)
     {

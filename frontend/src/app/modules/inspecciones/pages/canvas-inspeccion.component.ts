@@ -68,8 +68,12 @@ type ParametroFichaExtendido = ParametroInspeccion & {
    firmaResponsable: string = '';
    fechaFirma: string = '';
 
-   // Debounce para autoguardado
-   private autosaveTimeout: any = null;
+    // Debounce para autoguardado
+    private autosaveTimeout: any = null;
+
+    // Borrador: parametros en formato crudo (mapa) + flags de recuperación
+    private _draftParametrosRaw: { idParametros: number; valor: string; orden: number; seccion: string }[] | null = null;
+    private _borradorRecuperado: boolean = false;
 
   private seccionesMap: { [key: string]: string } = {
     'Nº de la empresa:': 'DATOS GENERALES',
@@ -186,33 +190,38 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        return;
      }
 
-     // Ruta realizar/:id (inspeccionId directo) - modo ejecución
-     this.modoDiseno = false;
+      // Ruta realizar/:id (inspeccionId directo) - modo ejecución
+      this.modoDiseno = false;
 
-     // Verificar si hay borrador guardado para esta inspección
-     const draft = this.draftService.getDraft(this.inspeccionId);
-     if (draft) {
-       const fecha = new Date(draft.ultimaModificacion).toLocaleString('es-ES');
-       if (confirm(`Se encontró un borrador guardado el ${fecha}. ¿Desea recuperarlo?`)) {
-         this.aplicarBorrador(draft);
-         // Cargar solo datos de la inspección (empresa, lugar, etc) sin sobrescribir el borrador
-         this.inspeccionService.obtener(this.inspeccionId).subscribe({
-           next: (inspeccion) => {
-             this.inspeccion = inspeccion;
-             this.rellenarDatosAutomaticos();
-           },
-           error: (err) => {
-             console.warn('No se pudieron cargar datos de la inspección para rellenar automáticos:', err);
-           }
-         });
-         return; // No continuar con cargarDatos() para no sobrescribir
-       } else {
-         this.draftService.clearDraft(this.inspeccionId);
-       }
-     }
+      // Verificar si hay borrador guardado para esta inspección
+      const draft = this.draftService.getDraft(this.inspeccionId);
+      if (draft) {
+        if (!confirm(`Se encontró un borrador guardado el ${new Date(draft.ultimaModificacion).toLocaleString('es-ES')}. ¿Desea recuperarlo?`)) {
+          // Usuario rechazó el borrador: limpiar y continuar normalmente
+          this.draftService.clearDraft(this.inspeccionId);
+        }
+        // Si aceptó, guardar datos crudos del borrador; si rechazó, no hay borrador → flag stays false
+        if (draft) {
+          this._draftParametrosRaw = (draft.parametrosFicha || []).map((p: any) => ({
+            idParametros: p.idParametros,
+            valor: p.valor || '',
+            orden: p.orden ?? 0,
+            seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
+          }));
+          this._borradorRecuperado = true;
+          this.firmaResponsable = draft.firmaResponsable || '';
+          this.fechaFirma = draft.fechaFirma || '';
+          this.resultado = draft.resultado || '';
+          this.tituloPrincipal = draft.tituloPrincipal || this.tituloPrincipal;
+          this.subtituloPrincipal = draft.subtituloPrincipal || this.subtituloPrincipal;
+          this.subtitulo2 = draft.subtitulo2 || '';
+          this.titulosSecciones = draft.titulosSecciones || this.titulosSecciones;
+          this.draftGuardado = true;
+        }
+      }
 
-     // Si no hay borrador, cargar datos normales desde servidor
-     this.cargarDatos();
+      // Cargar datos desde servidor (merge con borrador si corresponde se hace dentro)
+      this.cargarDatos();
    }
 
    private cargarFormatoGlobal(): void {
@@ -264,30 +273,44 @@ type ParametroFichaExtendido = ParametroInspeccion & {
              this.fichaInspeccionService.update(this.ficha.id!, this.ficha).subscribe();
            }
 
-           if (this.ficha.parametros && this.ficha.parametros.length > 0) {
-             this.construirParametrosFicha();
-           } else if (formato && formato.campos && formato.campos.length > 0) {
-             this.parametrosFicha = formato.campos.map(c => ({
-               idParametros: c.id,
-               parametro: c.nombre,
-               observacion: '',
-               fichaInspeccionId: this.ficha!.id,
-               valor: '',
-               seccion: c.seccion,
-               seccionAsignada: c.seccion,
-               orden: c.orden
-             })) as ParametroFichaExtendido[];
-             this.ficha.parametros = this.parametrosFicha.map(p => ({
-               idParametros: p.idParametros,
-               parametro: p.parametro,
-               observacion: p.valor,
-               seccion: p.seccion
-             })) as any[];
-           } else {
+            if (this.ficha.parametros && this.ficha.parametros.length > 0) {
+              this.construirParametrosFicha();
+              // Merge: preservar valores del borrador y añadir campos nuevos del formato actual
+              if (this._borradorRecuperado && formato) {
+                this.fusionarParametrosConFormato(formato);
+              }
+            } else if (formato && formato.campos && formato.campos.length > 0) {
+              this.parametrosFicha = formato.campos.map(c => ({
+                idParametros: c.id,
+                parametro: c.nombre,
+                observacion: '',
+                fichaInspeccionId: this.ficha!.id,
+                valor: '',
+                seccion: c.seccion,
+                seccionAsignada: c.seccion,
+                orden: c.orden
+              })) as ParametroFichaExtendido[];
+              this.ficha.parametros = this.parametrosFicha.map(p => ({
+                idParametros: p.idParametros,
+                parametro: p.parametro,
+                observacion: p.valor,
+                seccion: p.seccion
+              })) as any[];
+              // Merge: preservar valores del borrador y añadir campos nuevos del formato actual
+              if (this._borradorRecuperado && formato) {
+                this.fusionarParametrosConFormato(formato);
+              }
+            } else {
              this.inicializarFichaVacia();
            }
 
             this.clasificarPorSecciones();
+
+            // Limpiar flags de borrador después de realizar la fusión (si hubo una)
+            if (this._borradorRecuperado) {
+              this._draftParametrosRaw = null;
+              this._borradorRecuperado = false;
+            }
             this.rellenarDatosAutomaticos();
 
             // Sincronizar títulos desde el formato cargado
@@ -314,7 +337,59 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      });
    }
 
-  private cargarFormatoParaEdicion(): void {
+    /**
+     * Fusiona valores del borrador con el formato actual.
+     * Para cada campo del formato:
+     *  - Si ya existe en el borrador → conserva valor del borrador (respetando lo que el usuario escribió).
+     *  - Si es nuevo (no estaba en el borrador) → lo agrega como vacío.
+     */
+    private fusionarParametrosConFormato(formato: FormatoInspeccion): void {
+      if (!this._draftParametrosRaw) return;
+
+      // Mapa de idParametros → valor del borrador
+      const mapaDraft = new Map(this._draftParametrosRaw.map(p => [p.idParametros, p.valor]));
+
+      // Mapa de campos existentes por idParametros (para detectar ausentes)
+      const idsExistentes = new Set(this.parametrosFicha.map(p => p.idParametros).filter(Boolean));
+
+      // Actualizar valores de campos que ya existen en la ficha (por idParametros)
+      for (const param of this.parametrosFicha) {
+        if (param.idParametros && mapaDraft.has(param.idParametros)) {
+          param.valor = mapaDraft.get(param.idParametros)!;
+        }
+      }
+
+      // Añadir campos que están en el formato pero NO existían en el borrador (nuevos campos)
+      for (const campo of formato.campos) {
+        if (!idsExistentes.has(campo.id)) {
+          this.parametrosFicha.push({
+            idParametros: campo.id,
+            parametro: campo.nombre,
+            observacion: '',
+            fichaInspeccionId: this.ficha!.id,
+            valor: '',
+            seccion: campo.seccion,
+            seccionAsignada: campo.seccion,
+            orden: campo.orden
+          } as ParametroFichaExtendido);
+        }
+      }
+    }
+
+    /**
+     * Variante de fusionarParametrosConFormato que recibe directamente el
+     * array de parámetros crudos del borrador (sin necesidad de que _draftParametrosRaw
+     * esté poblado previamente).
+     */
+    private fusionarParametrosDesdeMapa(
+      parametrosRaw: { idParametros: number; valor: string; orden: number; seccion: string }[],
+      formato: FormatoInspeccion
+    ): void {
+      this._draftParametrosRaw = parametrosRaw;
+      this.fusionarParametrosConFormato(formato);
+    }
+
+   private cargarFormatoParaEdicion(): void {
     this.cargandoFicha = true;
     this.errorCarga = false;
 
@@ -785,11 +860,39 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        this.fechaFirma = '';
        this.notificationService?.showSuccess('Datos limpiados', 'Éxito', 2000);
      }
-     // Actualizar borrador local
-     this.guardarBorradorAutomatico();
-   }
+      // Actualizar borrador local
+      this.guardarBorradorAutomatico();
+    }
 
-  agregarCampoSeccion(seccion: string): void {
+    replicarFormato(): void {
+      if (!this.inspeccionId || !this.ficha?.id) {
+        alert('No hay ficha cargada para replicar el formato');
+        return;
+      }
+
+      if (!confirm('Esta acción remplazará todos los campos y datos de todas las fichas de esta inspección por el formato actual. ¿Continuar?')) {
+        return;
+      }
+
+      const fichaOrigenId = this.ficha.id;
+      this.cargandoFicha = true;
+
+      this.inspeccionService.replicarFormatoEnInspeccion(this.inspeccionId, fichaOrigenId).subscribe({
+        next: () => {
+          this.cargandoFicha = false;
+          this.notificationService?.showSuccess('Formato replicado en todas las fichas', 'Éxito', 3000);
+          // Recargar para ver los cambios
+          this.cargarDatos();
+        },
+        error: (err: any) => {
+          this.cargandoFicha = false;
+          console.error('Error replicando formato:', err);
+          alert('Error al replicar el formato: ' + (err.error?.message || err.message));
+        }
+      });
+    }
+
+   agregarCampoSeccion(seccion: string): void {
     const nombre = prompt(`Ingrese el nombre del nuevo campo para la sección "${seccion}":`);
     if (!nombre || !nombre.trim()) {
       alert('Debe ingresar un nombre para el campo');
@@ -1009,22 +1112,30 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      }
    }
 
-   /**
-    * Aplica los datos del borrador al componente
-    */
-   private aplicarBorrador(draft: any): void {
-     this.parametrosFicha = draft.parametrosFicha || [];
-     this.firmaResponsable = draft.firmaResponsable || '';
-     this.fechaFirma = draft.fechaFirma || '';
-     this.resultado = draft.resultado || '';
-     this.tituloPrincipal = draft.tituloPrincipal || this.tituloPrincipal;
-     this.subtituloPrincipal = draft.subtituloPrincipal || this.subtituloPrincipal;
-     this.subtitulo2 = draft.subtitulo2 || '';
-     this.titulosSecciones = draft.titulosSecciones || this.titulosSecciones;
-     this.clasificarPorSecciones();
-     this.draftGuardado = true;
-     this.notificationService?.showSuccess('Borrador recuperado correctamente', 'Éxito', 2000);
-   }
+    /**
+     * Aplica los datos del borrador — versión flag-only
+     * (valores guardados en _draftParametrosRaw, fusión se hace en cargarDatos)
+     */
+    private aplicarBorrador(draft: any): void {
+      // Extraer mapa de idParametros → valor desde borrador
+      this._draftParametrosRaw = (draft.parametrosFicha || []).map((p: any) => ({
+        idParametros: p.idParametros,
+        valor: p.valor || '',
+        orden: p.orden ?? 0,
+        seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
+      }));
+      this._borradorRecuperado = true;
+      this.firmaResponsable = draft.firmaResponsable || '';
+      this.fechaFirma = draft.fechaFirma || '';
+      this.resultado = draft.resultado || '';
+      this.tituloPrincipal = draft.tituloPrincipal || this.tituloPrincipal;
+      this.subtituloPrincipal = draft.subtituloPrincipal || this.subtituloPrincipal;
+      this.subtitulo2 = draft.subtitulo2 || '';
+      this.titulosSecciones = draft.titulosSecciones || this.titulosSecciones;
+      this.draftGuardado = true;
+      // No llamamos a clasificarPorSecciones ni construirParametrosFicha aquí:
+      // la fusión con el formato se delega a cargarDatos()
+    }
 
    /**
     * Guarda el estado actual como borrador (auto-guardado)
@@ -1107,27 +1218,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        // Auto-guardar en servidor
        this.guardarCertificadoEjecucion(true); // true = solo sync, no alert
      }
-   }
+    }
 
-   // ========== CICLO DE VIDA ==========
-
-   /**
-    * Aplica los datos del borrador al componente
-    */
-   private aplicarBorrador(draft: any): void {
-     this.parametrosFicha = draft.parametrosFicha || [];
-     this.firmaResponsable = draft.firmaResponsable || '';
-     this.fechaFirma = draft.fechaFirma || '';
-     this.resultado = draft.resultado || '';
-     this.tituloPrincipal = draft.tituloPrincipal || this.tituloPrincipal;
-     this.subtituloPrincipal = draft.subtituloPrincipal || this.subtituloPrincipal;
-     this.subtitulo2 = draft.subtitulo2 || '';
-     this.titulosSecciones = draft.titulosSecciones || this.titulosSecciones;
-     this.clasificarPorSecciones();
-     this.draftGuardado = true;
-     this.notificationService?.showSuccess('Borrador recuperado correctamente', 'Éxito', 2000);
-   }
-   onInputChange(): void {
+    onInputChange(): void {
      if (this.autosaveTimeout) {
        clearTimeout(this.autosaveTimeout);
      }
@@ -1145,17 +1238,16 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      }
      this.autosaveTimeout = setTimeout(() => {
        this.guardarBorradorAutomatico();
-     }, 1000);
-   }
+      }, 1000);
+    }
 
-   ngOnDestroy(): void {
-     window.removeEventListener('online', this.handleOnline);
-     window.removeEventListener('offline', this.handleOffline);
-     this.prepararParaSalida();
+    ngOnDestroy(): void {
+      window.removeEventListener('online', this.handleOnline);
+      window.removeEventListener('offline', this.handleOffline);
+      this.prepararParaSalida();
 
-     if (this.autosaveTimeout) {
-       clearTimeout(this.autosaveTimeout);
-     }
-   }
-   }
-}
+      if (this.autosaveTimeout) {
+        clearTimeout(this.autosaveTimeout);
+      }
+    }
+  }

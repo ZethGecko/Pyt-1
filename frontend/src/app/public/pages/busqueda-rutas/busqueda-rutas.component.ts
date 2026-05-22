@@ -2,6 +2,7 @@ import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy, ChangeDetec
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterModule } from '@angular/router';
 import * as L from 'leaflet';
+import { environment } from '../../../../environments/environment';
 import { BusquedaRutasService, RutaBusqueda, BusquedaRutasRequest } from '../../../shared/services/busqueda-rutas.service';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
@@ -48,8 +49,9 @@ export class BusquedaRutasComponent implements AfterViewInit, OnDestroy {
     this.imagenSitioService.listarTodas().subscribe({
       next: (data) => {
         this.imagenes.clear();
+        const apiBase = environment.apiUrl;
         data.forEach(img => {
-          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          const downloadUrl = `${apiBase}/imagenes-sitio/${img.id}/download`;
           this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
         });
       },

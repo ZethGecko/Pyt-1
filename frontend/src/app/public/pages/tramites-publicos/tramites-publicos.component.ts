@@ -57,11 +57,12 @@ export class TramitesPublicosComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarTiposTramite();
+    const apiBase = environment.apiUrl;
     this.imagenSitioService.listarTodas().subscribe({
       next: (data) => {
         this.imagenes.clear();
         data.forEach(img => {
-          const downloadUrl = `/api/imagenes-sitio/${img.id}/download`;
+          const downloadUrl = `${apiBase}/imagenes-sitio/${img.id}/download`;
           this.imagenes.set(img.ubicacion, { ...img, url: downloadUrl });
         });
       },

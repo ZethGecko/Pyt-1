@@ -45,10 +45,9 @@ public class PublicacionService {
     }
 
     public List<Publicacion> listarPublicadas() {
-        return repo.findAll().stream()
-                .filter(p -> "PUBLICADO".equalsIgnoreCase(p.getEstado()))
-                .toList();
+        return repo.findByEstadoIgnoreCase("PUBLICADO");
     }
+
 
     public Publicacion crear(Publicacion pub) {
         if (pub.getFechaCreacion() == null) {

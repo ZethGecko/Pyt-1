@@ -8,4 +8,5 @@ public interface InspeccionInstanciaRepository extends JpaRepository<InspeccionI
     List<InspeccionInstancia> findByInspeccion_IdInspeccion(Long inspeccionId);
     List<InspeccionInstancia> findByInstanciaTramite_IdInstancia(Long instanciaId);
     void deleteByInspeccion_IdInspeccionAndInstanciaTramite_IdInstancia(Long inspeccionId, Long instanciaId);
+    long countByInspeccion_IdInspeccion(Long inspeccionId);
 }
