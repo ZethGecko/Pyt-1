@@ -267,17 +267,8 @@ public class InspeccionService {
         inspeccion.setUsuarioInspector(inspector);
         inspeccion = inspeccionRepository.save(inspeccion);
 
-        // Crear o asegurar FormatoInspeccion para la inspección
-        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-        if (formato == null) {
-            formato = new FormatoInspeccion();
-            formato.setNombre("Formato " + inspeccion.getCodigo());
-            formato.setDescripcion("Formato generado automáticamente");
-            formato.setActivo(true);
-            formato = formatoInspeccionRepository.save(formato);
-            inspeccion.setFormatoInspeccion(formato);
-            inspeccionRepository.save(inspeccion);
-        }
+        // Usar formato reutilizable (no crea duplicados si ya hay uno activo)
+        FormatoInspeccion formato = fichaInspeccionService.obtenerOCrearFormatoActivo(inspeccion);
 
         for (Long vehiculoId : request.getVehiculosSeleccionados()) {
             Vehiculo vehiculo = vehiculoRepository.findById(vehiculoId)
@@ -307,21 +298,16 @@ public class InspeccionService {
             ficha.setFormatoInspeccion(formato);
             ficha = fichaInspeccionRepository.save(ficha);
 
-            // Crear valores vacíos para los campos actuales del formato
-            List<CampoFormato> camposFormato = campoFormatoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formato.getIdFormatoInspeccion());
-            for (CampoFormato campo : camposFormato) {
-                ValorCampo valor = new ValorCampo();
-                valor.setFichaInspeccion(ficha);
-                valor.setCampoFormato(campo);
-                valor.setValor("");
-                valor.setObservacion("");
-                valorCampoRepository.save(valor);
-            }
+            // Crear valores vacíos para cada campo del formato (reutiliza helper)
+            fichaInspeccionService.crearValoresCamposParaFicha(ficha, formato);
+
 
             // Agregar parámetros basados en requisitos del tipo de trámite (como campos adicionales)
             if (tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
-                List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
+                // Buscar el tamaño actual de campos del formato para asignar el orden base
+                List<CampoFormato> camposFormato = campoFormatoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formato.getIdFormatoInspeccion());
                 int ordenBase = camposFormato.size();
+                List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
                 for (Long reqId : requisitosIds) {
                     RequisitoTUPAC req = requisitoTUPACRepository.findById(reqId).orElse(null);
                     if (req != null && Boolean.TRUE.equals(req.getActivo())) {
@@ -372,17 +358,8 @@ public class InspeccionService {
                     .orElse(null);
         }
 
-        // Obtener o crear formato para la inspección
-        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-        if (formato == null) {
-            formato = new FormatoInspeccion();
-            formato.setNombre("Formato " + inspeccion.getCodigo());
-            formato.setDescripcion("Formato generado automáticamente");
-            formato.setActivo(true);
-            formato = formatoInspeccionRepository.save(formato);
-            inspeccion.setFormatoInspeccion(formato);
-            inspeccionRepository.save(inspeccion);
-        }
+        // Usar formato reutilizable (no crea duplicados si ya hay uno activo)
+        FormatoInspeccion formato = fichaInspeccionService.obtenerOCrearFormatoActivo(inspeccion);
 
         // Crear ficha
         FichaInspeccion ficha = new FichaInspeccion();
@@ -399,21 +376,15 @@ public class InspeccionService {
         ficha.setFormatoInspeccion(formato);
         ficha = fichaInspeccionRepository.save(ficha);
 
-        // Crear valores vacíos para todos los campos del formato
-        List<CampoFormato> campos = campoFormatoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formato.getIdFormatoInspeccion());
-        for (CampoFormato campo : campos) {
-            ValorCampo valor = new ValorCampo();
-            valor.setFichaInspeccion(ficha);
-            valor.setCampoFormato(campo);
-            valor.setValor("");
-            valor.setObservacion("");
-            valorCampoRepository.save(valor);
-        }
+        // Poblar valores vacíos para todos los campos del formato (reutiliza helper)
+        fichaInspeccionService.crearValoresCamposParaFicha(ficha, formato);
 
         // Si hay requisitos del tipo de trámite, agregarlos como campos al formato (si no existen) y crear valores para esta ficha
         Tramite tramite = inspeccion.getTramite();
         if (tramite != null && tramite.getTipoTramite() != null && tramite.getTipoTramite().getRequisitosIds() != null) {
             List<Long> requisitosIds = parseRequisitosIds(tramite.getTipoTramite().getRequisitosIds());
+            // Obtener el tamaño actual de campos del formato para asignar el orden base
+            List<CampoFormato> campos = campoFormatoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formato.getIdFormatoInspeccion());
             int ordenBase = campos.size();
             for (Long reqId : requisitosIds) {
                 RequisitoTUPAC req = requisitoTUPACRepository.findById(reqId).orElse(null);
@@ -655,48 +626,46 @@ public class InspeccionService {
              inspeccion.addInstancia(ii);
          }
 
-         inspeccion = inspeccionRepository.save(inspeccion);
+          inspeccion = inspeccionRepository.save(inspeccion);
 
-           // Crear ficha de inspección para cada instancia (una por vehículo)
-           // Cargar todas las instancias para obtener identificador (placa)
-           Map<Long, InstanciaTramite> instanciasMap = instanciaTramiteRepository.findAllById(request.getInstanciasTramiteIds()).stream()
-                   .collect(Collectors.toMap(InstanciaTramite::getIdInstancia, inst -> inst));
-           for (Long instanciaId : request.getInstanciasTramiteIds()) {
-               InstanciaTramite instancia = instanciasMap.get(instanciaId);
-                if (instancia == null) {
-                    throw new IllegalStateException("Instancia no encontrada: " + instanciaId);
-                }
-                String placa = instancia.getIdentificador();
-                if (placa == null || placa.trim().isEmpty()) {
-                    throw new IllegalStateException("Instancia " + instanciaId + " no tiene identificador (placa) asignado");
-                }
-                Vehiculo vehiculo = obtenerOcrearVehiculo(placa);
-                Long vehiculoId = vehiculo.getIdVehiculo();
+            // Obtener formato reutilizable (no crea duplicados si ya hay uno activo)
+            FormatoInspeccion formato = fichaInspeccionService.obtenerOCrearFormatoActivo(inspeccion);
 
-                FichaInspeccion ficha = new FichaInspeccion();
-                ficha.setInspeccion(inspeccion.getIdInspeccion());
-                ficha.setInstanciaTramiteId(instanciaId);
-                ficha.setEstado(true);
-                ficha.setResultado("PENDIENTE");
-                ficha.setFechaCreacion(LocalDateTime.now());
-                ficha.setFechaActualizacion(LocalDateTime.now());
-                ficha.setVehiculo(vehiculoId);
-                // Asignar formato de inspección (obligatorio)
-                FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-                if (formato == null) {
-                    // Buscar un formato activo por defecto
-                    formato = formatoInspeccionRepository.findAll().stream()
-                            .filter(f -> Boolean.TRUE.equals(f.getActivo()))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalStateException("No hay formato de inspección activo. Asigne uno a la inspección o cree un formato activo"));
-                }
-                ficha.setFormatoInspeccion(formato);
-                // Asociar solicitud del trámite si está disponible
-                if (tramite.getSolicitud() != null) {
-                    ficha.setSolicitud(tramite.getSolicitud().getIdSolicitud());
-                }
-                fichaInspeccionRepository.save(ficha);
-           }
+            // Crear ficha de inspección para cada instancia (una por vehículo)
+            // Cargar todas las instancias para obtener identificador (placa)
+            Map<Long, InstanciaTramite> instanciasMap = instanciaTramiteRepository.findAllById(request.getInstanciasTramiteIds()).stream()
+                    .collect(Collectors.toMap(InstanciaTramite::getIdInstancia, inst -> inst));
+            for (Long instanciaId : request.getInstanciasTramiteIds()) {
+                InstanciaTramite instancia = instanciasMap.get(instanciaId);
+                 if (instancia == null) {
+                     throw new IllegalStateException("Instancia no encontrada: " + instanciaId);
+                 }
+                 String placa = instancia.getIdentificador();
+                 if (placa == null || placa.trim().isEmpty()) {
+                     throw new IllegalStateException("Instancia " + instanciaId + " no tiene identificador (placa) asignado");
+                 }
+                 Vehiculo vehiculo = obtenerOcrearVehiculo(placa);
+                 Long vehiculoId = vehiculo.getIdVehiculo();
+
+                 FichaInspeccion ficha = new FichaInspeccion();
+                 ficha.setInspeccion(inspeccion.getIdInspeccion());
+                 ficha.setInstanciaTramiteId(instanciaId);
+                 ficha.setEstado(true);
+                 ficha.setResultado("PENDIENTE");
+                 ficha.setFechaCreacion(LocalDateTime.now());
+                 ficha.setFechaActualizacion(LocalDateTime.now());
+                 ficha.setVehiculo(vehiculoId);
+                 // Asignar formato reutilizado a la ficha
+                 ficha.setFormatoInspeccion(formato);
+                 // Asociar solicitud del trámite si está disponible
+                 if (tramite.getSolicitud() != null) {
+                     ficha.setSolicitud(tramite.getSolicitud().getIdSolicitud());
+                 }
+                 ficha = fichaInspeccionRepository.save(ficha);
+
+                 // Poblar valores vacíos para todos los campos del formato
+                 fichaInspeccionService.crearValoresCamposParaFicha(ficha, formato);
+            }
 
          return convertirAResponse(inspeccion);
      }
@@ -733,33 +702,31 @@ public class InspeccionService {
                     throw new IllegalStateException("Instancia " + instanciaId + " no tiene identificador (placa) asignado");
                 }
                 Vehiculo vehiculo = obtenerOcrearVehiculo(placa);
-                Long vehiculoId = vehiculo.getIdVehiculo();
+                 Long vehiculoId = vehiculo.getIdVehiculo();
 
-                // Crear ficha para la nueva instancia
-                FichaInspeccion ficha = new FichaInspeccion();
-                ficha.setInspeccion(inspeccion.getIdInspeccion());
-                ficha.setInstanciaTramiteId(instanciaId);
-                ficha.setEstado(true);
-                ficha.setResultado("PENDIENTE");
-                ficha.setFechaCreacion(LocalDateTime.now());
-                ficha.setFechaActualizacion(LocalDateTime.now());
-                ficha.setVehiculo(vehiculoId);
-                // Asignar formato de inspección (obligatorio)
-                FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-                if (formato == null) {
-                    // Intentar asignar un formato por defecto activo
-                    formato = formatoInspeccionRepository.findAll().stream()
-                            .filter(f -> Boolean.TRUE.equals(f.getActivo()))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalStateException("No hay formato de inspección activo. Asigne uno a la inspección o cree un formato activo"));
-                }
-                ficha.setFormatoInspeccion(formato);
-                // Asociar solicitud del trámite si está disponible
-                if (tramite != null && tramite.getSolicitud() != null) {
-                    ficha.setSolicitud(tramite.getSolicitud().getIdSolicitud());
-                }
-                fichaInspeccionRepository.save(ficha);
-         }
+                 // Obtener formato reutilizable (no crea duplicados)
+                 FormatoInspeccion formato = fichaInspeccionService.obtenerOCrearFormatoActivo(inspeccion);
+
+                 // Crear ficha para la nueva instancia
+                 FichaInspeccion ficha = new FichaInspeccion();
+                 ficha.setInspeccion(inspeccion.getIdInspeccion());
+                 ficha.setInstanciaTramiteId(instanciaId);
+                 ficha.setEstado(true);
+                 ficha.setResultado("PENDIENTE");
+                 ficha.setFechaCreacion(LocalDateTime.now());
+                 ficha.setFechaActualizacion(LocalDateTime.now());
+                 ficha.setVehiculo(vehiculoId);
+                 // Asignar el formato resuelto a la ficha
+                 ficha.setFormatoInspeccion(formato);
+                 // Asociar solicitud del trámite si está disponible
+                 if (tramite != null && tramite.getSolicitud() != null) {
+                     ficha.setSolicitud(tramite.getSolicitud().getIdSolicitud());
+                 }
+                 fichaInspeccionRepository.save(ficha);
+
+                 // Poblar valores vacíos para todos los campos del formato
+                 fichaInspeccionService.crearValoresCamposParaFicha(ficha, formato);
+          }
          // Actualizar fecha de actualización de la inspección
         inspeccion.setFechaActualizacion(LocalDateTime.now());
 
@@ -895,6 +862,7 @@ public class InspeccionService {
       private FichaInspeccionResponseDTO convertirAFichaResponseDTO(FichaInspeccion ficha) {
           FichaInspeccionResponseDTO dto = new FichaInspeccionResponseDTO();
           dto.setIdFichaInspeccion(ficha.getIdFichaInspeccion());
+          dto.setInspeccionId(ficha.getInspeccion());
           dto.setVehiculoId(ficha.getVehiculo());
           dto.setEstado(ficha.getEstado());
           dto.setResultado(ficha.getResultado());
@@ -1290,7 +1258,14 @@ public class InspeccionService {
                     .orElse(null);
             ficha.setVehiculoApto(apto);
 
+            // Asignar formato a la ficha
+            FormatoInspeccion formatoInspeccion = fichaInspeccionService.obtenerOCrearFormatoActivo(ii.getInspeccion());
+            ficha.setFormatoInspeccion(formatoInspeccion);
+
             fichaInspeccionRepository.save(ficha);
+
+            // Poblar valores vacíos para todos los campos del formato
+            fichaInspeccionService.crearValoresCamposParaFicha(ficha, formatoInspeccion);
         } else {
             // Actualizar ficha existente
             ficha.setVehiculo(vehiculo.getIdVehiculo());
@@ -1368,6 +1343,10 @@ public class InspeccionService {
             ficha.setFechaCreacion(LocalDateTime.now());
             ficha.setFechaActualizacion(LocalDateTime.now());
 
+            // Asignar formato
+            FormatoInspeccion formatoInspeccion = fichaInspeccionService.obtenerOCrearFormatoActivo(ii.getInspeccion());
+            ficha.setFormatoInspeccion(formatoInspeccion);
+
             // Vincular VehiculoApto
             if (tramite != null) {
                 VehiculoApto apto = vehiculoAptoRepository
@@ -1377,6 +1356,9 @@ public class InspeccionService {
             }
 
             fichaInspeccionRepository.save(ficha);
+
+            // Poblar valores vacíos para todos los campos del formato
+            fichaInspeccionService.crearValoresCamposParaFicha(ficha, formatoInspeccion);
 
             // Guardar parámetros si se envían
             if (request.getParametros() != null && !request.getParametros().isEmpty()) {
@@ -1464,17 +1446,8 @@ public class InspeccionService {
 
         inspeccion = inspeccionRepository.save(inspeccion);
 
-        // Asegurar FormatoInspeccion para la inspección
-        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-        if (formato == null) {
-            formato = new FormatoInspeccion();
-            formato.setNombre("Formato " + inspeccion.getCodigo());
-            formato.setDescripcion("Formato generado automáticamente");
-            formato.setActivo(true);
-            formato = formatoInspeccionRepository.save(formato);
-            inspeccion.setFormatoInspeccion(formato);
-            inspeccionRepository.save(inspeccion);
-        }
+        // Asegurar FormatoInspeccion reutilizable para la inspección
+        FormatoInspeccion formato = fichaInspeccionService.obtenerOCrearFormatoActivo(inspeccion);
 
         // Crear ficha de inspección para cada instancia (una por vehículo)
         for (Long instanciaId : request.getInstanciasTramiteIds()) {
@@ -1502,16 +1475,8 @@ public class InspeccionService {
             }
             ficha = fichaInspeccionRepository.save(ficha);
 
-            // Crear valores vacíos para los campos del formato
-            List<CampoFormato> camposFormato = campoFormatoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(formato.getIdFormatoInspeccion());
-            for (CampoFormato campo : camposFormato) {
-                ValorCampo valor = new ValorCampo();
-                valor.setFichaInspeccion(ficha);
-                valor.setCampoFormato(campo);
-                valor.setValor("");
-                valor.setObservacion("");
-                valorCampoRepository.save(valor);
-            }
+            // Poblar valores vacíos para todos los campos del formato
+            fichaInspeccionService.crearValoresCamposParaFicha(ficha, formato);
         }
 
         return convertirAResponse(inspeccion);

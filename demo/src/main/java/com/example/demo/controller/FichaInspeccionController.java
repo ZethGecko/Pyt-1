@@ -4,6 +4,10 @@ import com.example.demo.dto.FichaInspeccionCreateRequestDTO;
 import com.example.demo.dto.FichaInspeccionResponseDTO;
 import com.example.demo.dto.FichaInspeccionUpdateRequestDTO;
 import com.example.demo.service.FichaInspeccionService;
+import com.example.demo.service.InspeccionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,14 +19,18 @@ import java.util.List;
 public class FichaInspeccionController {
 
     private final FichaInspeccionService fichaInspeccionService;
+    private final InspeccionService inspeccionService;
 
-    public FichaInspeccionController(FichaInspeccionService fichaInspeccionService) {
+    public FichaInspeccionController(FichaInspeccionService fichaInspeccionService,
+                                     InspeccionService inspeccionService) {
         this.fichaInspeccionService = fichaInspeccionService;
+        this.inspeccionService = inspeccionService;
     }
 
     @GetMapping
-    public List<FichaInspeccionResponseDTO> listar() {
-        return fichaInspeccionService.listarTodas();
+    public ResponseEntity<Page<FichaInspeccionResponseDTO>> listar(Pageable pageable) {
+        Page<FichaInspeccionResponseDTO> page = fichaInspeccionService.listarTodas(pageable);
+        return ResponseEntity.ok(page);
     }
 
     /**
@@ -45,7 +53,13 @@ public class FichaInspeccionController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<FichaInspeccionResponseDTO> crear(@RequestBody FichaInspeccionCreateRequestDTO request) {
-        // Para creación directa (no recomendado). Usar POST /inspecciones/{id}/fichas en su lugar.
+        // Para creación directa. Validar inspeccionId antes de delegar.
+        if (request.getInspeccionId() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (inspeccionService.buscarPorId(request.getInspeccionId()) == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
         FichaInspeccionResponseDTO creado = fichaInspeccionService.guardar(request);
         return ResponseEntity.ok(creado);
     }

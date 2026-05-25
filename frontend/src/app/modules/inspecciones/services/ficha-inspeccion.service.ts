@@ -33,6 +33,7 @@ import { environment } from 'src/environments/environment';
    tituloSeccionPlaca?: string;
    tituloSeccionPlanLunca?: string;
    tituloSeccionLaboratorio?: string;
+    observaciones?: string;
  }
 
 export interface FichaInspeccionResponse {

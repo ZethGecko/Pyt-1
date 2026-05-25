@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 export interface CampoFormato {
@@ -63,13 +63,19 @@ export class FormatoInspeccionService {
      return this.http.get<FormatoInspeccion>(`${this.apiUrl}/inspeccion/${inspeccionId}`);
    }
 
-  create(formato: Partial<FormatoInspeccion>): Observable<FormatoInspeccion> {
-    return this.http.post<FormatoInspeccion>(this.apiUrl, formato);
-  }
+   create(formato: Partial<FormatoInspeccion>): Observable<FormatoInspeccion> {
+     console.log('[FormatoInspeccionService] POST /formatos-inspeccion - Payload:', formato);
+     return this.http.post<FormatoInspeccion>(this.apiUrl, formato).pipe(
+       tap(resp => console.log('[FormatoInspeccionService] POST respuesta:', resp))
+     );
+   }
 
-  update(id: number, formato: Partial<FormatoInspeccion>): Observable<FormatoInspeccion> {
-    return this.http.put<FormatoInspeccion>(`${this.apiUrl}/${id}`, formato);
-  }
+   update(id: number, formato: Partial<FormatoInspeccion>): Observable<FormatoInspeccion> {
+     console.log('[FormatoInspeccionService] PUT /formatos-inspeccion/' + id + ' - Payload:', formato);
+     return this.http.put<FormatoInspeccion>(`${this.apiUrl}/${id}`, formato).pipe(
+       tap(resp => console.log('[FormatoInspeccionService] PUT respuesta:', resp))
+     );
+   }
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);

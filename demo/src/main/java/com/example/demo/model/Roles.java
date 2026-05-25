@@ -3,12 +3,14 @@ package com.example.demo.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.envers.Audited;
 import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 @Entity
+@Audited
 @Table(name = "roles")
 public class Roles {
 

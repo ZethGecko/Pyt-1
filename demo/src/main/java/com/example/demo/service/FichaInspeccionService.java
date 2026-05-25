@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,8 +56,17 @@ public class FichaInspeccionService {
     }
 
     /**
-     * Lista todas las fichas (sin enriquecimiento pesado)
+     * Lista todas las fichas con paginación.
      */
+    @Transactional(readOnly = true)
+    public Page<FichaInspeccionResponseDTO> listarTodas(Pageable pageable) {
+        return fichaRepository.findAllWithAssociations(pageable).map(this::convertToResponseDTO);
+    }
+
+    /**
+     * @deprecated Usar {@link #listarTodas(Pageable)} en su lugar.
+     */
+    @Deprecated
     public List<FichaInspeccionResponseDTO> listarTodas() {
         return fichaRepository.findAll().stream()
                 .map(this::convertToResponseDTO)
@@ -81,8 +92,10 @@ public class FichaInspeccionService {
     }
 
     /**
-     * Crea una nueva ficha de inspección (para un vehículo)
-     */
+      * Crea una nueva ficha de inspección (para un vehículo).
+      * Obtiene el formato de la inspección (o crea uno por defecto si no existe)
+      * y genera los ValorCampo vacíos para todos sus campos.
+      */
     @Transactional
     public FichaInspeccionResponseDTO guardar(FichaInspeccionCreateRequestDTO request) {
         Long inspeccionId = request.getInspeccionId();
@@ -90,10 +103,14 @@ public class FichaInspeccionService {
             throw new IllegalArgumentException("InspeccionId es requerido");
         }
 
-        // Obtener inspección con instancias si es necesario
-        // Obtener inspección con instancias para buscar vehículo si es necesario
-        Inspeccion inspeccion = inspeccionRepository.findByIdWithInstancias(inspeccionId)
-                .orElseThrow(() -> new RuntimeException("Inspección no encontrada"));
+        // Use the standard findById first (reliable, no risk of silent empty from complex fetch joins).
+        // Fall back to findByIdWithInstancias only if the simple find returns empty, so that any
+        // caller that relies on eagerly-loaded instancias still gets the correct result.
+        Inspeccion inspeccion = inspeccionRepository.findById(inspeccionId)
+                .or(() -> inspeccionRepository.findByIdWithInstancias(inspeccionId))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Inspección no encontrada con id " + inspeccionId
+                ));
 
         // Determinar vehiculoId: si no viene, obtener de la primera instancia de la inspección
         Long vehiculoId = request.getVehiculoId();
@@ -113,10 +130,7 @@ public class FichaInspeccionService {
         }
 
         // Obtener o crear formato para la inspección
-        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-        if (formato == null) {
-            formato = crearFormatoPorDefecto(inspeccion);
-        }
+        FormatoInspeccion formato = obtenerOCrearFormatoActivo(inspeccion);
 
         // Crear ficha
         FichaInspeccion ficha = new FichaInspeccion();
@@ -131,7 +145,7 @@ public class FichaInspeccionService {
         FichaInspeccion guardada = fichaRepository.save(ficha);
 
         // Crear valores vacíos para cada campo del formato
-        crearValoresPorDefecto(guardada, formato);
+        crearValoresCamposParaFicha(guardada, formato);
 
         return convertirAResponseDTO(guardada);
     }
@@ -141,7 +155,7 @@ public class FichaInspeccionService {
      */
     public FichaInspeccionResponseDTO buscarPorId(Long id) {
         FichaInspeccion ficha = fichaRepository.findByIdWithAssociations(id)
-                .orElseThrow(() -> new RuntimeException("Ficha no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada"));
         return convertToDetailDTO(ficha);
     }
 
@@ -152,11 +166,11 @@ public class FichaInspeccionService {
     @Transactional
     public void replicarFormatoEnInspeccion(Long inspeccionId, Long fichaOrigenId) {
         FichaInspeccion fichaOrigen = fichaRepository.findByIdWithAssociations(fichaOrigenId)
-                .orElseThrow(() -> new RuntimeException("Ficha origen no encontrada: " + fichaOrigenId));
+                .orElseThrow(() -> new IllegalArgumentException("Ficha origen no encontrada: " + fichaOrigenId));
 
         FormatoInspeccion formatoOrigen = fichaOrigen.getFormatoInspeccion();
         if (formatoOrigen == null) {
-            throw new RuntimeException("La ficha origen no tiene formato asociado");
+            throw new IllegalArgumentException("La ficha origen no tiene formato asociado");
         }
 
         Long formatoId = formatoOrigen.getIdFormatoInspeccion();
@@ -214,7 +228,7 @@ public class FichaInspeccionService {
     @Transactional
     public FichaInspeccionResponseDTO actualizar(Long id, FichaInspeccionUpdateRequestDTO request) {
         FichaInspeccion ficha = fichaRepository.findByIdWithAssociations(id)
-                .orElseThrow(() -> new RuntimeException("Ficha no encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada"));
 
         // Actualizar datos de la ficha
         if (request.getUsuarioInspectorId() != null) {
@@ -267,6 +281,19 @@ public class FichaInspeccionService {
             if (formatoModificado) {
                 formatoRepository.save(formato);
             }
+        }
+
+        // Sincronizar InspeccionEntity.formatoInspeccion con el formato de la ficha
+        // para que /api/formatos-inspeccion/inspeccion/{id} y /api/fichas-inspeccion/inspeccion/{id}
+        // devuelvan el MISMO formato y los títulos coincidan en DISEÑO y EJECUCIÓN.
+        if (formato != null && ficha.getInspeccion() != null) {
+            inspeccionRepository.findById(ficha.getInspeccion()).ifPresent(inspeccion -> {
+                if (inspeccion.getFormatoInspeccion() == null ||
+                    !inspeccion.getFormatoInspeccion().getIdFormatoInspeccion().equals(formato.getIdFormatoInspeccion())) {
+                    inspeccion.setFormatoInspeccion(formato);
+                    inspeccionRepository.save(inspeccion);
+                }
+            });
         }
 
         // Actualizar parámetros (valores de campos)
@@ -352,20 +379,59 @@ public class FichaInspeccionService {
         return convertToDetailDTO(fichas.get(0));
     }
 
-    // ========== MÉTODOS AUXILIARES ==========
+    // ========== MÉTODOS AUXILIARES COMPARTIDOS ==========
 
-    private FormatoInspeccion crearFormatoPorDefecto(Inspeccion inspeccion) {
+    /**
+     * Obtiene el {@link FormatoInspeccion} activo de la inspección.
+     * <p>
+     * Flujo de selección:
+     * <ol>
+     *   <li>Si la inspección ya tiene un {@code FormatoInspeccion} asignado, lo devuelve tal cual.</li>
+     *   <li>Si no lo tiene, busca cualquier formato activo en la BD y lo reutiliza.</li>
+     *   <li>Si definitivamente no existe ningún formato activo, crea uno nuevo con campos
+     *       genéricos preconfigurados (27 campos en 4 secciones) y lo asigna a la inspección.</li>
+     * </ol>
+     * Esto evita duplicar formatos cuando ya hay uno configurado y lista para reutilizar.
+     *
+     * @param inspeccion la inspección para la que se necesita formato
+     * @return un {@link FormatoInspeccion} siempre no-nulo
+     */
+    public FormatoInspeccion obtenerOCrearFormatoActivo(Inspeccion inspeccion) {
+        // 1. Ya asignado en la cabecera de la inspección
+        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
+        if (formato != null) {
+            return formato;
+        }
+
+        // 2. Reutilizar el primer formato activo existente
+        formato = formatoRepository.findAll().stream()
+                .filter(f -> Boolean.TRUE.equals(f.getActivo()))
+                .findFirst()
+                .orElse(null);
+        if (formato != null) {
+            inspeccion.setFormatoInspeccion(formato);
+            inspeccionRepository.save(inspeccion);
+            return formato;
+        }
+
+        // 3. No hay formatos → crear uno por defecto
+        return crearFormatoPorDefectoSiNoExiste(inspeccion);
+    }
+
+    /**
+     * Crea un {@link FormatoInspeccion} por defecto con 27 campos preconfigurados
+     * en 4 secciones. Solo se ejecuta cuando definitivamente no hay ningún formato activo.
+     */
+    private FormatoInspeccion crearFormatoPorDefectoSiNoExiste(Inspeccion inspeccion) {
         FormatoInspeccion formato = new FormatoInspeccion();
         formato.setNombre("Formato " + inspeccion.getCodigo());
         formato.setDescripcion("Formato por defecto para inspección " + inspeccion.getCodigo());
         formato.setActivo(true);
         FormatoInspeccion guardado = formatoRepository.save(formato);
 
-        // Asignar a la inspección
         inspeccion.setFormatoInspeccion(guardado);
         inspeccionRepository.save(inspeccion);
 
-        // Crear campos por defecto (los mismos que en el frontend)
         String[] camposPorDefecto = {
                 "ID:", "Nº de la empresa:", "Nombre del representante:", "Teléfono:",
                 "Dirección:", "Localización:", "NUMERO DE PLACA:", "MODELO DE LA PLACA:",
@@ -400,23 +466,47 @@ public class FichaInspeccionService {
         return guardado;
     }
 
-    private void crearValoresPorDefecto(FichaInspeccion ficha, FormatoInspeccion formato) {
+    /**
+     * Crea un {@link ValorCampo} vacío por cada {@link CampoFormato} del formato,
+     * asociándolo a la ficha indicada.
+     * Usar cada vez que se crea una nueva {@link FichaInspeccion} para poblar
+     * todos los campos definidos en el formato.
+     *
+     * @param ficha   la ficha recién persistida (ya tiene id)
+     * @param formato el formato del que se toman los campos
+     */
+    public void crearValoresCamposParaFicha(FichaInspeccion ficha, FormatoInspeccion formato) {
         List<CampoFormato> campos = campoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(
                 formato.getIdFormatoInspeccion());
         for (CampoFormato campo : campos) {
             ValorCampo valor = new ValorCampo();
             valor.setFichaInspeccion(ficha);
             valor.setCampoFormato(campo);
-            valor.setValor(""); // valor vacío, se llenará después
+            valor.setValor("");
             valor.setObservacion("");
             valorRepository.save(valor);
         }
+    }
+
+    /**
+     * @deprecated Usar {@link #obtenerOCrearFormatoActivo} en su lugar.
+     * Mantenido por compatibilidad.
+     */
+    @Deprecated
+    private FormatoInspeccion crearFormatoPorDefecto(Inspeccion inspeccion) {
+        return crearFormatoPorDefectoSiNoExiste(inspeccion);
+    }
+
+    @Deprecated
+    private void crearValoresPorDefecto(FichaInspeccion ficha, FormatoInspeccion formato) {
+        crearValoresCamposParaFicha(ficha, formato);
     }
 
     // Conversión a DTO de respuesta simple (sin profundidad)
     private FichaInspeccionResponseDTO convertToResponseDTO(FichaInspeccion ficha) {
         FichaInspeccionResponseDTO dto = new FichaInspeccionResponseDTO();
         dto.setIdFichaInspeccion(ficha.getIdFichaInspeccion());
+        dto.setInspeccionId(ficha.getInspeccion());
         dto.setVehiculoId(ficha.getVehiculo());
         dto.setEstado(ficha.getEstado());
         dto.setResultado(ficha.getResultado());
@@ -452,6 +542,7 @@ public class FichaInspeccionService {
     private FichaInspeccionResponseDTO convertToDetailDTO(FichaInspeccion ficha) {
         FichaInspeccionResponseDTO dto = new FichaInspeccionResponseDTO();
         dto.setIdFichaInspeccion(ficha.getIdFichaInspeccion());
+        dto.setInspeccionId(ficha.getInspeccion());
         dto.setVehiculoId(ficha.getVehiculo());
         dto.setEstado(ficha.getEstado());
         dto.setResultado(ficha.getResultado());

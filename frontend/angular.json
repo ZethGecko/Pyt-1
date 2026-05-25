@@ -35,9 +35,10 @@
                "node_modules/leaflet/dist/leaflet.css",
                "src/styles.scss"
              ],
-             "scripts": []
-           },
-          "configurations": {
+              "scripts": [],
+              "allowedCommonJsDependencies": ["leaflet"]
+            },
+           "configurations": {
             "production": {
               "budgets": [
                 {

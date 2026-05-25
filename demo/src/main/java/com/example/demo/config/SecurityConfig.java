@@ -50,55 +50,57 @@ public class SecurityConfig {
         };
     }
 
-@Bean
-       public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-           http
-               .cors()  // Enable CORS support
-               .and()
-               .csrf().disable()
-                 .authorizeHttpRequests(auth -> auth
-                      .requestMatchers("/api/auth/login").permitAll()
-                      .requestMatchers("/api/auth/refresh").permitAll()
-                      .requestMatchers("/api/auth/logout").permitAll()
-                      .requestMatchers("/api/auth/validate").permitAll()
-                       .requestMatchers("/api/auth/notificaciones/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/publicaciones", "/api/publicaciones/**").permitAll()
-                       .requestMatchers(HttpMethod.POST, "/api/publicaciones").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                      .requestMatchers("/api/tipos-tramite/publico").permitAll()
-                     .requestMatchers("/api/tramites/publico/**").permitAll()
-                     .requestMatchers("/api/tramites/buscar/enriquecidos").permitAll()
-                     .requestMatchers("/api/tramites/enriquecidos").permitAll()
-                      .requestMatchers("/api/rutas/buscar").permitAll()
-                      .requestMatchers("/api/rutas/debug/**").permitAll()
-                      .requestMatchers("/api/empresas").permitAll()
-                      .requestMatchers("/api/empresas/**").permitAll()
-                       .requestMatchers("/api/expedientes").permitAll()
-                       .requestMatchers("/api/expedientes/**").permitAll()
-                       .requestMatchers("/api/documentos-tramite/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "INSPECTOR", "TRAMITES")
-                       .requestMatchers("/api/instancias-tramite/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "TRAMITES")
-                      .requestMatchers("/api/puntos").permitAll()
-                     .requestMatchers("/api/puntos/**").permitAll()
-                     .requestMatchers("/api/grupos-presentacion/**").permitAll()
-                     .requestMatchers("/api/inscripcion-examen/**").permitAll()
-                       .requestMatchers("/api/parametros-inspeccion/**").permitAll()
-                       .requestMatchers("/api/fichas-inspeccion").permitAll()
-                       .requestMatchers("/api/fichas-inspeccion/**").permitAll()
-                       .requestMatchers(HttpMethod.GET, "/api/imagenes-sitio/**").permitAll()
-                       .requestMatchers(HttpMethod.POST, "/api/imagenes-sitio/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                       .requestMatchers(HttpMethod.DELETE, "/api/imagenes-sitio/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                       .requestMatchers("/actuator/**").permitAll()
-                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                     // Recursos estáticos del frontend
-                     .requestMatchers("/", "/index.html", "/favicon.ico", "/manifest.json", "/assets/**").permitAll()
-                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                     .anyRequest().authenticated()
-                 )
-              .sessionManagement(session -> session
-                  .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-              );
+    @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http
+                .cors()  // Enable CORS support
+                .and()
+                .csrf().disable()
+                  .authorizeHttpRequests(auth -> auth
+                       .requestMatchers("/api/auth/login").permitAll()
+                       .requestMatchers("/api/auth/refresh").permitAll()
+                       .requestMatchers("/api/auth/logout").permitAll()
+                       .requestMatchers("/api/auth/validate").permitAll()
+                        .requestMatchers("/api/auth/notificaciones/**").permitAll()
+                         .requestMatchers(HttpMethod.GET, "/api/publicaciones", "/api/publicaciones/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/publicaciones").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                       .requestMatchers("/api/tipos-tramite/publico").permitAll()
+                      .requestMatchers("/api/tramites/publico/**").permitAll()
+                      .requestMatchers("/api/tramites/buscar/enriquecidos").permitAll()
+                      .requestMatchers("/api/tramites/enriquecidos").permitAll()
+                       .requestMatchers("/api/rutas/buscar").permitAll()
+                       .requestMatchers("/api/rutas/debug/**").permitAll()
+                       .requestMatchers("/api/empresas").permitAll()
+                       .requestMatchers("/api/empresas/**").permitAll()
+                        .requestMatchers("/api/expedientes").permitAll()
+                        .requestMatchers("/api/expedientes/**").permitAll()
+                        .requestMatchers("/api/documentos-tramite/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "INSPECTOR", "TRAMITES")
+                        .requestMatchers("/api/instancias-tramite/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "TRAMITES")
+                       .requestMatchers("/api/puntos").permitAll()
+                      .requestMatchers("/api/puntos/**").permitAll()
+                      .requestMatchers("/api/grupos-presentacion/**").permitAll()
+                      .requestMatchers("/api/inscripcion-examen/**").permitAll()
+                        .requestMatchers("/api/parametros-inspeccion/**").permitAll()
+                        .requestMatchers("/api/fichas-inspeccion").permitAll()
+                        .requestMatchers("/api/fichas-inspeccion/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/imagenes-sitio/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/imagenes-sitio/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/imagenes-sitio/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/actuator/**").permitAll()
+                      .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                      // Auditoría - solo para ADMIN y SUPER_ADMIN
+                      .requestMatchers("/api/audit/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                      // Recursos estáticos del frontend
+                      .requestMatchers("/", "/index.html", "/favicon.ico", "/manifest.json", "/assets/**").permitAll()
+                      .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                      .anyRequest().authenticated()
+                  )
+               .sessionManagement(session -> session
+                   .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+               );
 
-          http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+           http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
-          return http.build();
-      }
+           return http.build();
+       }
 }

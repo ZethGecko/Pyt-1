@@ -46,14 +46,46 @@ public class FormatoInspeccionController {
 
     @PostMapping
     public ResponseEntity<FormatoInspeccionResponseDTO> crear(@RequestBody FormatoInspeccionCreateRequestDTO request) {
-        FormatoInspeccionResponseDTO creado = service.crearFormato(request);
-        return new ResponseEntity<>(creado, HttpStatus.CREATED);
+        System.out.println("[FormatoInspeccionController] POST /api/formatos-inspeccion - Request: " +
+            "nombre=" + request.getNombre() + ", tituloPrincipal=" + request.getTituloPrincipal() +
+            ", camposCount=" + (request.getCampos() != null ? request.getCampos().size() : 0));
+        if (request.getCampos() != null) {
+            request.getCampos().forEach(c ->
+                System.out.println("  Campo: id=" + c.getId() + ", nombre=" + c.getNombre() + ", seccion=" + c.getSeccion())
+            );
+        }
+        FormatoInspeccionResponseDTO creado;
+        try {
+            creado = service.crearFormato(request);
+            System.out.println("[FormatoInspeccionController] Formato creado OK: id=" + creado.getId() +
+                ", camposBackendCount=" + (creado.getCampos() != null ? creado.getCampos().size() : "null"));
+            return new ResponseEntity<>(creado, HttpStatus.CREATED);
+        } catch (Exception e) {
+            System.err.println("[FormatoInspeccionController] ERROR creando formato: " + e.getMessage());
+            throw e;
+        }
     }
 
     @PutMapping("/{id}")
     public FormatoInspeccionResponseDTO actualizar(@PathVariable Long id,
                                                     @RequestBody FormatoInspeccionCreateRequestDTO request) {
-        return service.actualizarFormato(id, request);
+        System.out.println("[FormatoInspeccionController] PUT /api/formatos-inspeccion/" + id +
+            " - Request: tituloPrincipal=" + request.getTituloPrincipal() +
+            ", camposCount=" + (request.getCampos() != null ? request.getCampos().size() : 0));
+        if (request.getCampos() != null) {
+            request.getCampos().forEach(c ->
+                System.out.println("  Campo: id=" + c.getId() + ", nombre=" + c.getNombre() + ", seccion=" + c.getSeccion())
+            );
+        }
+        try {
+            FormatoInspeccionResponseDTO actualizado = service.actualizarFormato(id, request);
+            System.out.println("[FormatoInspeccionController] Formato actualizado OK: id=" + actualizado.getId() +
+                ", camposBackendCount=" + (actualizado.getCampos() != null ? actualizado.getCampos().size() : "null"));
+            return actualizado;
+        } catch (Exception e) {
+            System.err.println("[FormatoInspeccionController] ERROR actualizando formato: " + e.getMessage());
+            throw e;
+        }
     }
 
     @DeleteMapping("/{id}")

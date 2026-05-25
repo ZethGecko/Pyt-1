@@ -9,6 +9,7 @@ import java.util.List;
  public class FichaInspeccionResponseDTO {
      private Long idFichaInspeccion;
      private Long vehiculoId;
+     private Long inspeccionId;
      private Long vehiculoAptoId; // ID del registro de revisión documental
      private String vehiculoPlaca;
      private String vehiculoMarca;
@@ -18,7 +19,6 @@ import java.util.List;
      private String observaciones;
      private LocalDateTime fechaInspeccion;
      private List<ParametroInspeccionResponseDTO> parametros;
-     // Nuevos campos
      private String empresaNombre;
      private EstadoDocumental estadoDocumental;
      // Títulos del certificado
@@ -33,8 +33,11 @@ import java.util.List;
 
       public FichaInspeccionResponseDTO() {}
 
-    public Long getIdFichaInspeccion() { return idFichaInspeccion; }
-    public void setIdFichaInspeccion(Long idFichaInspeccion) { this.idFichaInspeccion = idFichaInspeccion; }
+     public Long getIdFichaInspeccion() { return idFichaInspeccion; }
+     public void setIdFichaInspeccion(Long idFichaInspeccion) { this.idFichaInspeccion = idFichaInspeccion; }
+
+     public Long getInspeccionId() { return inspeccionId; }
+     public void setInspeccionId(Long inspeccionId) { this.inspeccionId = inspeccionId; }
 
     @JsonProperty("id")
     public Long getId() {

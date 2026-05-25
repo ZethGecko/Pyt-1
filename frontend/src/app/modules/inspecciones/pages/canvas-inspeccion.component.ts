@@ -28,20 +28,22 @@ type ParametroFichaExtendido = ParametroInspeccion & {
    templateUrl: './canvas-inspeccion.component.html',
    styleUrls: ['./canvas-inspeccion.component.scss']
  })
- export class CanvasInspeccionComponent implements OnInit, OnDestroy {
-   inspeccionId: number = 0;
-   modoEdicion: boolean = false;
-   ficha: FichaInspeccion | null = null;
-   inspeccion?: InspeccionResponse;
-   parametrosFicha: ParametroFichaExtendido[] = [];
+  export class CanvasInspeccionComponent implements OnInit, OnDestroy {
+    inspeccionId: number = 0;
+    modoEdicion: boolean = false;
+    ficha: FichaInspeccion | null = null;
+    formatoId: number | null = null;
+    inspeccion?: InspeccionResponse;
+    parametrosFicha: ParametroFichaExtendido[] = [];
    errorCarga: boolean = false;
    mensajeError: string = '';
-   cargandoFicha: boolean = false;
-   modoDiseno: boolean = false;
+    cargandoFicha: boolean = false;
+    modoDiseno: boolean = false;
 
-   // Estado de conexión
-   isOnline: boolean = navigator.onLine;
-   draftGuardado: boolean = false;
+    // Estado de conexión
+    isOnline: boolean = navigator.onLine;
+    draftGuardado: boolean = false;
+    private isSaving: boolean = false;
 
    // Textos editables del encabezado
    tituloPrincipal: string = 'CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA';
@@ -137,8 +139,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      private draftService: DraftInspeccionService
    ) {}
 
-   ngOnInit(): void {
-     // Detectar cambios de conexión
+    ngOnInit(): void {
+      console.log('[CanvasInspeccion] ngOnInit() - ruta:', this.route.snapshot.routeConfig?.path, 'idParam:', this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('inspeccionId') || this.route.snapshot.paramMap.get('fichaId'));
+      // Detectar cambios de conexión
      window.addEventListener('online', () => this.handleOnline());
      window.addEventListener('offline', () => this.handleOffline());
 
@@ -249,25 +252,54 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      });
    }
 
-   private cargarDatos(): void {
-     this.cargandoFicha = true;
-     this.errorCarga = false;
+    private cargarDatos(): void {
+      this.cargandoFicha = true;
+      this.errorCarga = false;
 
-     forkJoin({
-       fichas: this.fichaInspeccionService.getByInspeccion(this.inspeccionId),
-       inspeccion: this.inspeccionService.obtener(this.inspeccionId),
-       formato: this.formatoInspeccionService.getByInspeccion(this.inspeccionId)
-     }).subscribe({
-       next: ({ fichas, inspeccion, formato }) => {
-         this.cargandoFicha = false;
-         this.inspeccion = inspeccion;
-         if (fichas && fichas.length > 0) {
-           this.ficha = fichas.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
-           this.resultado = this.ficha.resultado || '';
-           this.firmaResponsable = (this.ficha as any).firmaResponsable || '';
-           this.fechaFirma = (this.ficha as any).fechaFirma ? this.formatDateToInput((this.ficha as any).fechaFirma) : '';
+      forkJoin({
+        fichas: this.fichaInspeccionService.getByInspeccion(this.inspeccionId),
+        inspeccion: this.inspeccionService.obtener(this.inspeccionId).pipe(catchError(() => of(null))),
+        formato: this.formatoInspeccionService.getByInspeccion(this.inspeccionId).pipe(catchError(() => of(null)))
+      }).subscribe({
+        next: ({ fichas, inspeccion, formato }) => {
+          this.cargandoFicha = false;
 
-           const currentUserId = this.authState.currentUser()?.id;
+          console.log('[CanvasInspeccion] cargarDatos():', {
+            fichasCount: fichas?.length || 0,
+            formatoId_recibido: formato?.id,
+            formatoNombre: formato?.nombre,
+            fichaId_actual: this.ficha?.id,
+            formatoId_actual: this.formatoId
+          });
+
+          // Inspección no existe en BD (FK rota/stale): notificar y continuar con la ficha
+          if (!inspeccion) {
+            console.warn('[CanvasInspeccion] No se pudo cargar la Inspección ' + this.inspeccionId + ': fue eliminada o nunca existió.');
+            this.notificationService?.showWarning(
+              'La inspección asociada a esta ficha ya no existe. La ficha se muestra en modo recuperación.',
+              'Inspección no encontrada',
+              6000
+            );
+            this.inspeccion = undefined;
+          } else {
+            this.inspeccion = inspeccion;
+          }
+
+          if (fichas && fichas.length > 0) {
+            this.ficha = fichas.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+            // En modo EJECUCION, NUNCA sobrescribir formatoId con el id de la ficha
+            // formatoId solo se modifica en modo DISENO
+            console.log('[CanvasInspeccion] Ficha cargada:', {
+              modo: this.modoDiseno ? 'DISENO' : 'EJECUCION',
+              fichaId: this.ficha.id,
+              formatoId_actual: this.formatoId,
+              modoDiseno: this.modoDiseno
+            });
+            this.resultado = this.ficha.resultado || '';
+            this.firmaResponsable = (this.ficha as any).firmaResponsable || '';
+            this.fechaFirma = (this.ficha as any).fechaFirma ? this.formatDateToInput((this.ficha as any).fechaFirma) : '';
+
+            const currentUserId = this.authState.currentUser()?.id;
            if (currentUserId && !this.ficha.usuarioInspector) {
              this.ficha.usuarioInspector = currentUserId;
              this.fichaInspeccionService.update(this.ficha.id!, this.ficha).subscribe();
@@ -280,6 +312,10 @@ type ParametroFichaExtendido = ParametroInspeccion & {
                 this.fusionarParametrosConFormato(formato);
               }
             } else if (formato && formato.campos && formato.campos.length > 0) {
+              // Solo sobrescribir formatoId si estamos en modo diseno
+              if (this.modoDiseno && formato.id) {
+                this.formatoId = formato.id ?? null;
+              }
               this.parametrosFicha = formato.campos.map(c => ({
                 idParametros: c.id,
                 parametro: c.nombre,
@@ -389,9 +425,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
       this.fusionarParametrosConFormato(formato);
     }
 
-   private cargarFormatoParaEdicion(): void {
-    this.cargandoFicha = true;
-    this.errorCarga = false;
+    private cargarFormatoParaEdicion(): void {
+     this.cargandoFicha = true;
+     this.errorCarga = false;
 
     forkJoin({
       inspeccion: this.inspeccionService.obtener(this.inspeccionId)
@@ -406,19 +442,28 @@ type ParametroFichaExtendido = ParametroInspeccion & {
       next: ({ inspeccion, formato }) => {
         this.cargandoFicha = false;
         this.inspeccion = inspeccion;
+        console.log('[CanvasInspeccion] Formato cargado desde BD:', {
+          id: formato?.id,
+          nombre: formato?.nombre,
+          tituloPrincipal: formato?.tituloPrincipal,
+          camposCount: formato?.campos?.length || 0,
+          campos: formato?.campos?.map((c: any) => ({ id: c.id, nombre: c.nombre, seccion: c.seccion }))
+        });
         if (formato) {
+          this.formatoId = formato.id ?? null;
           this.ficha = this.construirFichaDesdeFormato(formato);
           this.sincronizarTitulosDesdeFormato(formato);
           this.construirParametrosFicha();
           this.rellenarDatosAutomaticos();
         } else {
+          this.formatoId = null;
           this.ficha = null;
           this.inicializarFichaVacia();
         }
       },
       error: (err: any) => {
         this.cargandoFicha = false;
-        console.error('Error cargando formato:', err);
+        console.error('[CanvasInspeccion] Error cargando formato:', err);
         this.errorCarga = true;
         this.mensajeError = 'Error al cargar el formato de inspección.';
       }
@@ -426,10 +471,18 @@ type ParametroFichaExtendido = ParametroInspeccion & {
   }
 
 
-  crearFichaManual(): void {
-    if (!confirm('¿Desea crear una ficha de inspección vacía para esta inspección?\n\nNota: Se crearán los campos por defecto, pero puede editarlos luego.')) {
-      return;
-    }
+    crearFichaManual(): void {
+     if (!this.inspeccionId || this.inspeccionId <= 0) {
+       alert('No es posible crear la ficha: la inspección no tiene un identificador válido. Recargue la página o navegue nuevamente a la inspección.');
+       return;
+     }
+     if (!this.inspeccion) {
+       alert('No es posible crear la ficha: la inspección asociada no existe o fue eliminada de la base de datos.');
+       return;
+     }
+     if (!confirm('¿Desea crear una ficha de inspección vacía para esta inspección?\n\nNota: Se crearán los campos por defecto, pero puede editarlos luego.')) {
+       return;
+     }
 
     this.cargandoFicha = true;
     const currentUserId = this.authState.currentUser()?.id;
@@ -709,127 +762,188 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      this.router.navigate(['/inspecciones']);
    }
 
-   guardarCertificado(): void {
-     if (this.modoDiseno) {
-       const currentUserId = this.authState.currentUser()?.id;
-       if (!currentUserId) {
-         alert('No se pudo obtener el ID del usuario actual');
-         return;
-       }
+    guardarCertificado(): void {
+      if (this.modoDiseno) {
+        if (this.isSaving) {
+          console.log('[CanvasInspeccion] Guardado en progreso, ignorando clic duplicado');
+          return;
+        }
+        this.isSaving = true;
 
-       const formatoDTO: any = {
-         nombre: 'Formato ' + (this.inspeccion?.codigo || 'Inspección ' + this.inspeccionId),
-         descripcion: 'Formato editado',
-         tituloPrincipal: this.tituloPrincipal,
-         subtituloPrincipal: this.subtituloPrincipal,
-         subtitulo2: this.subtitulo2 || '',
-         tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
-         tituloSeccionPlaca: this.titulosSecciones['PLACA'],
-         tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
-         tituloSeccionLaboratorio: this.titulosSecciones['LABORATORIO'],
-         campos: this.parametrosFicha.map(p => ({
-           id: p.idParametros || undefined,
-           nombre: p.parametro,
-           seccion: p.seccionAsignada || p.seccion || 'LABORATORIO',
-           orden: p.orden !== undefined ? p.orden : 0,
-           tipoEvaluacion: 'TEXTO',
-           obligatorio: false
-         }))
-       };
+        const currentUserId = this.authState.currentUser()?.id;
+        if (!currentUserId) {
+          this.isSaving = false;
+          alert('No se pudo obtener el ID del usuario actual');
+          return;
+        }
 
-       // Solo incluir inspeccionId si es válido (>0)
-       if (this.inspeccionId && this.inspeccionId > 0) {
-         formatoDTO.inspeccionId = this.inspeccionId;
-       }
+        const formatoDTO: any = {
+          nombre: 'Formato ' + (this.inspeccion?.codigo || 'Inspección ' + this.inspeccionId),
+          descripcion: 'Formato editado',
+          tituloPrincipal: this.tituloPrincipal,
+          subtituloPrincipal: this.subtituloPrincipal,
+          subtitulo2: this.subtitulo2 || '',
+          tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
+          tituloSeccionPlaca: this.titulosSecciones['PLACA'],
+          tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
+          tituloSeccionLaboratorio: this.titulosSecciones['LABORATORIO'],
+          campos: this.parametrosFicha.map(p => ({
+            id: p.idParametros || undefined,
+            nombre: p.parametro,
+            seccion: p.seccionAsignada || p.seccion || 'LABORATORIO',
+            orden: p.orden !== undefined ? p.orden : 0,
+            tipoEvaluacion: 'TEXTO',
+            obligatorio: false
+          }))
+        };
+
+        // Solo incluir inspeccionId si es válido (>0)
+        if (this.inspeccionId && this.inspeccionId > 0) {
+          formatoDTO.inspeccionId = this.inspeccionId;
+        }
+
+        const existingFormatoId = this.ficha?.id;
+
+        console.log('[CanvasInspeccion] Guardando formato:', {
+          modo: this.formatoId ? 'UPDATE' : 'CREATE',
+          formatoId: this.formatoId || 'nuevo',
+          inspeccionId: this.inspeccionId,
+          tituloPrincipal: formatoDTO.tituloPrincipal,
+          camposEnviados: formatoDTO.campos.length,
+          camposDetalle: formatoDTO.campos.map((c: any) => ({ id: c.id, nombre: c.nombre, seccion: c.seccion }))
+        });
 
        this.cargandoFicha = true;
-       const existingFormatoId = this.ficha?.id;
 
-       const request = existingFormatoId
-         ? this.formatoInspeccionService.update(existingFormatoId, formatoDTO)
+       const request = this.formatoId
+         ? this.formatoInspeccionService.update(this.formatoId, formatoDTO)
          : this.formatoInspeccionService.create(formatoDTO);
 
        request.subscribe({
          next: (formato) => {
-           this.ficha = this.construirFichaDesdeFormato(formato);
+           console.log('[CanvasInspeccion] Formato guardado OK:', {
+             id: formato.id,
+             tituloPrincipal: formato.tituloPrincipal,
+             camposCount: formato.campos?.length || 0,
+             campos: formato.campos?.map((c: any) => ({ id: c.id, nombre: c.nombre, seccion: c.seccion }))
+           });
+            this.formatoId = formato.id ?? null;
+            this.ficha = this.construirFichaDesdeFormato(formato);
            this.sincronizarTitulosDesdeFormato(formato);
            this.construirParametrosFicha();
            this.rellenarDatosAutomaticos();
-           // Actualizar el ID del formato en la ficha para futuras ediciones
-           this.ficha.id = formato.id;
-           this.notificationService?.showSuccess('Formato guardado correctamente', 'Éxito', 2000);
-           this.cargandoFicha = false;
-         },
-         error: (err: any) => {
-           this.cargandoFicha = false;
-           console.error('Error guardando formato:', err);
-           alert('Error al guardar el formato.');
-         }
-       });
-       return;
-     }
+            this.notificationService?.showSuccess('Formato guardado correctamente', 'Éxito', 2000);
+            this.cargandoFicha = false;
+            this.isSaving = false;
+          },
+          error: (err: any) => {
+            console.error('[CanvasInspeccion] Error guardando formato:', err);
+            console.error('[CanvasInspeccion] Error body:', err.error);
+            this.cargandoFicha = false;
+            this.isSaving = false;
+            alert('Error al guardar el formato: ' + (err.error?.message || err.message || 'desconocido'));
+          }
+        });
+        return;
+      }
 
      this.guardarCertificadoEjecucion();
    }
 
-   private guardarCertificadoEjecucion(soloSync: boolean = false): void {
-     if (this.ficha) {
-       (this.ficha as any).firmaResponsable = this.firmaResponsable || null;
-       (this.ficha as any).fechaFirma = this.fechaFirma || null;
-       this.ficha.estado = this.ficha.estado || false;
-       this.ficha.resultado = this.resultado || undefined;
-     }
+    private guardarCertificadoEjecucion(soloSync: boolean = false): void {
+      if (this.ficha) {
+        (this.ficha as any).firmaResponsable = this.firmaResponsable || null;
+        (this.ficha as any).fechaFirma = this.fechaFirma || null;
+        this.ficha.estado = this.ficha.estado || false;
+        this.ficha.resultado = this.resultado || undefined;
+      }
 
-     const fichaDTO = {
-       inspeccionId: this.inspeccionId,
-       estado: this.ficha?.estado || false,
-       usuarioInspector: this.authState.currentUser()?.id || null,
-       vehiculoId: this.inspeccion?.vehiculoId || null,
-       parametros: this.parametrosFicha.map(p => ({
-         idParametros: p.idParametros,
-         parametro: p.parametro,
-         observacion: p.valor || '',
-         seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
-       })),
-       firmaResponsable: this.firmaResponsable || undefined,
-       fechaFirma: this.fechaFirma || undefined,
-       resultado: this.resultado || undefined
-     };
+      // Si la inspeccion no existe en BD (FK rota), solo permitir UPDATE de fichas existentes.
+      // Bloquear POST de creacion que enviaria inspeccionId nulo/invalido al servidor.
+      if (!this.inspeccion) {
+        if (this.ficha && this.ficha.id) {
+          this.fichaInspeccionService.update(this.ficha.id, {
+            estado: this.ficha.estado || false,
+            usuarioInspector: this.authState.currentUser()?.id || null,
+            parametros: this.parametrosFicha.map(p => ({
+              idParametros: p.idParametros,
+              parametro: p.parametro,
+              observacion: p.valor || '',
+              seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
+            })),
+            firmaResponsable: this.firmaResponsable || undefined,
+            fechaFirma: this.fechaFirma || undefined,
+            resultado: this.resultado || undefined,
+            observaciones: this.ficha.observaciones
+          }).subscribe({
+            next: () => {
+              this.cargandoFicha = false;
+              if (!soloSync) {
+                this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
+              }
+            },
+            error: (err: any) => {
+              console.error('Error guardando ficha sin inspeccion:', err);
+              this.cargandoFicha = false;
+              if (!soloSync) {
+                alert('La inspeccion ya no existe. No se pudo guardar los cambios.');
+              }
+            }
+          });
+        }
+        return;
+      }
+      const fichaDTO = {
+        inspeccionId: this.inspeccionId,
+        estado: this.ficha?.estado || false,
+        usuarioInspector: this.authState.currentUser()?.id || null,
+        vehiculoId: this.inspeccion?.vehiculoId || null,
+        parametros: this.parametrosFicha.map(p => ({
+          idParametros: p.idParametros,
+          parametro: p.parametro,
+          observacion: p.valor || '',
+          seccion: p.seccionAsignada || p.seccion || 'LABORATORIO'
+        })),
+        firmaResponsable: this.firmaResponsable || undefined,
+        fechaFirma: this.fechaFirma || undefined,
+        resultado: this.resultado || undefined
+      };
 
-     // Si no hay conexión y no es solo sync, guardar solo local y notificar
-     if (!this.isOnline && !soloSync) {
-       this.guardarBorradorAutomatico();
-       alert('Sin conexión. Los datos se han guardado localmente. Se sincronizarán cuando se restablezca la conexión.');
-       return;
-     }
+      // Si no hay conexion y no es solo sync, guardar solo local y notificar
+      if (!this.isOnline && !soloSync) {
+        this.guardarBorradorAutomatico();
+        alert('Sin conexion. Los datos se han guardado localmente. Se sincronizaran cuando se restablezca la conexion.');
+        return;
+      }
 
-     this.cargandoFicha = true;
-     const request = this.ficha && this.ficha.id
-       ? this.fichaInspeccionService.update(this.ficha.id, fichaDTO)
-       : this.fichaInspeccionService.create(fichaDTO);
+      this.cargandoFicha = true;
+      const request = this.ficha && this.ficha.id
+        ? this.fichaInspeccionService.update(this.ficha.id, fichaDTO)
+        : this.fichaInspeccionService.create(fichaDTO);
 
-     request.subscribe({
-       next: () => {
-         this.notificationService?.showSuccess('Certificado guardado correctamente', 'Éxito', 2000);
-         this.cargandoFicha = false;
-         // Limpiar borrador local tras guardar exitosamente en servidor
-         this.limpiarBorrador();
-         if (!soloSync) {
-           this.cargarDatos();
+      request.subscribe({
+        next: () => {
+          this.notificationService?.showSuccess('Certificado guardado correctamente', 'Exito', 2000);
+          this.cargandoFicha = false;
+          // Limpiar borrador local tras guardar exitosamente en servidor
+          this.limpiarBorrador();
+          if (!soloSync) {
+            this.cargarDatos();
+          }
+        },
+        error: (err: any) => {
+          this.cargandoFicha = false;
+          console.error('Error guardando certificado:', err);
+          if (soloSync) {
+            console.log('[CanvasInspeccion] Fallo sincronizacion, se mantendra borrador local');
+          } else {
+            alert('Error al guardar el certificado. Los datos se han guardado localmente.');
+            this.guardarBorradorAutomatico();
+          }
          }
-       },
-       error: (err: any) => {
-         this.cargandoFicha = false;
-         console.error('Error guardando certificado:', err);
-         if (soloSync) {
-           console.log('[CanvasInspeccion] Falló sincronización, se mantendrá borrador local');
-         } else {
-           alert('Error al guardar el certificado. Los datos se han guardado localmente.');
-           this.guardarBorradorAutomatico();
-         }
-       }
-     });
-   }
+       });
+      }
+      // end if (!this.inspeccion) — update de ficha existente con inspeccion desaparecida
 
   toggleModoEdicion(): void {
     this.modoEdicion = !this.modoEdicion;
@@ -1241,7 +1355,7 @@ type ParametroFichaExtendido = ParametroInspeccion & {
       }, 1000);
     }
 
-    ngOnDestroy(): void {
+  public ngOnDestroy(): void {
       window.removeEventListener('online', this.handleOnline);
       window.removeEventListener('offline', this.handleOffline);
       this.prepararParaSalida();

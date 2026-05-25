@@ -1,6 +1,8 @@
 package com.example.demo.repository;
 
 import com.example.demo.model.FichaInspeccion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +14,18 @@ import java.util.Optional;
 
 @Repository
 public interface FichaInspeccionRepository extends JpaRepository<FichaInspeccion, Long> {
+
+    @EntityGraph(attributePaths = {
+        "vehiculoEntity",
+        "vehiculoEntity.empresa",
+        "formatoInspeccion",
+        "formatoInspeccion.campos",
+        "inspeccionEntity",
+        "usuarioInspectorEntity",
+        "vehiculoApto"
+    })
+    @Query("SELECT f FROM FichaInspeccion f")
+    Page<FichaInspeccion> findAllWithAssociations(Pageable pageable);
 
     @EntityGraph(attributePaths = {
         "vehiculoEntity",
@@ -31,6 +45,8 @@ public interface FichaInspeccionRepository extends JpaRepository<FichaInspeccion
     @EntityGraph(attributePaths = {
         "vehiculoEntity",
         "vehiculoEntity.empresa",
+        "formatoInspeccion",
+        "formatoInspeccion.campos",
         "inspeccionEntity",
         "usuarioInspectorEntity"
     })
