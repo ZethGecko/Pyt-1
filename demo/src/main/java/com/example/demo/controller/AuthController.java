@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.model.Users;
 import com.example.demo.repository.UsersRepository;
 import com.example.demo.security.JwtUtil;
-import com.example.demo.security.UserDetailsServiceImpl;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -31,9 +30,6 @@ public class AuthController {
 
     @Autowired
     private UsersRepository usersRepository;
-
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
 
       @PostMapping("/login")
       public ResponseEntity<?> createAuthenticationToken(@RequestBody Map<String, String> credentials) {

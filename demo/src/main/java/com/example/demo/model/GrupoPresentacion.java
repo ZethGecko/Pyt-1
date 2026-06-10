@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
+@Audited
 @Table(name = "grupo_presentacion", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"requisito_examen_id", "fecha"}, name = "uk_grupo_requisito_fecha")
 })
@@ -112,6 +115,7 @@ public class GrupoPresentacion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "configuracion_examen_id")
     @JsonIgnore
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private ConfiguracionExamen configuracionExamen;
 
     @Version

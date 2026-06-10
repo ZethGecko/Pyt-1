@@ -22,8 +22,10 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "inspeccion")
 public class Inspeccion {
 

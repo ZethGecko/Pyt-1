@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 import { ImagenSitioService, ImagenSitio as ImagenDto, UbicacionConfig } from '../../../shared/services/imagen-sitio.service';
 import { NotificationService } from '../../../shared/services/notification.service';
 

@@ -65,39 +65,48 @@ public class Users {
 
      @ManyToOne(fetch = FetchType.EAGER)
      @JoinColumn(name = "departamento_id")
+     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
      private Departamento departamento;
 
-    @OneToMany(mappedBy = "usuarioRegistra", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Tramite> tramitesRegistrados;
-
-    @OneToMany(mappedBy = "usuarioResponsableId", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Tramite> tramitesResponsables;
-
-    @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<GrupoPresentacion> gruposPresentacion;
-
-    @OneToMany(mappedBy = "usuarioInspector", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Inspeccion> inspecciones;
-
-    @OneToMany(mappedBy = "usuarioAprobado", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Solicitud> solicitudesAprobadas;
-
-     @OneToMany(mappedBy = "usuarioRechaza", cascade = CascadeType.ALL)
+     @OneToMany(mappedBy = "usuarioRegistra", cascade = CascadeType.ALL)
+     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
      @JsonIgnore
-     private List<Solicitud> solicitudesRechazadas;
+     private List<Tramite> tramitesRegistrados;
 
-     @OneToMany(mappedBy = "usuarioActualizador", cascade = CascadeType.ALL)
+     @OneToMany(mappedBy = "usuarioResponsableId", cascade = CascadeType.ALL)
+     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
      @JsonIgnore
-     private List<Publicacion> publicacionesActualizadas;
+     private List<Tramite> tramitesResponsables;
 
-    @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Publicacion> publicacionesCreadas;
+     @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
+     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+     @JsonIgnore
+     private List<GrupoPresentacion> gruposPresentacion;
+
+      @OneToMany(mappedBy = "usuarioInspector", cascade = CascadeType.ALL)
+      @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+      @JsonIgnore
+      private List<Inspeccion> inspecciones;
+
+     @OneToMany(mappedBy = "usuarioAprobado", cascade = CascadeType.ALL)
+     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+     @JsonIgnore
+     private List<Solicitud> solicitudesAprobadas;
+
+      @OneToMany(mappedBy = "usuarioRechaza", cascade = CascadeType.ALL)
+      @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+      @JsonIgnore
+      private List<Solicitud> solicitudesRechazadas;
+
+      @OneToMany(mappedBy = "usuarioActualizador", cascade = CascadeType.ALL)
+      @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+      @JsonIgnore
+      private List<Publicacion> publicacionesActualizadas;
+
+     @OneToMany(mappedBy = "usuarioCreador", cascade = CascadeType.ALL)
+     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+     @JsonIgnore
+     private List<Publicacion> publicacionesCreadas;
 
     // Constructors
     public Users() {

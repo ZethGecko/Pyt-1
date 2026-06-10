@@ -8,6 +8,7 @@ public class CrearInspeccionEnBloqueRequest {
     private String observacionesGenerales;
     private Long usuarioInspectorId;
     private String codigoGrupo;
+    private Long empresaId;
 
     public CrearInspeccionEnBloqueRequest() {}
 
@@ -49,5 +50,13 @@ public class CrearInspeccionEnBloqueRequest {
 
     public void setCodigoGrupo(String codigoGrupo) {
         this.codigoGrupo = codigoGrupo;
+    }
+
+    public Long getEmpresaId() {
+        return empresaId;
+    }
+
+    public void setEmpresaId(Long empresaId) {
+        this.empresaId = empresaId;
     }
 }

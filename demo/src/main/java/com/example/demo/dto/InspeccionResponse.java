@@ -27,6 +27,7 @@ public class InspeccionResponse {
     private String gerenteNombre;
     private Long inspectorId;
     private String inspectorNombre;
+    private String codigoRut;
 
     public InspeccionResponse() {}
 
@@ -92,4 +93,7 @@ public class InspeccionResponse {
 
     public String getGerenteNombre() { return gerenteNombre; }
     public void setGerenteNombre(String gerenteNombre) { this.gerenteNombre = gerenteNombre; }
+
+    public String getCodigoRut() { return codigoRut; }
+    public void setCodigoRut(String codigoRut) { this.codigoRut = codigoRut; }
 }

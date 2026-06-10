@@ -1,0 +1,194 @@
+<div class="auditoria-container">
+  <div class="auditoria-header">
+    <h1 class="page-title">Auditoría del Sistema</h1>
+    <p class="page-subtitle">Registro de cambios y actividades del sistema</p>
+  </div>
+
+  <div class="auditoria-content">
+    <div class="filters-card">
+      <h3 class="filter-title">Filtros</h3>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label">Tabla</label>
+          <input type="text" class="filter-input" placeholder="Nombre de tabla..."
+                 [(ngModel)]="filtroTabla">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Usuario</label>
+          <input type="text" class="filter-input" placeholder="Nombre de usuario..."
+                 [(ngModel)]="filtroUsuario">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Acción</label>
+          <select class="filter-select" [(ngModel)]="filtroAccion">
+            <option value="">Todas</option>
+            <option value="CREACION">Creación</option>
+            <option value="MODIFICACION">Modificación</option>
+            <option value="ELIMINACION">Eliminación</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Fecha desde</label>
+          <input type="date" class="filter-input" [(ngModel)]="filtroFechaDesde">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Fecha hasta</label>
+          <input type="date" class="filter-input" [(ngModel)]="filtroFechaHasta">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" (click)="cargarLogs()">Buscar</button>
+        <button class="btn btn-secondary" (click)="limpiarFiltros()">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card stat-total">
+        <span class="stat-value">{{ totalElements }}</span>
+        <span class="stat-label">Total registros</span>
+      </div>
+      <div class="stat-card stat-created">
+        <span class="stat-value">{{ stats.creaciones }}</span>
+        <span class="stat-label">Creaciones</span>
+      </div>
+      <div class="stat-card stat-updated">
+        <span class="stat-value">{{ stats.modificaciones }}</span>
+        <span class="stat-label">Modificaciones</span>
+      </div>
+      <div class="stat-card stat-deleted">
+        <span class="stat-value">{{ stats.eliminaciones }}</span>
+        <span class="stat-label">Eliminaciones</span>
+      </div>
+    </div>
+
+    <div class="logs-card" *ngIf="logs.length > 0; else emptyState">
+      <div class="logs-table-header">
+        <span>Acción</span>
+        <span>Tabla / Registro</span>
+        <span>Usuario</span>
+        <span>Fecha</span>
+      </div>
+
+      <div class="log-item" *ngFor="let log of logs">
+        <div class="log-header" (click)="toggleLogExpand(log)" style="cursor: pointer;">
+          <div class="log-main-row">
+            <span class="log-action badge" [class]="getAccionBadgeClass(log.tipoAccion || log.accion)">
+              {{ getAccionLabel(log.tipoAccion || log.accion) }}
+            </span>
+            <span class="log-table">{{ log.tablaAfectada }}</span>
+            <span class="log-id">#{{ log.registroId }}</span>
+          </div>
+          <div class="log-meta-row">
+            <span class="log-user">{{ log.usuario }}</span>
+            <span class="log-date">{{ formatDate(log.fechaAccion) }}</span>
+            <span class="log-expand">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline [attr.points]="isExpanded(log) ? '6 9 12 15 18 9' : '9 15 15 9 21 15 15 21 9 15'"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="log-details" *ngIf="isExpanded(log)">
+          <div class="log-detail-content">
+            <div class="detail-loading" *ngIf="loadingDetail && detailFor === log">
+              Cargando detalle...
+            </div>
+
+            <div class="detail-error" *ngIf="detailError && detailFor === log">
+              {{ detailError }}
+            </div>
+
+            <div class="detail-body" *ngIf="detailData && detailFor === log">
+              <div class="detail-meta">
+                <span><strong>Usuario:</strong> {{ detailData.usuario || log.usuario }}</span>
+                <span><strong>Fecha:</strong> {{ formatDate(detailData.fechaAccion || log.fechaAccion) }}</span>
+                <span><strong>Revisión:</strong> #{{ detailData.revision }}</span>
+              </div>
+
+              <div class="detail-section" *ngIf="getCurrentTipoAccion(log) === 'CREACION'">
+                <h4 class="detail-subtitle">Datos creados</h4>
+                <div class="detail-data-block">
+                  <pre>{{ log.descripcion }}</pre>
+                  <div class="detail-raw">
+                    <strong>Datos nuevos:</strong>
+                    <pre>{{ detailData.datosNuevos | json }}</pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-section" *ngIf="getCurrentTipoAccion(log) === 'MODIFICACION'">
+                <h4 class="detail-subtitle">Cambios realizados</h4>
+                <div class="detail-comparison">
+                  <div class="comparison-col">
+                    <span class="comparison-label">Datos anteriores</span>
+                    <pre class="comparison-data">{{ detailData.datosAnteriores | json }}</pre>
+                  </div>
+                  <div class="comparison-col">
+                    <span class="comparison-label">Datos actuales</span>
+                    <pre class="comparison-data">{{ detailData.datosNuevos | json }}</pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-section" *ngIf="getCurrentTipoAccion(log) === 'ELIMINACION'">
+                <h4 class="detail-subtitle">Datos eliminados</h4>
+                <div class="detail-data-block detail-danger">
+                  <pre>{{ log.descripcion }}</pre>
+                  <div class="detail-raw">
+                    <strong>Datos eliminados:</strong>
+                    <pre>{{ detailData.datosNuevos | json }}</pre>
+                  </div>
+                  <p class="detail-who">
+                    <strong>Eliminado por:</strong> {{ detailData.usuario || log.usuario }} |
+                    <strong>Fecha:</strong> {{ formatDate(detailData.fechaAccion || log.fechaAccion) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button
+          class="pagination-btn"
+          [disabled]="page === 0"
+          (click)="cambiarPagina(0)">
+          Primera
+        </button>
+        <button
+          class="pagination-btn"
+          [disabled]="page === 0"
+          (click)="cambiarPagina(page - 1)">
+          Anterior
+        </button>
+        <span class="pagination-info">
+          Página {{ page + 1 }} de {{ totalPages }}
+        </span>
+        <button
+          class="pagination-btn"
+          [disabled]="page === totalPages - 1"
+          (click)="cambiarPagina(page + 1)">
+          Siguiente
+        </button>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <h3 class="empty-title">No hay registros de auditoría</h3>
+        <p class="empty-description">No se encontraron registros con los filtros aplicados.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

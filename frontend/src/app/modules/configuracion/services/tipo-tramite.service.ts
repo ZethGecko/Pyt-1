@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 import { TipoTramite, TipoTramiteCreateRequest, TipoTramiteUpdateRequest, TipoTramiteEnriquecido } from '../models/tipo-tramite.model';
 import { RequisitoTUPAC } from '../models/requisito-tupac.model';
 

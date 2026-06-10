@@ -12,8 +12,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "persona_natural")
 public class PersonaNatural {
 

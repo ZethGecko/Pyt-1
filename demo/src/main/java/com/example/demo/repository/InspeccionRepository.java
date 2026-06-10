@@ -16,6 +16,8 @@ public interface InspeccionRepository extends JpaRepository<Inspeccion, Long> {
            "LEFT JOIN FETCH it.tramite t " +
            "LEFT JOIN FETCH t.empresa e " +
            "LEFT JOIN FETCH e.gerente " +
+           "LEFT JOIN FETCH i.empresa emp " +
+           "LEFT JOIN FETCH emp.gerente " +
            "LEFT JOIN FETCH i.tramite t2 " +
            "LEFT JOIN FETCH t2.empresa e2 " +
            "LEFT JOIN FETCH e2.gerente " +
@@ -40,6 +42,17 @@ public interface InspeccionRepository extends JpaRepository<Inspeccion, Long> {
     List<Inspeccion> findByFechaProgramadaBetween(@Param("fechaDesde") LocalDate fechaDesde,
                                                    @Param("fechaHasta") LocalDate fechaHasta);
 
-    @Query("SELECT i FROM Inspeccion i WHERE LOWER(i.tramite.empresa.nombre) LIKE LOWER(CONCAT('%', :empresaNombre, '%'))")
+    @Query("SELECT i FROM Inspeccion i WHERE i.tramite.empresa.nombre LIKE LOWER(CONCAT('%', :empresaNombre, '%'))")
     List<Inspeccion> findByEmpresaNombreContainingIgnoreCase(@Param("empresaNombre") String empresaNombre);
+
+    @Query("SELECT DISTINCT i FROM Inspeccion i " +
+           "LEFT JOIN FETCH i.empresa e " +
+           "LEFT JOIN FETCH i.tramite t " +
+           "LEFT JOIN FETCH t.empresa te " +
+           "WHERE e.idEmpresa = :empresaId OR te.idEmpresa = :empresaId " +
+           "ORDER BY COALESCE(i.fechaEjecucion, i.fechaCreacion) DESC, i.fechaProgramada DESC")
+    List<Inspeccion> findByEmpresaIdEmpresaOrderByFechaDesc(@Param("empresaId") Long empresaId);
+
+    @Query("SELECT i FROM Inspeccion i WHERE i.formatoInspeccion.idFormatoInspeccion = :formatoId")
+    List<Inspeccion> findByFormatoInspeccion_IdFormatoInspeccion(@Param("formatoId") Long formatoId);
 }

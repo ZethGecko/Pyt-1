@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 
 // DTOs públicos
 export interface InspeccionPublicaDTO {
@@ -53,6 +53,9 @@ export interface InspeccionResponse {
     placa?: string;
     fechaInspeccion?: string;
     observaciones?: string;
+    fichaId?: number;
+    fichaResultado?: string;
+    fichaEstado?: boolean;
   }[];
 }
 
@@ -171,16 +174,17 @@ export class InspeccionService {
      return this.http.post<InspeccionResponse>(this.apiUrl, inspeccion);
    }
 
-   crearConInstancias(data: {
-     instanciasTramiteIds: number[];
-     fechaProgramada: string;
-     horaProgramada: string;
-     lugar: string;
-     observaciones?: string;
-     codigoGrupo?: string;
-   }): Observable<InspeccionResponse> {
-     return this.http.post<InspeccionResponse>(`${this.apiUrl}/con-instancias`, data);
-   }
+    crearConInstancias(data: {
+      instanciasTramiteIds: number[];
+      fechaProgramada: string;
+      horaProgramada: string;
+      lugar: string;
+      observaciones?: string;
+      codigoGrupo?: string;
+      empresaId?: number;
+    }): Observable<InspeccionResponse> {
+      return this.http.post<InspeccionResponse>(`${this.apiUrl}/con-instancias`, data);
+    }
 
    actualizar(id: number, inspeccion: Partial<InspeccionCreateRequest>): Observable<InspeccionResponse> {
      return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}`, inspeccion);

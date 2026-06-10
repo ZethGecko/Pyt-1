@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 import { ImagenSitioService, ImagenSitio } from '../../../shared/services/imagen-sitio.service';
 import { PublicNavbarComponent } from '../../../public/components/public-navbar/public-navbar.component';
 

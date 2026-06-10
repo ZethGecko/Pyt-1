@@ -485,6 +485,16 @@ $border-radius-lg: 0.75rem;
       color: white;
     }
   }
+
+  &.btn-tuc {
+    background-color: #dbeafe;
+    color: $primary-color;
+
+    &:hover {
+      background-color: $primary-color;
+      color: white;
+    }
+  }
 }
 
 // Pagination

@@ -2,6 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.EmisionTUCRequestDTO;
 import com.example.demo.dto.EmpresaHabilitadaDTO;
+import com.example.demo.dto.HabilitacionTucRequestDTO;
+import com.example.demo.dto.HabilitacionTucResponseDTO;
+import com.example.demo.dto.InspeccionParaHabilitarTucDTO;
 import com.example.demo.dto.TUCDTO;
 import com.example.demo.model.TUC;
 import com.example.demo.service.TUCService;
@@ -78,5 +81,16 @@ public class TUCController {
     @GetMapping("/empresa/{empresaId}")
     public List<TUCDTO> listarPorEmpresa(@PathVariable Long empresaId) {
         return tucService.listarTUCsPorEmpresa(empresaId);
+    }
+
+    @GetMapping("/empresa/{empresaId}/inspecciones-para-habilitar")
+    public List<InspeccionParaHabilitarTucDTO> listarInspeccionesParaHabilitar(@PathVariable Long empresaId) {
+        return tucService.listarInspeccionesParaHabilitarTuc(empresaId);
+    }
+
+    @PostMapping("/emitir-habilitacion")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public HabilitacionTucResponseDTO emitirHabilitacion(@RequestBody HabilitacionTucRequestDTO request) {
+        return tucService.habilitarPorInspeccion(request);
     }
 }

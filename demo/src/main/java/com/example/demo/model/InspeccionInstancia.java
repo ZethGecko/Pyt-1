@@ -2,8 +2,10 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "inspeccion_instancia", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"inspeccion_id", "instancia_tramite_id"})
 })

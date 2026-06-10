@@ -10,9 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import jakarta.annotation.PostConstruct;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -20,20 +18,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.demo.config.StoragePathResolver;
 import com.example.demo.model.Formatos;
 import com.example.demo.repository.FormatosRepository;
+
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class FormatosService {
 
-    @Autowired
-    private FormatosRepository repo;
+    private final FormatosRepository repo;
+    private final StoragePathResolver storagePathResolver;
 
-    private final Path uploadDir = Paths.get("uploads", "formatos");
+    @Value("${app.formatos.dir:uploads/formatos}")
+    private String formatosDir;
+
+    public FormatosService(FormatosRepository repo, StoragePathResolver storagePathResolver) {
+        this.repo = repo;
+        this.storagePathResolver = storagePathResolver;
+    }
 
     @PostConstruct
     public void init() throws IOException {
-        Files.createDirectories(uploadDir);
+        Files.createDirectories(getUploadDirectory());
+    }
+
+    private Path getUploadDirectory() throws IOException {
+        Path dir = storagePathResolver.resolve(formatosDir);
+        Files.createDirectories(dir);
+        return dir;
     }
 
     public List<Formatos> listarTodos() {
@@ -67,7 +80,7 @@ public class FormatosService {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null) originalFilename = "file";
         String filename = UUID.randomUUID() + "_" + originalFilename;
-        Path destination = uploadDir.resolve(filename);
+        Path destination = getUploadDirectory().resolve(filename);
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
         Formatos formato = new Formatos();
         formato.setArchivoRuta(destination.toString());

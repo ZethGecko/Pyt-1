@@ -7,6 +7,7 @@ import { EmpresaService, EmpresaResponse, EmpresaCreateRequest, EmpresaUpdateReq
 import { GerenteService, GerenteResponse, GerenteCreateRequest } from '../services/gerente.service';
 import { SubtipoTransporteService, SubtipoTransporte } from '../../configuracion/services/subtipo-transporte.service';
 import { NotificationService } from '../../../shared/services/notification.service';
+import { TucService, TucHabilitacionRequest, TucInspeccionResponse, TucVehiculoResponse } from '../../vehiculos/services/tuc.service';
 
 @Component({
   selector: 'app-gestion-empresas',
@@ -90,10 +91,175 @@ export class GestionEmpresasComponent implements OnInit {
     private empresaService: EmpresaService,
     private gerenteService: GerenteService,
     private subtipoService: SubtipoTransporteService,
+    private tucService: TucService,
     private notificationService: NotificationService,
     private changeDetectorRef: ChangeDetectorRef
   ) {}
+
+  mostrarModalHabilitarTUC = false;
+  cargandoTUC = false;
+  empresaHabilitarTUC: EmpresaResponse | null = null;
+  inspeccionesTUC: TucInspeccionResponse[] = [];
+  inspeccionTUCSeleccionada: TucInspeccionResponse | null = null;
+  vehiculosTUCSeleccionados: number[] = [];
+  observacionesVehiculosTUC: { [vehiculoId: number]: string } = {};
+  tipoVigenciaTUC: '12_MESES' | 'HASTA_FIN_ANIO' = '12_MESES';
+  anioVencimientoTUC: number = new Date().getFullYear() + 1;
   
+  get aniosFinAnioTUC(): number[] {
+    const anioActual = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, index) => anioActual + index);
+  }
+
+  habilitarTUC(empresa?: EmpresaResponse): void {
+    const empresaInicial = empresa || this.empresas.find(e => e.activo !== false) || this.empresas[0] || null;
+    if (!empresaInicial) {
+      this.notificationService.error('No hay empresas disponibles para habilitar TUC', 'Validación', 5000);
+      return;
+    }
+
+    this.empresaHabilitarTUC = empresaInicial;
+    this.inspeccionTUCSeleccionada = null;
+    this.inspeccionesTUC = [];
+    this.vehiculosTUCSeleccionados = [];
+    this.observacionesVehiculosTUC = {};
+    this.tipoVigenciaTUC = '12_MESES';
+    this.anioVencimientoTUC = new Date().getFullYear() + 1;
+    this.mostrarModalHabilitarTUC = true;
+    this.cargarInspeccionesParaTUC();
+  }
+
+  cerrarModalHabilitarTUC(): void {
+    this.mostrarModalHabilitarTUC = false;
+    this.inspeccionTUCSeleccionada = null;
+    this.inspeccionesTUC = [];
+    this.vehiculosTUCSeleccionados = [];
+    this.observacionesVehiculosTUC = {};
+  }
+
+  cargarInspeccionesParaTUC(): void {
+    if (!this.empresaHabilitarTUC?.id) return;
+
+    this.cargandoTUC = true;
+    this.tucService.listarInspeccionesParaHabilitar(this.empresaHabilitarTUC.id).subscribe({
+      next: (inspecciones) => {
+        this.inspeccionesTUC = inspecciones;
+        this.inspeccionTUCSeleccionada = inspecciones[0] || null;
+        if (this.inspeccionTUCSeleccionada) {
+          this.seleccionarInspeccionTUC(this.inspeccionTUCSeleccionada);
+        }
+        this.cargandoTUC = false;
+      },
+      error: (err) => {
+        this.cargandoTUC = false;
+        this.notificationService.error(err.error?.message || 'Error al cargar inspecciones para TUC', 'Error', 5000);
+      }
+    });
+  }
+
+  seleccionarInspeccionTUC(inspeccion: TucInspeccionResponse): void {
+    this.inspeccionTUCSeleccionada = inspeccion;
+    this.observacionesVehiculosTUC = {};
+    this.vehiculosTUCSeleccionados = this.vehiculosDeInspeccion(inspeccion)
+      .filter(vehiculo => vehiculo.resultadoFicha === 'APROBADO')
+      .map(vehiculo => vehiculo.idVehiculo)
+      .filter((vehiculoId): vehiculoId is number => vehiculoId !== undefined);
+  }
+
+  toggleVehiculoTUC(vehiculoId: number, checked: boolean): void {
+    if (checked) {
+      if (!this.vehiculosTUCSeleccionados.includes(vehiculoId)) {
+        this.vehiculosTUCSeleccionados.push(vehiculoId);
+      }
+    } else {
+      this.vehiculosTUCSeleccionados = this.vehiculosTUCSeleccionados.filter(id => id !== vehiculoId);
+    }
+  }
+
+  vehiculosDeInspeccion(inspeccion: TucInspeccionResponse | null): TucVehiculoResponse[] {
+    return (inspeccion as any)?.vehiculos || [];
+  }
+
+  estaVehiculoSeleccionado(vehiculoId?: number): boolean {
+    return !!vehiculoId && this.vehiculosTUCSeleccionados.includes(vehiculoId);
+  }
+
+  observacionVehiculo(vehiculo: TucVehiculoResponse): string {
+    return vehiculo.idVehiculo !== undefined
+      ? (this.observacionesVehiculosTUC[vehiculo.idVehiculo] || '')
+      : '';
+  }
+
+  setObservacionVehiculo(vehiculo: TucVehiculoResponse, valor: string): void {
+    if (vehiculo.idVehiculo !== undefined) {
+      this.observacionesVehiculosTUC[vehiculo.idVehiculo] = valor;
+    }
+  }
+
+  habilitarTUCSeleccionados(): void {
+    if (!this.empresaHabilitarTUC?.id) {
+      this.notificationService.error('Seleccione una empresa', 'Validación', 4000);
+      return;
+    }
+    if (!this.inspeccionTUCSeleccionada?.idInspeccion) {
+      this.notificationService.error('Seleccione una inspección', 'Validación', 4000);
+      return;
+    }
+    if (this.vehiculosTUCSeleccionados.length === 0) {
+      this.notificationService.error('Seleccione al menos un vehículo', 'Validación', 4000);
+      return;
+    }
+    if (this.tipoVigenciaTUC === 'HASTA_FIN_ANIO' && (!this.anioVencimientoTUC || this.anioVencimientoTUC < new Date().getFullYear())) {
+      this.notificationService.error('Seleccione un año de vencimiento válido', 'Validación', 4000);
+      return;
+    }
+
+    const vehiculos = this.vehiculosDeInspeccion(this.inspeccionTUCSeleccionada)
+      .filter(vehiculo => this.estaVehiculoSeleccionado(vehiculo.idVehiculo));
+
+    const sinObservacion = vehiculos.find(vehiculo =>
+      vehiculo.resultadoFicha !== 'APROBADO' &&
+      !(this.observacionVehiculo(vehiculo) || '').trim()
+    );
+
+    if (sinObservacion) {
+      this.notificationService.error(`El vehículo ${sinObservacion.placa} requiere observaciones para habilitarse`, 'Validación', 5000);
+      return;
+    }
+
+    const request: TucHabilitacionRequest = {
+      empresaId: this.empresaHabilitarTUC.id,
+      inspeccionId: this.inspeccionTUCSeleccionada.idInspeccion,
+      tipo: this.tipoVigenciaTUC,
+      anioVencimiento: this.tipoVigenciaTUC === 'HASTA_FIN_ANIO' ? this.anioVencimientoTUC : undefined,
+      vehiculos: vehiculos.map(vehiculo => ({
+        idVehiculo: vehiculo.idVehiculo,
+        placa: vehiculo.placa,
+        marca: vehiculo.marca,
+        modelo: vehiculo.modelo,
+        anioFabricacion: vehiculo.anioFabricacion,
+        color: vehiculo.color,
+        categoria: vehiculo.categoria,
+        subtipoTransporteId: vehiculo.subtipoTransporteId,
+        observaciones: this.observacionVehiculo(vehiculo)
+      }))
+    };
+
+    this.cargandoTUC = true;
+    this.tucService.habilitarPorInspeccion(request).subscribe({
+      next: (resultado) => {
+        this.cargandoTUC = false;
+        this.notificationService.success(`TUC habilitado para ${resultado.totalHabilitados} vehículo(s)`, 'Éxito', 5000);
+        this.cerrarModalHabilitarTUC();
+        this.cargarEmpresas();
+      },
+      error: (err) => {
+        this.cargandoTUC = false;
+        this.notificationService.error(err.error?.message || 'Error al habilitar TUC', 'Error', 5000);
+      }
+    });
+  }
+
   ngOnInit(): void {
     console.log('ngOnInit: Iniciando carga de datos');
     this.cargarEmpresasYGerentes();

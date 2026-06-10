@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { PersonaNaturalService, PersonaNatural, PersonaNaturalCreateRequest, PersonaNaturalUpdateRequest, FiltrosPersonaNatural, PersonaNaturalEstadisticas } from '../services/persona-natural.service';
-import { NotificationService } from 'src/app/shared/services/notification.service';
+import { NotificationService } from '@app/shared/services/notification.service';
 
 @Component({
   selector: 'app-gestion-personas-naturales',

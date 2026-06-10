@@ -158,38 +158,6 @@
                </p>
              </div>
            </div>
-         </div>
-
-          <!-- Acciones del Bloque -->
-          <div class="bloque-acciones">
-            <button class="btn btn-secondary btn-sm"
-                    (click)="verInstancias(bloque)"
-                    title="Ver detalle de instancias del trámite">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
-              Ver Instancias
-            </button>
-            <button class="btn btn-primary btn-sm"
-                    (click)="iniciarBloque(bloque)"
-                    title="Iniciar todas las inspecciones de este bloque"
-                    [disabled]="bloque.estado !== 'PROGRAMADA'">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              Iniciar Todas
-            </button>
-            <button class="btn btn-danger btn-sm"
-                    (click)="cancelarBloque(bloque)"
-                    title="Cancelar todas las inspecciones de este bloque"
-                    [disabled]="bloque.estado === 'FINALIZADA' || bloque.estado === 'CANCELADA'">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="btn-icon-svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-              </svg>
-              Cancelar Todas
-            </button>
           </div>
        </div>
 
@@ -421,18 +389,33 @@
                                 {{ inst.estadoInstancia || 'N/A' }}
                               </span>
                             </td>
-                            <td class="px-4 py-2 text-sm">
-                              <button class="btn btn-sm btn-primary"
-                                      (click)="verFichaVehiculo(inst)"
-                                      [disabled]="!inst.fichaId"
-                                      title="Ver ficha de inspección del vehículo">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                </svg>
-                                Ver Ficha
-                              </button>
-                            </td>
+                             <td class="px-4 py-2 text-sm">
+                               <ng-container *ngIf="inspeccionSeleccionadaParaVer?.estado !== 'FINALIZADA'; else readonlyFicha">
+                                 <button class="btn btn-sm btn-primary"
+                                         (click)="verFichaVehiculo(inst)"
+                                         [disabled]="inspeccionSeleccionadaParaVer?.estado === 'FINALIZADA'"
+                                         title="Ver ficha de inspección del vehículo">
+                                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                   </svg>
+                                   <span *ngIf="inst.fichaId; else crearFichaLabel">Ver Ficha</span>
+                                   <ng-template #crearFichaLabel>Crear Ficha</ng-template>
+                                 </button>
+                               </ng-container>
+                               <ng-template #readonlyFicha>
+                                 <button class="btn btn-sm btn-primary"
+                                         (click)="verFichaVehiculo(inst)"
+                                         [disabled]="!inst.fichaId"
+                                         title="Ver ficha (solo lectura)">
+                                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                   </svg>
+                                   Ver Ficha
+                                 </button>
+                               </ng-template>
+                             </td>
                           </tr>
                        </tbody>
                     </table>

@@ -5,7 +5,6 @@ import com.example.demo.dto.FormatoInspeccionCreateRequestDTO;
 import com.example.demo.dto.FormatoInspeccionResponseDTO;
 import com.example.demo.model.CampoFormato;
 import com.example.demo.model.FormatoInspeccion;
-import com.example.demo.model.Inspeccion;
 import com.example.demo.repository.CampoFormatoRepository;
 import com.example.demo.repository.FormatoInspeccionRepository;
 import com.example.demo.repository.InspeccionRepository;
@@ -25,22 +24,109 @@ import java.util.stream.Collectors;
 @Service
 public class FormatoInspeccionService {
 
+    public static final String FORMATO_GLOBAL_NOMBRE = FichaInspeccionService.FORMATO_GLOBAL_NOMBRE;
+
     private final FormatoInspeccionRepository formatoRepository;
     private final CampoFormatoRepository campoRepository;
     private final InspeccionRepository inspeccionRepository;
+    private final FichaInspeccionService fichaInspeccionService;
 
     public FormatoInspeccionService(FormatoInspeccionRepository formatoRepository,
                                      CampoFormatoRepository campoRepository,
-                                     InspeccionRepository inspeccionRepository) {
+                                     InspeccionRepository inspeccionRepository,
+                                     FichaInspeccionService fichaInspeccionService) {
         this.formatoRepository = formatoRepository;
         this.campoRepository = campoRepository;
         this.inspeccionRepository = inspeccionRepository;
+        this.fichaInspeccionService = fichaInspeccionService;
     }
 
     @Transactional
     public FormatoInspeccionResponseDTO crearFormato(FormatoInspeccionCreateRequestDTO request) {
-        FormatoInspeccion formato = new FormatoInspeccion();
-        formato.setNombre(request.getNombre());
+        FormatoInspeccion formato = obtenerFormatoGlobalOCrear(request.getInspeccionId());
+        aplicarDatosFormato(formato, request);
+
+        FormatoInspeccion guardado = formatoRepository.save(formato);
+        sincronizarCampos(guardado, request.getCampos());
+        guardado = formatoRepository.save(guardado);
+        formatoRepository.flush();
+
+        asignarFormatoAInspeccion(guardado, request.getInspeccionId());
+
+        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(guardado);
+
+        return convertirAResponseDTO(guardado);
+    }
+
+    @Transactional
+    public FormatoInspeccionResponseDTO actualizarFormato(Long id, FormatoInspeccionCreateRequestDTO request) {
+        System.out.println("[actualizarFormato] ID=" + id + ", nombre=" + request.getNombre() +
+            ", tituloPrincipal=" + request.getTituloPrincipal() +
+            ", camposCount=" + (request.getCampos() != null ? request.getCampos().size() : 0));
+        FormatoInspeccion formato = obtenerFormatoGlobalOCrear(request.getInspeccionId());
+        System.out.println("[actualizarFormato] Formato encontrado: id=" + formato.getIdFormatoInspeccion() +
+            ", camposExistentes=" + (formato.getCampos() != null ? formato.getCampos().size() : 0));
+        if (formato.getCampos() != null) {
+            formato.getCampos().forEach(c ->
+                System.out.println("  Campo EXISTENTE: idCampo=" + c.getIdCampoFormato() + ", nombre=" + c.getNombre())
+            );
+        }
+
+        aplicarDatosFormato(formato, request);
+
+        sincronizarCampos(formato, request.getCampos());
+
+        FormatoInspeccion guardado = formatoRepository.save(formato);
+        formatoRepository.flush();
+
+        asignarFormatoAInspeccion(guardado, request.getInspeccionId());
+
+        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(guardado);
+
+        FormatoInspeccionResponseDTO response = convertirAResponseDTO(guardado);
+        return response;
+    }
+
+    private FormatoInspeccion obtenerFormatoGlobalOCrear(Long inspeccionId) {
+        FormatoInspeccion formato = formatoRepository.findByNombre(FORMATO_GLOBAL_NOMBRE).orElse(null);
+        if (formato != null) {
+            return formato;
+        }
+
+        formato = new FormatoInspeccion();
+        formato.setNombre(FORMATO_GLOBAL_NOMBRE);
+        formato.setDescripcion("Formato reutilizable global para inspecciones");
+        formato.setActivo(true);
+        formato.setTituloPrincipal("CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA");
+        formato.setTituloFontSize(24);
+        formato.setSubtituloPrincipal("CÁTEDRA DE LA EMPRESA");
+        formato.setSubtituloFontSize(18);
+        formato.setTituloSeccionDatosGenerales("DATOS GENERALES");
+        formato.setTituloSeccionPlaca("PLACA");
+        formato.setTituloSeccionPlanLunca("PLAN LUNCA DE RODALE");
+        formato.setTituloSeccionLaboratorio("LABORATORIO");
+        FormatoInspeccion guardado = formatoRepository.save(formato);
+        formatoRepository.flush();
+
+        asignarFormatoAInspeccion(guardado, inspeccionId);
+
+        return guardado;
+    }
+
+    private void asignarFormatoAInspeccion(FormatoInspeccion formato, Long inspeccionId) {
+        if (inspeccionId == null || inspeccionId <= 0) {
+            return;
+        }
+
+        inspeccionRepository.findById(inspeccionId).ifPresent(inspeccion -> {
+            inspeccion.setFormatoInspeccion(formato);
+            inspeccionRepository.save(inspeccion);
+        });
+        inspeccionRepository.flush();
+    }
+
+    private void aplicarDatosFormato(FormatoInspeccion formato, FormatoInspeccionCreateRequestDTO request) {
+        formato.setNombre(FORMATO_GLOBAL_NOMBRE);
         formato.setDescripcion(request.getDescripcion());
         formato.setTituloPrincipal(request.getTituloPrincipal());
         formato.setTituloFontSize(request.getTituloFontSize());
@@ -54,88 +140,6 @@ public class FormatoInspeccionService {
         formato.setTituloSeccionPlanLunca(request.getTituloSeccionPlanLunca());
         formato.setTituloSeccionLaboratorio(request.getTituloSeccionLaboratorio());
         formato.setActivo(true);
-
-        FormatoInspeccion guardado = formatoRepository.save(formato);
-        formatoRepository.flush();
-
-        // Asociar a inspección solo si existe y el ID es válido
-        if (request.getInspeccionId() != null && request.getInspeccionId() > 0) {
-            inspeccionRepository.findById(request.getInspeccionId()).ifPresent(inspeccion -> {
-                inspeccion.setFormatoInspeccion(guardado);
-                inspeccionRepository.save(inspeccion);
-            });
-            inspeccionRepository.flush();
-        }
-
-        if (request.getCampos() != null) {
-            if (guardado.getCampos() == null) {
-                guardado.setCampos(new ArrayList<>());
-            }
-            for (CampoFormatoDTO campoDTO : request.getCampos()) {
-                CampoFormato campo = new CampoFormato();
-                campo.setNombre(campoDTO.getNombre());
-                campo.setSeccion(campoDTO.getSeccion() != null ? campoDTO.getSeccion() : "LABORATORIO");
-                campo.setOrden(campoDTO.getOrden() != null ? campoDTO.getOrden() : 0);
-                campo.setTipoEvaluacion(campoDTO.getTipoEvaluacion() != null ? campoDTO.getTipoEvaluacion() : "TEXTO");
-                campo.setObligatorio(campoDTO.getObligatorio() != null ? campoDTO.getObligatorio() : false);
-                campo.setFormatoInspeccion(guardado);
-                guardado.getCampos().add(campo);
-            }
-            campoRepository.flush();
-        }
-
-        return convertirAResponseDTO(guardado);
-    }
-
-    @Transactional
-    public FormatoInspeccionResponseDTO actualizarFormato(Long id, FormatoInspeccionCreateRequestDTO request) {
-        System.out.println("[actualizarFormato] ID=" + id + ", nombre=" + request.getNombre() +
-            ", tituloPrincipal=" + request.getTituloPrincipal() +
-            ", camposCount=" + (request.getCampos() != null ? request.getCampos().size() : 0));
-        FormatoInspeccion formato = formatoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Formato no encontrado"));
-        System.out.println("[actualizarFormato] Formato encontrado: id=" + formato.getIdFormatoInspeccion() +
-            ", camposExistentes=" + (formato.getCampos() != null ? formato.getCampos().size() : 0));
-        if (formato.getCampos() != null) {
-            formato.getCampos().forEach(c ->
-                System.out.println("  Campo EXISTENTE: idCampo=" + c.getIdCampoFormato() + ", nombre=" + c.getNombre())
-            );
-        }
-
-        formato.setNombre(request.getNombre());
-        formato.setDescripcion(request.getDescripcion());
-        formato.setTituloPrincipal(request.getTituloPrincipal());
-        formato.setTituloFontSize(request.getTituloFontSize());
-        formato.setSubtituloPrincipal(request.getSubtituloPrincipal());
-        formato.setSubtituloFontSize(request.getSubtituloFontSize());
-        formato.setSubtitulo2(request.getSubtitulo2());
-        formato.setSubtitulo3(request.getSubtitulo3());
-        formato.setSubtitulo4(request.getSubtitulo4());
-        formato.setTituloSeccionDatosGenerales(request.getTituloSeccionDatosGenerales());
-        formato.setTituloSeccionPlaca(request.getTituloSeccionPlaca());
-        formato.setTituloSeccionPlanLunca(request.getTituloSeccionPlanLunca());
-        formato.setTituloSeccionLaboratorio(request.getTituloSeccionLaboratorio());
-
-        sincronizarCampos(formato, request.getCampos());
-
-        // Asociar a inspección solo si se proporciona un ID válido
-        if (request.getInspeccionId() != null && request.getInspeccionId() > 0) {
-            inspeccionRepository.findById(request.getInspeccionId()).ifPresent(inspeccion -> {
-                System.out.println("[actualizarFormato] Asociando formato " + formato.getIdFormatoInspeccion() +
-                    " a inspeccion " + inspeccion.getIdInspeccion());
-                inspeccion.setFormatoInspeccion(formato);
-                inspeccionRepository.save(inspeccion);
-                System.out.println("[actualizarFormato] Inspeccion guardada OK");
-            });
-        }
-
-        FormatoInspeccion guardado = formatoRepository.save(formato);
-        formatoRepository.flush();
-        System.out.println("[actualizarFormato] Formato guardado en BD OK, id=" + guardado.getIdFormatoInspeccion() +
-            ", camposFinales=" + (guardado.getCampos() != null ? guardado.getCampos().size() : 0));
-        FormatoInspeccionResponseDTO response = convertirAResponseDTO(guardado);
-        System.out.println("[actualizarFormato] Response DTO camposCount=" + (response.getCampos() != null ? response.getCampos().size() : "null"));
-        return response;
     }
 
     private void sincronizarCampos(FormatoInspeccion formato, List<CampoFormatoDTO> camposNuevos) {
@@ -230,9 +234,8 @@ public class FormatoInspeccionService {
 
     @Transactional
     public FormatoInspeccionResponseDTO obtenerPorInspeccion(Long inspeccionId) {
-        Inspeccion inspeccion = inspeccionRepository.findById(inspeccionId)
-                .orElseThrow(() -> new RuntimeException("Inspección no encontrada"));
-        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
+        FormatoInspeccion formato = formatoRepository.findByInspecciones_IdInspeccion(inspeccionId)
+                .orElse(null);
         if (formato == null) {
             FormatoInspeccionResponseDTO global = obtenerFormatoGlobal();
             if (global == null) {
@@ -256,17 +259,15 @@ public class FormatoInspeccionService {
      */
     @Transactional
     public FormatoInspeccionResponseDTO obtenerFormatoGlobal() {
+        FormatoInspeccion formato = formatoRepository.findByNombre(FORMATO_GLOBAL_NOMBRE).orElse(null);
+        if (formato != null) {
+            return convertirAResponseDTO(formato);
+        }
+
         List<FormatoInspeccion> formatos = formatoRepository.findAll();
         if (formatos.isEmpty()) {
             return null;
         }
-        // Buscar el formato no asociado (sin inspecciones)
-        for (FormatoInspeccion f : formatos) {
-            if (f.getInspecciones() == null || f.getInspecciones().isEmpty()) {
-                return convertirAResponseDTO(f);
-            }
-        }
-        // Si todos están asociados, devolver el más reciente
         FormatoInspeccion ultimo = formatos.stream()
                 .max((a, b) -> {
                     LocalDateTime da = a.getFechaActualizacion() != null ? a.getFechaActualizacion() : a.getFechaCreacion();
@@ -306,6 +307,7 @@ public class FormatoInspeccionService {
         campo.setFormatoInspeccion(formato);
 
         CampoFormato guardado = campoRepository.save(campo);
+        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(formato);
         return convertirACampoDTO(guardado);
     }
 
@@ -326,12 +328,17 @@ public class FormatoInspeccionService {
         }
 
         CampoFormato guardado = campoRepository.save(campo);
+        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(campo.getFormatoInspeccion());
         return convertirACampoDTO(guardado);
     }
 
     @Transactional
     public void eliminarCampo(Long campoId) {
+        CampoFormato campo = campoRepository.findById(campoId)
+                .orElseThrow(() -> new RuntimeException("Campo no encontrado"));
+        FormatoInspeccion formato = campo.getFormatoInspeccion();
         campoRepository.deleteById(campoId);
+        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(formato);
     }
 
     @Transactional
@@ -347,6 +354,9 @@ public class FormatoInspeccionService {
                 throw new RuntimeException("El campo no pertenece al formato");
             }
         }
+        FormatoInspeccion formato = formatoRepository.findById(formatoId)
+                .orElseThrow(() -> new RuntimeException("Formato no encontrado"));
+        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(formato);
     }
 
     private FormatoInspeccionResponseDTO convertirAResponseDTO(FormatoInspeccion formato) {

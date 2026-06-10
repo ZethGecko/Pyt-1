@@ -562,6 +562,9 @@ export class ModalProgramarInspeccionComponent implements OnInit, OnChanges {
           lugar: this.formulario.lugar,
           observacionesGenerales: this.formulario.observaciones
         };
+        if (this.empresaSeleccionadaId != null) {
+          data.empresaId = this.empresaSeleccionadaId;
+        }
         this.inspeccionService.crearConInstancias(data).subscribe({
           next: () => {
             this.cargando = false;

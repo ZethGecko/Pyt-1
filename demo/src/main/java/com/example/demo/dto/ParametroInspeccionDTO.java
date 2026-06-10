@@ -1,6 +1,9 @@
 package com.example.demo.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ParametroInspeccionDTO {
+    @JsonProperty("idParametros")
     private Long id; // null para nuevo, id existente para editar
     private String parametro;
     private String observacion;

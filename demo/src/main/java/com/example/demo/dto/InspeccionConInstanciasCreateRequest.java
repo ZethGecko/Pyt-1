@@ -11,6 +11,7 @@ public class InspeccionConInstanciasCreateRequest {
     private List<Long> instanciasTramiteIds;
     private String codigoGrupo;
     private Long usuarioInspectorId;
+    private Long empresaId;
 
     public InspeccionConInstanciasCreateRequest() {}
 
@@ -34,4 +35,12 @@ public class InspeccionConInstanciasCreateRequest {
 
     public Long getUsuarioInspectorId() { return usuarioInspectorId; }
     public void setUsuarioInspectorId(Long usuarioInspectorId) { this.usuarioInspectorId = usuarioInspectorId; }
+
+    public Long getEmpresaId() {
+        return empresaId;
+    }
+
+    public void setEmpresaId(Long empresaId) {
+        this.empresaId = empresaId;
+    }
 }

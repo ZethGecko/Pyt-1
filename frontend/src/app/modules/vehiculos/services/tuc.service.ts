@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 
 export interface TUCResponse {
   id: number;
@@ -27,13 +27,72 @@ export interface TUCRenovacionRequest {
   observaciones?: string;
 }
 
+export interface TucInspeccionResponse {
+  idInspeccion: number;
+  codigo: string;
+  fechaProgramada: string;
+  hora?: string;
+  lugar: string;
+  estado?: string;
+  resultadoGeneral?: string;
+  fechaEjecucion?: string;
+  fechaCreacion?: string;
+  empresaId?: number;
+  empresaNombre?: string;
+  empresaRuc?: string;
+}
+
+export interface TucVehiculoResponse {
+  idVehiculo?: number;
+  fichaId?: number;
+  inspeccionId?: number;
+  placa?: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+  categoria?: string;
+  anioFabricacion?: number;
+  subtipoTransporteId?: number;
+  empresaId?: number;
+  estado?: string;
+  resultadoFicha?: string;
+  estadoFicha?: boolean;
+  tieneTucActivo?: boolean;
+  fechaVencimientoTuc?: string;
+  observaciones?: string;
+}
+
+export interface TucHabilitacionRequest {
+  empresaId: number;
+  inspeccionId: number;
+  tipo: '12_MESES' | 'HASTA_FIN_ANIO';
+  anioVencimiento?: number;
+  vehiculos: Array<{
+    idVehiculo?: number;
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    anioFabricacion?: number;
+    color?: string;
+    categoria?: string;
+    subtipoTransporteId?: number;
+    pesoNeto?: number;
+    observaciones?: string;
+  }>;
+}
+
+export interface TucHabilitacionResponse {
+  inspeccion?: TucInspeccionResponse;
+  tucs: TUCResponse[];
+  totalHabilitados: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TucService {
-  private apiUrl = `${environment.apiUrl}/tucs`;
+  private apiUrl = `${environment.apiUrl}/tuc`;
 
   constructor(private http: HttpClient) {}
 
-  // ========== CRUD ==========
   obtener(id: number): Observable<TUCResponse> {
     return this.http.get<TUCResponse>(`${this.apiUrl}/${id}`);
   }
@@ -56,6 +115,14 @@ export class TucService {
     });
   }
 
+  listarInspeccionesParaHabilitar(empresaId: number): Observable<TucInspeccionResponse[]> {
+    return this.http.get<TucInspeccionResponse[]>(`${this.apiUrl}/empresa/${empresaId}/inspecciones-para-habilitar`);
+  }
+
+  habilitarPorInspeccion(request: TucHabilitacionRequest): Observable<TucHabilitacionResponse> {
+    return this.http.post<TucHabilitacionResponse>(`${this.apiUrl}/emitir-habilitacion`, request);
+  }
+
   crear(tuc: TUCCreateRequest): Observable<TUCResponse> {
     return this.http.post<TUCResponse>(this.apiUrl, tuc);
   }
@@ -76,7 +143,6 @@ export class TucService {
     });
   }
 
-  // ========== UTILIDADES ==========
   obtenerPorNumero(numero: string): Observable<TUCResponse | null> {
     return this.http.get<TUCResponse | null>(`${this.apiUrl}/numero/${numero}`);
   }

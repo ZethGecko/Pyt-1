@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 import { Subscription, interval, throwError, timer } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
@@ -302,6 +302,18 @@ export class AuthNotificationService implements OnDestroy {
         this._cargando.set(false);
         return [] as AuthNotification[];
       });
+  }
+
+  async marcarComoLeido(id: number): Promise<void> {
+    try {
+      await this.http.post(`${this.api}/${id}/leer`, {}).toPromise();
+      const current = this._notificaciones();
+      const updated = current.map(n => n.id === id ? { ...n, leido: true } : n);
+      this._notificaciones.set(updated);
+      this.updateCounter();
+    } catch (err) {
+      console.warn('[AuthNotificationService] Error marcando como leído:', err);
+    }
   }
 
   // Convenience: carga feed (counter se deriva automáticamente del contenido)

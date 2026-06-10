@@ -212,7 +212,11 @@ export class GestionExpedientesComponent implements OnInit {
 
   // ========== CRUD TRÁMITES ==========
   abrirModalCrearTramite(): void {
-    alert('Creación de trámite no implementada aún');
+    this.irAGestionTramites();
+  }
+
+  irAGestionTramites(): void {
+    this.router.navigate(['/tramites/gestion']);
   }
 
   // Modal eliminar trámite con motivo

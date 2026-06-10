@@ -3,8 +3,10 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "vehiculo_apto")
 public class VehiculoApto {
 

@@ -1,6 +1,5 @@
 package com.example.demo.auditing;
 
-import java.util.Optional;
 import org.hibernate.envers.RevisionListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

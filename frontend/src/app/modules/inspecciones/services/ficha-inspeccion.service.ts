@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 
  export interface ParametroInspeccion {
    idParametros?: number;
@@ -14,9 +14,11 @@ import { environment } from 'src/environments/environment';
    seccion?: string;
  }
 
- export interface FichaInspeccion {
-   id?: number;
-   inspeccionId: number | null;
+  export interface FichaInspeccion {
+    id?: number;
+    idFichaInspeccion?: number;
+    inspeccionId: number | null;
+   instanciaTramiteId?: number | null;
    instanciaId?: number | null;
    estado?: boolean;
    usuarioInspector?: number | null;

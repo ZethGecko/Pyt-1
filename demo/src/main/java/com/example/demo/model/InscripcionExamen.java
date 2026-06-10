@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "inscripcion_examen")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tramite"})
 public class InscripcionExamen {

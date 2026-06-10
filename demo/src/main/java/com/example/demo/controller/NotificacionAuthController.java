@@ -10,16 +10,20 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.example.demo.dto.NotificacionAuthDTO;
 import com.example.demo.dto.NotificacionCountDTO;
+import com.example.demo.model.Notificacion;
 import com.example.demo.model.Users;
+import com.example.demo.repository.UsersRepository;
 import com.example.demo.service.NotificacionService;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/auth/notificaciones")
@@ -29,98 +33,10 @@ public class NotificacionAuthController {
     private NotificacionService notificacionService;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    /**
-     * GET /api/auth/notificaciones/active
-     * Returns notifications visible to the authenticated user:
-     * - paraTodos = true  → broadcast to everyone
-     * - paraTodos = false → only when usuarioDestino == current user
-     * Requires authentication.
-     */
-    /**
-     * Diagnóstico: consulta directa para ver qué hay en la tabla notificaciones
-     */
-    @GetMapping("/debug")
-    public ResponseEntity<java.util.Map<String, Object>> debugNotificaciones(Authentication authentication) {
-        java.util.LinkedHashMap<String, Object> result = new java.util.LinkedHashMap<>();
-        
-        if (authentication == null) {
-            result.put("authentication", null);
-            return ResponseEntity.ok(result);
-        }
-        
-        String username = authentication.getName();
-        result.put("username", username);
-        
-        Users currentUser = notificacionService.getUserByUsername(username);
-        if (currentUser == null) {
-            result.put("userFound", false);
-            result.put("error", "Usuario no encontrado en BD: " + username);
-            return ResponseEntity.ok(result);
-        }
-        
-        Long userId = currentUser.getIdUsuarios();
-        result.put("userId", userId);
-        result.put("userFound", true);
-        
-        // Consulta 1: contar todas las notificaciones en la tabla
-        Long total = notificacionRepository.count();
-        result.put("totalNotificacionesEnTabla", total);
-        
-        // Consulta 2: contar notificaciones activas sin filtro de usuario
-        Long activasCount = (Long) entityManager.createQuery(
-            "SELECT COUNT(n) FROM Notificacion n WHERE n.activo = true").getSingleResult();
-        result.put("notificacionesActivas", activasCount);
-        
-        // Consulta 3: contar con filtro para_todos
-        Long paraTodosCount = (Long) entityManager.createQuery(
-            "SELECT COUNT(n) FROM Notificacion n WHERE n.activo = true AND n.paraTodos = true").getSingleResult();
-        result.put("paraTodosTrue", paraTodosCount);
-        
-        // Consulta 4: contar con filtro de fecha_publicacion
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        Long conFechaPub = (Long) entityManager.createQuery(
-            "SELECT COUNT(n) FROM Notificacion n WHERE n.activo = true AND n.fechaPublicacion IS NOT NULL").getSingleResult();
-        result.put("conFechaPublicacion", conFechaPub);
-        
-        // Consulta 5: contar completas (que cumplen todos los filtros de active)
-        Long completas = (Long) entityManager.createQuery(
-            "SELECT COUNT(n) FROM Notificacion n WHERE n.activo = true " +
-            "AND (n.paraTodos = true OR n.usuarioDestino.idUsuarios = :userId) " +
-            "AND n.fechaPublicacion IS NOT NULL " +
-            "AND (n.fechaExpiracion IS NULL OR n.fechaExpiracion > :now)")
-            .setParameter("userId", userId)
-            .setParameter("now", now)
-            .getSingleResult();
-        result.put("cumplenFiltrosCompletos", completas);
-        
-        // Consulta 6: listar las notificaciones activas para el usuario (lo que devuelve el endpoint)
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
-        org.springframework.data.domain.Page<com.example.demo.model.Notificacion> page = 
-            notificacionService.listarActivasParaUsuarioApp(currentUser, pageable);
-        result.put("resultadoActive(" + page.getTotalElements() + ")", 
-            page.getContent().stream().map(n -> {
-                java.util.LinkedHashMap<String, Object> m = new java.util.LinkedHashMap<>();
-                m.put("id", n.getId());
-                m.put("titulo", n.getTitulo());
-                m.put("tipo", n.getTipo());
-                m.put("paraTodos", n.getParaTodos());
-                m.put("fechaPublicacion", n.getFechaPublicacion());
-                m.put("fechaExpiracion", n.getFechaExpiracion());
-                m.put("activo", n.getActivo());
-                return m;
-            }).toList());
-        
-        System.out.println("[NotificacionAuthController] DEBUG result: " + result);
-        return ResponseEntity.ok(result);
-    }
+    private UsersRepository usersRepository;
 
     @Autowired
-    private com.example.demo.repository.NotificacionRepository notificacionRepository;
-    
-    @Autowired
-    private jakarta.persistence.EntityManager entityManager;
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @GetMapping("/active")
     public ResponseEntity<List<NotificacionAuthDTO>> getActiveForCurrentUser(Authentication authentication) {
@@ -160,6 +76,23 @@ public class NotificacionAuthController {
         return ResponseEntity.ok(
                 new NotificacionCountDTO(
                         notificacionService.contarActivasParaUsuarioApp(currentUser)));
+    }
+
+    @PostMapping("/{id}/leer")
+    public ResponseEntity<NotificacionAuthDTO> marcarComoLeido(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String username = authentication.getName();
+        Users currentUser = notificacionService.getUserByUsername(username);
+        if (currentUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Notificacion notif = notificacionService.marcarComoLeido(id, currentUser);
+        if (notif == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(notificacionService.convertToAuthDTO(notif));
     }
 
     // ── SSE Streaming ─────────────────────────────────────────

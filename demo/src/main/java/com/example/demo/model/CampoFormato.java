@@ -2,9 +2,13 @@ package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
 @Table(name = "campo_formato")
+@Audited
 public class CampoFormato {
 
     @Id
@@ -39,6 +43,7 @@ public class CampoFormato {
     // Relación con valores de fichas (un campo puede tener muchos valores en diferentes fichas)
     @OneToMany(mappedBy = "campoFormato", cascade = CascadeType.ALL)
     @JsonIgnore
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private java.util.List<ValorCampo> valores;
 
     // Constructores

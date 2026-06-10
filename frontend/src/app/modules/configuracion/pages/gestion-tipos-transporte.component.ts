@@ -38,8 +38,8 @@ interface Subtipo {
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <a routerLink="/app/configuracion" class="header-back">
-            <app-icon name="arrow-left" size="md"></app-icon>
+           <a routerLink="/dashboard" class="header-back">
+             <app-icon name="arrow-left" size="md"></app-icon>
           </a>
           <div class="header-text">
             <h1 class="page-title">Tipos de Transporte</h1>

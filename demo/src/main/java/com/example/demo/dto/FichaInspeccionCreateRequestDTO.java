@@ -3,12 +3,13 @@ package com.example.demo.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
- public class FichaInspeccionCreateRequestDTO {
-     private Long inspeccionId;
-     private Long vehiculoId;
+  public class FichaInspeccionCreateRequestDTO {
+      private Long inspeccionId;
+      private Long vehiculoId;
+      private Long instanciaTramiteId;
 
-     @JsonProperty("usuarioInspector")
-     private Long usuarioInspectorId;
+      @JsonProperty("usuarioInspector")
+      private Long usuarioInspectorId;
 
      private Boolean estado;
      private String resultado;
@@ -28,10 +29,13 @@ import java.util.List;
     public Long getInspeccionId() { return inspeccionId; }
     public void setInspeccionId(Long inspeccionId) { this.inspeccionId = inspeccionId; }
 
-    public Long getVehiculoId() { return vehiculoId; }
-    public void setVehiculoId(Long vehiculoId) { this.vehiculoId = vehiculoId; }
+      public Long getVehiculoId() { return vehiculoId; }
+      public void setVehiculoId(Long vehiculoId) { this.vehiculoId = vehiculoId; }
 
-    public Long getUsuarioInspectorId() { return usuarioInspectorId; }
+      public Long getInstanciaTramiteId() { return instanciaTramiteId; }
+      public void setInstanciaTramiteId(Long instanciaTramiteId) { this.instanciaTramiteId = instanciaTramiteId; }
+
+      public Long getUsuarioInspectorId() { return usuarioInspectorId; }
     public void setUsuarioInspectorId(Long usuarioInspectorId) { this.usuarioInspectorId = usuarioInspectorId; }
 
     public Boolean getEstado() { return estado; }

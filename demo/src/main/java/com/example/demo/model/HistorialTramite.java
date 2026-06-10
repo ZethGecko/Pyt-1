@@ -2,9 +2,11 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "historial_tramite")
+@Audited
 public class HistorialTramite {
 
     @Id

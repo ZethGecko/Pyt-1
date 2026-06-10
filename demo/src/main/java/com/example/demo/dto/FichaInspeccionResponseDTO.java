@@ -10,6 +10,7 @@ import java.util.List;
      private Long idFichaInspeccion;
      private Long vehiculoId;
      private Long inspeccionId;
+     private Long instanciaTramiteId;
      private Long vehiculoAptoId; // ID del registro de revisión documental
      private String vehiculoPlaca;
      private String vehiculoMarca;
@@ -36,8 +37,11 @@ import java.util.List;
      public Long getIdFichaInspeccion() { return idFichaInspeccion; }
      public void setIdFichaInspeccion(Long idFichaInspeccion) { this.idFichaInspeccion = idFichaInspeccion; }
 
-     public Long getInspeccionId() { return inspeccionId; }
-     public void setInspeccionId(Long inspeccionId) { this.inspeccionId = inspeccionId; }
+    public Long getInspeccionId() { return inspeccionId; }
+    public void setInspeccionId(Long inspeccionId) { this.inspeccionId = inspeccionId; }
+
+    public Long getInstanciaTramiteId() { return instanciaTramiteId; }
+    public void setInstanciaTramiteId(Long instanciaTramiteId) { this.instanciaTramiteId = instanciaTramiteId; }
 
     @JsonProperty("id")
     public Long getId() {

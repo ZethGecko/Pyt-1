@@ -20,9 +20,15 @@
     </button>
     <button class="btn btn-secondary" (click)="abrirListaGerentes()">
       <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
       </svg>
       Ver Gerentes
+    </button>
+    <button class="btn btn-secondary" (click)="habilitarTUC()">
+      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
+      </svg>
+      Habilitar TUC
     </button>
   </div>
 
@@ -206,6 +212,12 @@
                     title="Activar">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </button>
+            
+            <button class="btn-icon btn-tuc" (click)="habilitarTUC(empresa)" title="Habilitar TUC">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
               </svg>
             </button>
             
@@ -453,6 +465,136 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Habilitar TUC -->
+  <div class="modal-overlay" *ngIf="mostrarModalHabilitarTUC" (click)="cerrarModalHabilitarTUC()">
+    <div class="modal-content modal-xl" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <svg class="modal-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
+          </svg>
+          Habilitar TUC
+        </h2>
+        <button class="btn-close" (click)="cerrarModalHabilitarTUC()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="empresaTUC">Empresa</label>
+            <select id="empresaTUC" [(ngModel)]="empresaHabilitarTUC" (ngModelChange)="cargarInspeccionesParaTUC()" name="empresaTUC">
+              <option *ngFor="let empresa of empresas" [ngValue]="empresa" [disabled]="empresa.activo === false">
+                {{ empresa.nombre }} - {{ empresa.ruc }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="inspeccionesTUC.length > 0">
+          <div class="form-group">
+            <label for="inspeccionTUC">Inspección</label>
+            <select id="inspeccionTUC" [(ngModel)]="inspeccionTUCSeleccionada" (ngModelChange)="seleccionarInspeccionTUC($event)" name="inspeccionTUC">
+              <option *ngFor="let inspeccion of inspeccionesTUC" [ngValue]="inspeccion">
+                {{ inspeccion.codigo }} - {{ inspeccion.fechaProgramada | date:'dd/MM/yyyy' }} - {{ inspeccion.estado || 'Sin estado' }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tipoVigenciaTUC">Vigencia</label>
+            <select id="tipoVigenciaTUC" [(ngModel)]="tipoVigenciaTUC" name="tipoVigenciaTUC">
+              <option value="12_MESES">12 meses desde la emisión</option>
+              <option value="HASTA_FIN_ANIO">Hasta fin de año</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="tipoVigenciaTUC === 'HASTA_FIN_ANIO'">
+            <label for="anioVencimientoTUC">Año de vencimiento</label>
+            <select id="anioVencimientoTUC" [(ngModel)]="anioVencimientoTUC" name="anioVencimientoTUC">
+              <option *ngFor="let anio of aniosFinAnioTUC" [ngValue]="anio">{{ anio }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container" *ngIf="inspeccionTUCSeleccionada">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Seleccionar</th>
+                <th>Placa</th>
+                <th>Marca / Modelo</th>
+                <th>Categoría</th>
+                <th>Resultado ficha</th>
+                <th>TUC actual</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let vehiculo of vehiculosDeInspeccion(inspeccionTUCSeleccionada)">
+                <td>
+                  <input
+                    type="checkbox"
+                    [checked]="estaVehiculoSeleccionado(vehiculo.idVehiculo)"
+                    (change)="toggleVehiculoTUC(vehiculo.idVehiculo || 0, $any($event.target).checked)"
+                    name="vehiculoTUC_{{ vehiculo.idVehiculo }}"
+                  >
+                </td>
+                <td>{{ vehiculo.placa || 'Sin placa' }}</td>
+                <td>{{ vehiculo.marca || '' }} {{ vehiculo.modelo || '' }}</td>
+                <td>{{ vehiculo.categoria || 'N/A' }}</td>
+                <td>
+                  <span class="badge"
+                        [class.badge-success]="vehiculo.resultadoFicha === 'APROBADO'"
+                        [class.badge-warning]="vehiculo.resultadoFicha === 'OBSERVADO'"
+                        [class.badge-danger]="vehiculo.resultadoFicha === 'DESAPROBADO'">
+                    {{ vehiculo.resultadoFicha || 'Sin resultado' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [class.badge-success]="vehiculo.tieneTucActivo" [class.badge-secondary]="!vehiculo.tieneTucActivo">
+                    {{ vehiculo.tieneTucActivo ? 'Activo' : 'Sin TUC activo' }}
+                  </span>
+                  <div class="text-muted" *ngIf="vehiculo.fechaVencimientoTuc">
+                    {{ vehiculo.fechaVencimientoTuc | date:'dd/MM/yyyy' }}
+                  </div>
+                </td>
+                <td>
+                  <textarea
+                    [(ngModel)]="observacionesVehiculosTUC[vehiculo.idVehiculo]"
+                    [ngModelOptions]="{standalone: true}"
+                    placeholder="Obligatorio si no está aprobado"
+                    rows="2"
+                    class="form-textarea"
+                  ></textarea>
+                </td>
+              </tr>
+              <tr *ngIf="vehiculosDeInspeccion(inspeccionTUCSeleccionada).length === 0">
+                <td colspan="7" class="empty-state">
+                  <p>No hay vehículos en esta inspección</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-warning" *ngIf="inspeccionesTUC.length === 0 && !cargandoTUC">
+          No hay inspecciones registradas para esta empresa.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalHabilitarTUC()">Cancelar</button>
+        <button class="btn btn-primary" (click)="habilitarTUCSeleccionados()" [disabled]="cargandoTUC">
+          <span *ngIf="cargandoTUC" class="spinner-small"></span>
+          {{ cargandoTUC ? 'Habilitando...' : 'Habilitar TUC seleccionado' }}
+        </button>
       </div>
     </div>
   </div>

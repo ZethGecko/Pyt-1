@@ -68,7 +68,7 @@ public interface FichaInspeccionRepository extends JpaRepository<FichaInspeccion
                                                            @Param("vehiculoId") Long vehiculoId);
 
     @Query("SELECT f FROM FichaInspeccion f " +
-           "WHERE f.inspeccionEntity.idInspeccion = :inspeccionId AND f.instanciaTramiteId = :instanciaTramiteId")
+           "WHERE f.inspeccion = :inspeccionId AND f.instanciaTramiteId = :instanciaTramiteId")
     Optional<FichaInspeccion> findByInstanciaTramiteIdAndInspeccion(@Param("inspeccionId") Long inspeccionId,
                                                                      @Param("instanciaTramiteId") Long instanciaTramiteId);
 

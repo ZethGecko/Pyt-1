@@ -1,6 +1,9 @@
 package com.example.demo.model;
 
+import java.time.LocalDateTime;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
 @Table(name = "valor_campo")
@@ -17,6 +20,23 @@ public class ValorCampo {
     @Column(name = "observacion", columnDefinition = "TEXT")
     private String observacion;
 
+    @Column(name = "fecha_creacion")
+    private LocalDateTime fechaCreacion;
+
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
+
+    @PrePersist
+    public void prePersist() {
+        this.fechaCreacion = LocalDateTime.now();
+        this.fechaActualizacion = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.fechaActualizacion = LocalDateTime.now();
+    }
+
     // Relación con FichaInspeccion (a qué ficha pertenece este valor)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_ficha_inspeccion", nullable = false)
@@ -25,6 +45,7 @@ public class ValorCampo {
     // Relación con CampoFormato (qué campo es este)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_campo_formato", nullable = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private CampoFormato campoFormato;
 
     // Constructores
@@ -42,6 +63,22 @@ public class ValorCampo {
 
     public void setIdValorCampo(Long idValorCampo) {
         this.idValorCampo = idValorCampo;
+    }
+
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
     }
 
     public String getValor() {

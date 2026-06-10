@@ -63,16 +63,11 @@ export class NavbarComponent {
              route: '/admin/usuarios',
              visible: this.canManageUsers()
            },
-           {
-             label: 'Roles',
-             route: '/admin/roles',
-             visible: this.permissionService.hasTablePermission('rol', 'manage')
-           },
-           {
-             label: 'Configuración',
-             route: '/admin/configuracion',
-             visible: this.permissionService.hasTablePermission('configuracion', 'manage')
-           }
+            {
+              label: 'Roles',
+              route: '/admin/roles',
+              visible: this.permissionService.hasTablePermission('rol', 'manage')
+            }
          ]
        }
      ].filter(item => item.visible);

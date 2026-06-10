@@ -4,8 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
+@Audited
 @Table(name = "vehiculo")
 public class Vehiculo {
 
@@ -76,6 +79,7 @@ public class Vehiculo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subtipo_transporte")
     @JsonIgnore
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private SubtipoTransporte subtipoTransporte;
 
     @ManyToOne(fetch = FetchType.LAZY)

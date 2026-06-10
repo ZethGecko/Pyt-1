@@ -9,7 +9,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/audit")
@@ -38,13 +38,13 @@ public class AuditLogController {
         return ResponseEntity.ok(logs);
     }
 
-    @GetMapping("/{tabla}/{id}/{revision}")
-    public ResponseEntity<AuditLogResponseDTO> getAuditLogRevision(
+    @GetMapping("/{tabla}/{id}/detalle")
+    public ResponseEntity<Map<String, Object>> getAuditLogDetail(
             @PathVariable String tabla,
             @PathVariable Long id,
-            @PathVariable Long revision) {
-        AuditLogResponseDTO log = auditLogService.getAuditLogRevision(tabla, id, revision);
-        return ResponseEntity.ok(log);
+            @RequestParam(required = false) Long revision) {
+        Map<String, Object> detail = auditLogService.getAuditLogDetail(tabla, id, revision);
+        return ResponseEntity.ok(detail);
     }
 
     @GetMapping("/search")

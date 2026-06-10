@@ -1,38 +1,38 @@
 package com.example.demo.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.demo.config.StoragePathResolver;
+import com.example.demo.model.ImagenSitio;
+import com.example.demo.repository.ImagenSitioRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.model.ImagenSitio;
-import com.example.demo.repository.ImagenSitioRepository;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ImagenSitioService {
     
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
-    
+
     private final ImagenSitioRepository imagenSitioRepository;
-    
-    @Autowired
-    public ImagenSitioService(ImagenSitioRepository imagenSitioRepository) {
+    private final StoragePathResolver storagePathResolver;
+
+    public ImagenSitioService(ImagenSitioRepository imagenSitioRepository,
+                              StoragePathResolver storagePathResolver) {
         this.imagenSitioRepository = imagenSitioRepository;
+        this.storagePathResolver = storagePathResolver;
     }
     
     private Path getUploadDirectory() {
-        Path dir = Paths.get(uploadDir, "site-images");
+        Path dir = storagePathResolver.resolve(uploadDir).resolve("site-images");
         try {
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);

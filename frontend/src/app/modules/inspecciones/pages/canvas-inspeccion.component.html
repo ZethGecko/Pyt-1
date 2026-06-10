@@ -31,6 +31,16 @@
           </div>
         </button>
 
+        <button class="action-btn success" (click)="guardarCertificado()" *ngIf="!modoDiseno && ficha" [disabled]="!puedeGuardarFicha()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">Guardar Ficha</span>
+            <span class="btn-description">Guardar cambios de la ficha de inspección</span>
+          </div>
+        </button>
+
         <button class="action-btn warning" (click)="replicarFormato()" *ngIf="modoDiseno && ficha?.id">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -61,6 +71,16 @@
           </div>
         </button>
 
+        <button class="action-btn info" (click)="imprimirTodasLasFichas()" *ngIf="!modoDiseno && inspeccion?.estado === 'FINALIZADA' && ficha?.id">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          <div class="btn-content">
+            <span class="btn-label">Imprimir todas</span>
+            <span class="btn-description">Fichas de la inspección</span>
+          </div>
+        </button>
+
         <button class="action-btn danger" (click)="limpiarCampos()" *ngIf="modoDiseno">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -80,9 +100,9 @@
           <div class="form-group">
             <label>Resultado:</label>
              <select [(ngModel)]="resultado" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarFirma()" class="resultado-select">
-              <option value="APROBADO">✅ Aprobado</option>
-              <option value="OBSERVADO">⚠️ Observado</option>
-              <option value="RECHAZADO">❌ Rechazado</option>
+              <option value="APROBADO">Aprobado</option>
+              <option value="OBSERVADO">Observado</option>
+              <option value="DESAPROBADO">Desaprobado</option>
             </select>
           </div>
           <div class="form-group">
@@ -268,7 +288,7 @@
                   <div class="flex-1 flex items-center gap-2">
                     <input type="text"
                            class="editable-input flex-1"
-                           [(ngModel)]="param.valor" (ngModelChange)="onInputChange()"
+                           [(ngModel)]="param.valor" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarCampo()"
                            (ngModelChange)="onInputChange()"
                            placeholder="( )">
                    <div *ngIf="modoDiseno" class="flex gap-1">
@@ -318,7 +338,7 @@
                   <div class="flex-1 flex items-center gap-2">
                     <input type="text"
                            class="editable-input flex-1"
-                           [(ngModel)]="param.valor" (ngModelChange)="onInputChange()"
+                           [(ngModel)]="param.valor" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarCampo()"
                            (ngModelChange)="onInputChange()"
                            placeholder="( )">
                    <div *ngIf="modoDiseno" class="flex gap-1">
@@ -388,14 +408,14 @@
                        <button type="button"
                                class="btn-opcion btn-bien"
                                [class.active]="param.valorOpcion === 'BIEN'"
-                               (click)="seleccionarOpcion(param, 'BIEN')"
+                               (click)="seleccionarOpcion(param, 'BIEN')" [disabled]="!puedeEditarCampo()"
                                title="Marcar como Bien">
                          Bien
                        </button>
                        <button type="button"
                                class="btn-opcion btn-mal"
                                [class.active]="param.valorOpcion === 'MAL'"
-                               (click)="seleccionarOpcion(param, 'MAL')"
+                               (click)="seleccionarOpcion(param, 'MAL')" [disabled]="!puedeEditarCampo()"
                                title="Marcar como Mal">
                          Mal
                        </button>
@@ -462,7 +482,7 @@
                  </label>
                   <div class="flex-1 flex flex-col">
                     <textarea class="editable-input flex-1"
-                              [(ngModel)]="param.valor" (ngModelChange)="onInputChange()"
+                              [(ngModel)]="param.valor" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarCampo()"
                               (ngModelChange)="onInputChange()"
                               placeholder="( )"
                               rows="4"></textarea>
@@ -490,39 +510,6 @@
              </div>
            </div>
          </div>
-
-         <!-- Pie de página / Firma (solo en modo ejecución) -->
-        <div class="certificado-section mt-12 pt-8 border-t border-gray-300" *ngIf="!modoDiseno">
-          <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="text-center md:text-left w-full md:w-1/2">
-              <div class="firma-area">
-                <label class="block text-sm font-medium text-gray-700 mb-1">FIRMA DEL RESPONSABLE</label>
-                <input type="text"
-                       [(ngModel)]="firmaResponsable" (ngModelChange)="onInputChange()"
-                       [readonly]="!puedeEditarFirma()"
-                       placeholder="Nombre del responsable"
-                       class="firma-input-large"
-                       *ngIf="puedeEditarFirma(); else firmaSoloLectura">
-                <ng-template #firmaSoloLectura>
-                  <p class="firma-texto">{{ firmaResponsable || '_______________________________' }}</p>
-                </ng-template>
-              </div>
-            </div>
-            <div class="text-center md:text-right w-full md:w-1/2">
-              <div class="firma-area">
-                <label class="block text-sm font-medium text-gray-700 mb-1">FECHA</label>
-                <input type="date"
-                       [(ngModel)]="fechaFirma" (ngModelChange)="onInputChange()"
-                       [readonly]="!puedeEditarFirma()"
-                       class="fecha-input-large"
-                       *ngIf="puedeEditarFirma(); else fechaSoloLectura">
-                <ng-template #fechaSoloLectura>
-                  <p class="fecha-texto">{{ fechaFirma || '_______________' }}</p>
-                </ng-template>
-              </div>
-            </div>
-          </div>
-        </div>
 
       </div>
     </div>

@@ -3,8 +3,10 @@ package com.example.demo.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "punto_ruta")
 public class PuntoRuta {
 

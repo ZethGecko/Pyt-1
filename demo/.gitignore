@@ -25,5 +25,4 @@ Thumbs.db
 *.log
 
 # Uploads (si son generados)
-uploads/*.tmp
-uploads/temp/
+uploads/

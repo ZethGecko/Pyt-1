@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -33,6 +35,8 @@ import com.example.demo.repository.VehiculoRepository;
 
 @Service
 public class FichaInspeccionService {
+
+    public static final String FORMATO_GLOBAL_NOMBRE = "FORMATO_GLOBAL_REUTILIZABLE";
 
     private final FichaInspeccionRepository fichaRepository;
     private final VehiculoRepository vehiculoRepository;
@@ -103,49 +107,77 @@ public class FichaInspeccionService {
             throw new IllegalArgumentException("InspeccionId es requerido");
         }
 
-        // Use the standard findById first (reliable, no risk of silent empty from complex fetch joins).
-        // Fall back to findByIdWithInstancias only if the simple find returns empty, so that any
-        // caller that relies on eagerly-loaded instancias still gets the correct result.
+        Long instanciaTramiteId = request.getInstanciaTramiteId();
+        if (instanciaTramiteId == null) {
+            throw new IllegalArgumentException("InstanciaTramiteId es requerido para asociar la ficha a una instancia del expediente");
+        }
+
+        Optional<FichaInspeccion> fichaExistente = fichaRepository.findByInstanciaTramiteIdAndInspeccion(inspeccionId, instanciaTramiteId);
+
         Inspeccion inspeccion = inspeccionRepository.findById(inspeccionId)
                 .or(() -> inspeccionRepository.findByIdWithInstancias(inspeccionId))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Inspección no encontrada con id " + inspeccionId
                 ));
 
-        // Determinar vehiculoId: si no viene, obtener de la primera instancia de la inspección
         Long vehiculoId = request.getVehiculoId();
         if (vehiculoId == null) {
-            if (inspeccion.getInstancias() != null && !inspeccion.getInstancias().isEmpty()) {
-                InstanciaTramite instancia = inspeccion.getInstancias().get(0).getInstanciaTramite();
-                if (instancia != null && instancia.getIdentificador() != null) {
-                    Vehiculo v = vehiculoRepository.findByPlaca(instancia.getIdentificador()).orElse(null);
-                    if (v != null) {
-                        vehiculoId = v.getIdVehiculo();
-                    }
-                }
+            if (fichaExistente.isPresent() && fichaExistente.get().getVehiculo() != null) {
+                vehiculoId = fichaExistente.get().getVehiculo();
+            } else if (inspeccion.getInstancias() != null) {
+                vehiculoId = inspeccion.getInstancias().stream()
+                        .filter(ii -> ii.getInstanciaTramite() != null
+                                && ii.getInstanciaTramite().getIdInstancia().equals(instanciaTramiteId))
+                        .findFirst()
+                        .flatMap(ii -> {
+                            try {
+                                return Optional.ofNullable(ii.getInstanciaTramite().getIdentificador());
+                            } catch (Exception e) {
+                                return Optional.empty();
+                            }
+                        })
+                        .flatMap(placa -> vehiculoRepository.findByPlaca(placa))
+                        .map(Vehiculo::getIdVehiculo)
+                        .orElse(null);
             }
         }
-        if (vehiculoId == null) {
-            throw new IllegalArgumentException("No se pudo determinar el vehículo. Proporcione vehiculoId o asegúrese que la inspección tiene instancias.");
-        }
 
-        // Obtener o crear formato para la inspección
         FormatoInspeccion formato = obtenerOCrearFormatoActivo(inspeccion);
 
-        // Crear ficha
-        FichaInspeccion ficha = new FichaInspeccion();
-        ficha.setInspeccion(inspeccionId);
+        FichaInspeccion ficha = fichaExistente.orElseGet(FichaInspeccion::new);
+        if (ficha.getIdFichaInspeccion() == null) {
+            ficha.setInspeccion(inspeccionId);
+            ficha.setInstanciaTramiteId(instanciaTramiteId);
+            ficha.setFechaCreacion(LocalDateTime.now());
+        }
+        if (ficha.getInspeccion() == null) {
+            ficha.setInspeccion(inspeccionId);
+        }
+        if (ficha.getInstanciaTramiteId() == null) {
+            ficha.setInstanciaTramiteId(instanciaTramiteId);
+        }
+
         ficha.setVehiculo(vehiculoId);
-        ficha.setUsuarioInspector(request.getUsuarioInspectorId());
+        if (request.getUsuarioInspectorId() != null) {
+            ficha.setUsuarioInspector(request.getUsuarioInspectorId());
+        }
         ficha.setEstado(request.getEstado() != null ? request.getEstado() : true);
-        ficha.setResultado(request.getResultado());
-        ficha.setObservaciones(request.getObservaciones());
+        if (request.getResultado() != null) {
+            ficha.setResultado(request.getResultado());
+        }
+        if (request.getObservaciones() != null) {
+            ficha.setObservaciones(request.getObservaciones());
+        }
         ficha.setFormatoInspeccion(formato);
 
         FichaInspeccion guardada = fichaRepository.save(ficha);
 
-        // Crear valores vacíos para cada campo del formato
-        crearValoresCamposParaFicha(guardada, formato);
+        sincronizarValoresConFormato(guardada, formato);
+
+        if (request.getParametros() != null) {
+            actualizarParametros(guardada, request.getParametros());
+            sincronizarValoresConFormato(guardada, formato);
+        }
 
         return convertirAResponseDTO(guardada);
     }
@@ -230,6 +262,16 @@ public class FichaInspeccionService {
         FichaInspeccion ficha = fichaRepository.findByIdWithAssociations(id)
                 .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada"));
 
+        boolean solicitudFinalizaFicha = Boolean.TRUE.equals(request.getEstado()) && !Boolean.TRUE.equals(ficha.getEstado());
+        boolean inspeccionFinalizada = esInspeccionFinalizada(ficha);
+
+        if (inspeccionFinalizada && !solicitudFinalizaFicha) {
+            throw new IllegalStateException("No se puede editar una ficha de una inspección finalizada.");
+        }
+        if (Boolean.TRUE.equals(ficha.getEstado()) && !solicitudFinalizaFicha) {
+            throw new IllegalStateException("No se puede editar una ficha finalizada.");
+        }
+
         // Actualizar datos de la ficha
         if (request.getUsuarioInspectorId() != null) {
             ficha.setUsuarioInspector(request.getUsuarioInspectorId());
@@ -300,9 +342,26 @@ public class FichaInspeccionService {
         if (request.getParametros() != null) {
             actualizarParametros(ficha, request.getParametros());
         }
+        sincronizarValoresConFormato(ficha, formato);
 
         FichaInspeccion guardada = fichaRepository.save(ficha);
         return convertirADetailDTO(guardada);
+    }
+
+    /**
+     * Valida si la inspección asociada a la ficha ya está cerrada.
+     */
+    private boolean esInspeccionFinalizada(FichaInspeccion ficha) {
+        Long inspeccionId = ficha.getInspeccion();
+        if (inspeccionId == null) {
+            return false;
+        }
+        return inspeccionRepository.findById(inspeccionId)
+                .map(inspeccion -> {
+                    String estado = inspeccion.getEstado();
+                    return "FINALIZADA".equalsIgnoreCase(estado) || "CANCELADA".equalsIgnoreCase(estado);
+                })
+                .orElse(false);
     }
 
     /**
@@ -397,93 +456,133 @@ public class FichaInspeccionService {
      * @return un {@link FormatoInspeccion} siempre no-nulo
      */
     public FormatoInspeccion obtenerOCrearFormatoActivo(Inspeccion inspeccion) {
-        // 1. Ya asignado en la cabecera de la inspección
-        FormatoInspeccion formato = inspeccion.getFormatoInspeccion();
-        if (formato != null) {
-            return formato;
+        if (inspeccion == null || inspeccion.getIdInspeccion() == null) {
+            throw new IllegalArgumentException("La inspección es requerida para obtener/crear el formato activo");
         }
 
-        // 2. Reutilizar el primer formato activo existente
-        formato = formatoRepository.findAll().stream()
-                .filter(f -> Boolean.TRUE.equals(f.getActivo()))
-                .findFirst()
-                .orElse(null);
+        FormatoInspeccion formato = formatoRepository.findByNombre(FORMATO_GLOBAL_NOMBRE).orElse(null);
         if (formato != null) {
             inspeccion.setFormatoInspeccion(formato);
             inspeccionRepository.save(inspeccion);
             return formato;
         }
 
-        // 3. No hay formatos → crear uno por defecto
-        return crearFormatoPorDefectoSiNoExiste(inspeccion);
+        return crearFormatoPorDefectoParaInspeccion(inspeccion);
     }
 
     /**
      * Crea un {@link FormatoInspeccion} por defecto con 27 campos preconfigurados
      * en 4 secciones. Solo se ejecuta cuando definitivamente no hay ningún formato activo.
      */
-    private FormatoInspeccion crearFormatoPorDefectoSiNoExiste(Inspeccion inspeccion) {
+    private FormatoInspeccion crearFormatoPorDefectoParaInspeccion(Inspeccion inspeccion) {
         FormatoInspeccion formato = new FormatoInspeccion();
-        formato.setNombre("Formato " + inspeccion.getCodigo());
-        formato.setDescripcion("Formato por defecto para inspección " + inspeccion.getCodigo());
+        formato.setNombre(FORMATO_GLOBAL_NOMBRE);
+        formato.setDescripcion("Formato reutilizable global para inspecciones");
         formato.setActivo(true);
+        formato.setTituloPrincipal("CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA");
+        formato.setTituloFontSize(24);
+        formato.setSubtituloPrincipal("CÁTEDRA DE LA EMPRESA");
+        formato.setSubtituloFontSize(18);
+        formato.setTituloSeccionDatosGenerales("DATOS GENERALES");
+        formato.setTituloSeccionPlaca("UNIDAD VEHICULAR");
+        formato.setTituloSeccionPlanLunca("PLAN LUNCA DE RODALE");
+        formato.setTituloSeccionLaboratorio("OBSERVACIONES");
         FormatoInspeccion guardado = formatoRepository.save(formato);
 
-        inspeccion.setFormatoInspeccion(guardado);
-        inspeccionRepository.save(inspeccion);
-
-        String[] camposPorDefecto = {
-                "ID:", "Nº de la empresa:", "Nombre del representante:", "Teléfono:",
-                "Dirección:", "Localización:", "NUMERO DE PLACA:", "MODELO DE LA PLACA:",
-                "AÑO DE LA PLACA:", "PRIMEROS AUXILIOS:", "EXTINTORES DE INCENDIOS:",
-                "ACCIDENTES:", "CARRETERA DE ACCESO:", "CARREO DE CIRCULACIÓN VIAL VIENTOS:",
-                "SEÑALIZACIÓN DE OBRA:", "APLICABILIDAD MUNDIAL DE PLAZA:",
-                "SELECCIÓN DE EMERGENCIA:", "A MUNDIAL DE PLAZA:",
-                "CIRCULACIÓN VIARIA VIENTOS:", "SELECCIÓN DE PUNTO DE CONTACTO:",
-                "APLICABILIDAD DE PLANTA:", "FECHA DE PROGRAMA:", "CARTA DE INDUCCIÓN:",
-                "IMPLEMENTACION DE MANTENIMIENTO:", "CONSTRUCCIÓN DE CIUDAD:",
-                "ESTRUCTURA DE PLAZA:", "COMPONENTE DE SEGURIDAD:"
-        };
-        String[] seccionesPorDefecto = {
-                "DATOS GENERALES", "DATOS GENERALES", "DATOS GENERALES", "DATOS GENERALES",
-                "DATOS GENERALES", "DATOS GENERALES", "PLACA", "PLACA", "PLACA",
-                "PLAN LUNCA DE RODALE", "PLAN LUNCA DE RODALE", "PLAN LUNCA DE RODALE",
-                "PLAN LUNCA DE RODALE", "PLAN LUNCA DE RODALE", "PLAN LUNCA DE RODALE",
-                "LABORATORIO", "LABORATORIO", "LABORATORIO", "LABORATORIO", "LABORATORIO",
-                "LABORATORIO", "LABORATORIO", "LABORATORIO", "LABORATORIO", "LABORATORIO",
-                "LABORATORIO", "LABORATORIO"
-        };
-        for (int i = 0; i < camposPorDefecto.length; i++) {
-            CampoFormato campo = new CampoFormato();
-            campo.setNombre(camposPorDefecto[i]);
-            campo.setSeccion(seccionesPorDefecto[i]);
-            campo.setOrden(i);
-            campo.setTipoEvaluacion("TEXTO");
-            campo.setObligatorio(false);
-            campo.setFormatoInspeccion(guardado);
-            campoRepository.save(campo);
+        List<CampoFormato> campos = List.of(
+                new CampoFormato("Empresa:", "DATOS GENERALES", 0),
+                new CampoFormato("RUC:", "DATOS GENERALES", 1),
+                new CampoFormato("Lugar:", "DATOS GENERALES", 2),
+                new CampoFormato("Fecha:", "DATOS GENERALES", 3),
+                new CampoFormato("Representante:", "DATOS GENERALES", 4),
+                new CampoFormato("DNI:", "DATOS GENERALES", 5),
+                new CampoFormato("Unidad vehicular:", "UNIDAD VEHICULAR", 6),
+                new CampoFormato("Placa:", "UNIDAD VEHICULAR", 7),
+                new CampoFormato("Propietario:", "UNIDAD VEHICULAR", 8),
+                new CampoFormato("Nombre del Conductor:", "UNIDAD VEHICULAR", 9),
+                new CampoFormato("Licencia:", "UNIDAD VEHICULAR",  10),
+                new CampoFormato("Categoria:", "UNIDAD VEHICULAR",  11),
+                campoEvaluacion(12, "botiquin"),
+                campoEvaluacion(13, "luces"),
+                campoEvaluacion(14, "espejos"),
+                campoEvaluacion(15, "repuestos"),
+                campoEvaluacion(16, "test"),
+                new CampoFormato("Observaciones generales:", "OBSERVACIONES", 17)
+        );
+        for (CampoFormato c : campos) {
+            c.setFormatoInspeccion(guardado);
+            campoRepository.save(c);
         }
         return guardado;
     }
 
+    private static CampoFormato campoEvaluacion(int orden, String nombre) {
+        CampoFormato c = new CampoFormato(nombre, "PLAN LUNCA DE RODALE", orden);
+        c.setTipoEvaluacion("EVALUACION");
+        c.setObligatorio(true);
+        return c;
+    }
+
+    @Deprecated
+    private FormatoInspeccion crearFormatoPorDefectoSiNoExiste(Inspeccion inspeccion) {
+        return crearFormatoPorDefectoParaInspeccion(inspeccion);
+    }
+
     /**
-     * Crea un {@link ValorCampo} vacío por cada {@link CampoFormato} del formato,
-     * asociándolo a la ficha indicada.
-     * Usar cada vez que se crea una nueva {@link FichaInspeccion} para poblar
-     * todos los campos definidos en el formato.
+     * Sincroniza la estructura de una ficha con el formato actual sin borrar valores existentes.
+     * Usa cada vez que se crea o reutiliza una {@link FichaInspeccion}.
      *
-     * @param ficha   la ficha recién persistida (ya tiene id)
+     * @param ficha   la ficha a sincronizar
      * @param formato el formato del que se toman los campos
      */
     public void crearValoresCamposParaFicha(FichaInspeccion ficha, FormatoInspeccion formato) {
-        List<CampoFormato> campos = campoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(
+        sincronizarValoresConFormato(ficha, formato);
+    }
+
+    public void sincronizarValoresConFormato(FichaInspeccion ficha, FormatoInspeccion formato) {
+        if (ficha == null || ficha.getIdFichaInspeccion() == null || formato == null || formato.getIdFormatoInspeccion() == null) {
+            return;
+        }
+
+        List<CampoFormato> camposFormato = campoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(
                 formato.getIdFormatoInspeccion());
-        for (CampoFormato campo : campos) {
-            ValorCampo valor = new ValorCampo();
-            valor.setFichaInspeccion(ficha);
-            valor.setCampoFormato(campo);
-            valor.setValor("");
-            valor.setObservacion("");
+        Set<Long> idsFormato = camposFormato.stream()
+                .map(CampoFormato::getIdCampoFormato)
+                .collect(Collectors.toSet());
+
+        List<ValorCampo> valoresExistentes = valorRepository.findByFichaInspeccion_IdFichaInspeccion(ficha.getIdFichaInspeccion());
+        Map<Long, List<ValorCampo>> valoresPorCampo = valoresExistentes.stream()
+                .filter(v -> v.getCampoFormato() != null && idsFormato.contains(v.getCampoFormato().getIdCampoFormato()))
+                .collect(Collectors.groupingBy(v -> v.getCampoFormato().getIdCampoFormato()));
+
+        valoresExistentes.stream()
+                .filter(v -> v.getCampoFormato() == null || !idsFormato.contains(v.getCampoFormato().getIdCampoFormato()))
+                .forEach(valorRepository::delete);
+
+        valoresPorCampo.values().stream()
+                .filter(valores -> valores.size() > 1)
+                .forEach(valores -> valorRepository.deleteAll(valores.subList(1, valores.size())));
+
+        for (CampoFormato campo : camposFormato) {
+            List<ValorCampo> valores = valoresPorCampo.get(campo.getIdCampoFormato());
+            ValorCampo valor;
+            if (valores == null || valores.isEmpty()) {
+                valor = new ValorCampo();
+                valor.setFichaInspeccion(ficha);
+                valor.setCampoFormato(campo);
+                valor.setValor("");
+                valor.setObservacion("");
+            } else {
+                valor = valores.get(0);
+                valor.setFichaInspeccion(ficha);
+                valor.setCampoFormato(campo);
+                if (valor.getValor() == null) {
+                    valor.setValor("");
+                }
+                if (valor.getObservacion() == null) {
+                    valor.setObservacion("");
+                }
+            }
             valorRepository.save(valor);
         }
     }
@@ -507,6 +606,7 @@ public class FichaInspeccionService {
         FichaInspeccionResponseDTO dto = new FichaInspeccionResponseDTO();
         dto.setIdFichaInspeccion(ficha.getIdFichaInspeccion());
         dto.setInspeccionId(ficha.getInspeccion());
+        dto.setInstanciaTramiteId(ficha.getInstanciaTramiteId());
         dto.setVehiculoId(ficha.getVehiculo());
         dto.setEstado(ficha.getEstado());
         dto.setResultado(ficha.getResultado());
@@ -543,6 +643,7 @@ public class FichaInspeccionService {
         FichaInspeccionResponseDTO dto = new FichaInspeccionResponseDTO();
         dto.setIdFichaInspeccion(ficha.getIdFichaInspeccion());
         dto.setInspeccionId(ficha.getInspeccion());
+        dto.setInstanciaTramiteId(ficha.getInstanciaTramiteId());
         dto.setVehiculoId(ficha.getVehiculo());
         dto.setEstado(ficha.getEstado());
         dto.setResultado(ficha.getResultado());
@@ -620,6 +721,39 @@ public class FichaInspeccionService {
         }
 
         return dto;
+    }
+
+    /**
+     * Sincroniza todas las fichas de todas las inspecciones que usen este formato.
+     * Garantiza que formato y fichas sean idénticos en estructura.
+     */
+    @Transactional
+    public void sincronizarTodasLasFichasDeFormato(FormatoInspeccion formato) {
+        if (formato == null) return;
+
+        List<Long> inspeccionIds = inspeccionRepository.findByFormatoInspeccion_IdFormatoInspeccion(formato.getIdFormatoInspeccion()).stream()
+                .map(Inspeccion::getIdInspeccion)
+                .collect(java.util.stream.Collectors.toList());
+
+        for (Long inspeccionId : inspeccionIds) {
+            sincronizarFichasConFormato(inspeccionId, formato);
+        }
+    }
+
+    /**
+     * Sincroniza todas las fichas de una inspección para que usen el mismo formato.
+     * Garantiza que formato (cabecera) y fichas (hojas) siempre sean iguales.
+     */
+    @Transactional
+    public void sincronizarFichasConFormato(Long inspeccionId, FormatoInspeccion formato) {
+        if (inspeccionId == null || formato == null) return;
+
+        List<FichaInspeccion> fichas = fichaRepository.findByInspeccion(inspeccionId);
+        for (FichaInspeccion ficha : fichas) {
+            ficha.setFormatoInspeccion(formato);
+            fichaRepository.save(ficha);
+            sincronizarValoresConFormato(ficha, formato);
+        }
     }
 
     private FichaInspeccionResponseDTO convertirAResponseDTO(FichaInspeccion ficha) {

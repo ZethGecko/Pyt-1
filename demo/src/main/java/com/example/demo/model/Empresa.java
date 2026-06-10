@@ -5,8 +5,11 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
+@Audited
 @Table(name = "empresa")
 public class Empresa {
 
@@ -74,6 +77,7 @@ public class Empresa {
     // Relación con SubtipoTransporte
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subtipo_transporte")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private SubtipoTransporte subtipoTransporte;
 
     // Relación con Vehiculo

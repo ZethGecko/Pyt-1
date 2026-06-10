@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
-import { PublicNavbarComponent } from 'src/app/public/components/public-navbar/public-navbar.component';
+import { environment } from '@env';
+import { PublicNavbarComponent } from '@app/public/components/public-navbar/public-navbar.component';
 
 export interface InspeccionPublica {
   idInspeccion: number;

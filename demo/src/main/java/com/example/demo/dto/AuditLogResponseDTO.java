@@ -7,13 +7,15 @@ public class AuditLogResponseDTO {
     private String tablaAfectada;
     private Long registroId;
     private String accion;
+    private String tipoAccion; // "CREACION", "MODIFICACION", "ELIMINACION"
     private LocalDateTime fechaAccion;
     private String usuario;
     private String descripcion;
     private Map<String, Object> datosAnteriores;
     private Map<String, Object> datosNuevos;
 
-    // Getters and Setters
+    public AuditLogResponseDTO() {}
+
     public String getTablaAfectada() {
         return tablaAfectada;
     }
@@ -36,6 +38,14 @@ public class AuditLogResponseDTO {
 
     public void setAccion(String accion) {
         this.accion = accion;
+    }
+
+    public String getTipoAccion() {
+        return tipoAccion;
+    }
+
+    public void setTipoAccion(String tipoAccion) {
+        this.tipoAccion = tipoAccion;
     }
 
     public LocalDateTime getFechaAccion() {

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { IconComponent } from 'src/app/shared/components/ui/icon.component';
+import { IconComponent } from '@app/shared/components/ui/icon.component';
 
 interface NavItem {
   label: string;

@@ -11,8 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
+@Audited
 @Table(name = "publicacion")
 public class Publicacion {
 
@@ -62,6 +65,7 @@ public class Publicacion {
     // Relación con Formatos
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "formato")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Formatos formato;
 
     // Getters y setters

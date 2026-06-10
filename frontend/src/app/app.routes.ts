@@ -73,6 +73,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./modules/admin/notificaciones/notificaciones-admin.component').then(m => m.NotificacionesAdminComponent)
   },
+  {
+    path: 'admin/auditoria',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
+    loadComponent: () => import('./modules/admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent)
+  },
 
   // Privadas - Empresas
   {
@@ -97,16 +103,16 @@ export const routes: Routes = [
 
     // Privadas - Inspecciones
     // Rutas específicas primero (más específicas antes que la general 'inspecciones')
-    {
-      path: 'inspecciones/realizar/:id',
-      canActivate: [authGuard],
-      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
-    },
-    {
-      path: 'inspecciones/ficha/:fichaId',
-      canActivate: [authGuard],
-      loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
-    },
+     {
+       path: 'inspecciones/ficha/:fichaId',
+       canActivate: [authGuard],
+       loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+     },
+     {
+       path: 'inspecciones/realizar/:id',
+       canActivate: [authGuard],
+       loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
+     },
     // Rutas separadas para evitar conflictos con parámetro opcional
     {
       path: 'inspecciones/campos',
@@ -135,12 +141,7 @@ export const routes: Routes = [
       loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
     },
 
-   // Privadas - Configuración (módulo configuracion)
-   {
-     path: 'configuracion',
-     canActivate: [authGuard],
-     loadComponent: () => import('./modules/configuracion/pages/configuracion.component').then(m => m.ConfiguracionComponent)
-   },
+   // Privadas - Configuración
    {
      path: 'tipos-transporte',
      canActivate: [authGuard],

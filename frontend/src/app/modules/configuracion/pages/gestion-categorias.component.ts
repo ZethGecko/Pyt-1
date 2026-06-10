@@ -19,7 +19,7 @@ interface CategoriaTransporte {
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <a routerLink="/app/configuracion" class="header-back">
+          <a routerLink="/dashboard" class="header-back">
             <app-icon name="arrow-left" size="md"></app-icon>
           </a>
           <div class="header-icon">

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 
 export interface CampoFormato {
   id?: number;
@@ -25,7 +25,7 @@ export interface FormatoInspeccion {
   tituloSeccionPlaca: string;
   tituloSeccionPlanLunca: string;
   tituloSeccionLaboratorio: string;
-  campos: CampoFormato[];
+  campos?: CampoFormato[];
 }
 
 export interface FormatoInspeccionResponse {

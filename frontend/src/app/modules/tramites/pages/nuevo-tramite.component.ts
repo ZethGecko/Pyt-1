@@ -13,7 +13,7 @@ import { ReglaTipoTramitePermisoService } from '../../configuracion/services/reg
 import { PersonaNaturalService } from '../../personas-naturales/services/persona-natural.service';
 import { EmpresaService } from '../../empresas/services/empresa.service';
 import { VehiculoService } from '../../vehiculos/services/vehiculo.service';
-import { NotificationService } from 'src/app/shared/services/notification.service';
+import { NotificationService } from '@app/shared/services/notification.service';
 
 interface RequisitoDocumento {
   id: number;

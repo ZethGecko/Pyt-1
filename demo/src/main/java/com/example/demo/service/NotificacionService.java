@@ -1,6 +1,5 @@
 package com.example.demo.service;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -135,17 +134,17 @@ public class NotificacionService {
                   ", now=" + now + ", page=" + page + ", size=" + size);
 
           // Usamos lista explícita de columnas (sin leido hasta que exista en BD)
-          jakarta.persistence.Query query = entityManager.createNativeQuery(
-                  "SELECT n.id_notificacion, n.titulo, n.mensaje, n.tipo, " +
-                  "n.fecha_creacion, n.fecha_publicacion, n.fecha_expiracion, " +
-                  "n.activo, n.prioridad, n.url_destino, n.para_todos, " +
-                  "n.usuario_creador_id, n.usuario_destino_id " +
-                  "FROM notificaciones n WHERE n.activo = true " +
-                          "AND (n.para_todos = true OR n.usuario_destino_id = :userId) " +
-                          "AND n.fecha_publicacion IS NOT NULL " +
-                          "AND (n.fecha_expiracion IS NULL OR n.fecha_expiracion > :now) " +
-                          "ORDER BY n.prioridad DESC, n.fecha_publicacion DESC " +
-                          "LIMIT :limit OFFSET :offset")
+           jakarta.persistence.Query query = entityManager.createNativeQuery(
+                   "SELECT n.id_notificacion, n.titulo, n.mensaje, n.tipo, " +
+                   "n.fecha_creacion, n.fecha_publicacion, n.fecha_expiracion, " +
+                   "n.activo, n.prioridad, n.url_destino, n.para_todos, " +
+                   "n.usuario_creador_id, n.usuario_destino_id, n.leido " +
+                   "FROM notificaciones n WHERE n.activo = true " +
+                           "AND (n.para_todos = true OR n.usuario_destino_id = :userId) " +
+                           "AND n.fecha_publicacion IS NOT NULL " +
+                           "AND (n.fecha_expiracion IS NULL OR n.fecha_expiracion > :now) " +
+                           "ORDER BY n.prioridad DESC, n.fecha_publicacion DESC " +
+                           "LIMIT :limit OFFSET :offset")
                   .setParameter("userId", userId)
                   .setParameter("now", now)
                   .setParameter("limit", size)
@@ -206,12 +205,13 @@ public class NotificacionService {
                           creador.setIdUsuarios(((Number) row[11]).longValue());
                           n.setUsuarioCreador(creador);
                       }
-                      if (row[12] != null) {
-                          Users destino = new Users();
-                          destino.setIdUsuarios(((Number) row[12]).longValue());
-                          n.setUsuarioDestino(destino);
-                      }
-                      return n;
+                       if (row[12] != null) {
+                           Users destino = new Users();
+                           destino.setIdUsuarios(((Number) row[12]).longValue());
+                           n.setUsuarioDestino(destino);
+                       }
+                       n.setLeido(row[13] != null ? (Boolean) row[13] : false);
+                       return n;
                   })
                   .toList();
 
@@ -270,6 +270,37 @@ public class NotificacionService {
             n.setFechaPublicacion(null);
             return repo.save(n);
         }).orElse(null);
+    }
+
+    @Transactional
+    public Notificacion marcarComoLeido(Long id, Users usuario) {
+        return repo.findById(id).map(n -> {
+            n.setLeido(true);
+            return repo.save(n);
+        }).orElse(null);
+    }
+
+    public NotificacionAuthDTO convertToAuthDTO(Notificacion n) {
+        NotificacionAuthDTO dto = new NotificacionAuthDTO();
+        dto.setId(n.getId());
+        dto.setTitulo(n.getTitulo());
+        dto.setMensaje(n.getMensaje());
+        dto.setTipo(n.getTipo() != null ? n.getTipo().name() : null);
+        dto.setFechaCreacion(n.getFechaCreacion());
+        dto.setFechaPublicacion(n.getFechaPublicacion());
+        dto.setFechaExpiracion(n.getFechaExpiracion());
+        dto.setActivo(n.getActivo());
+        dto.setPrioridad(n.getPrioridad());
+        dto.setUrlDestino(n.getUrlDestino());
+        dto.setParaTodos(n.getParaTodos());
+        dto.setLeido(n.getLeido() != null ? n.getLeido() : false);
+        if (n.getUsuarioCreador() != null) {
+            dto.setUsuarioCreadorUsername(n.getUsuarioCreador().getUsername());
+        }
+        if (n.getUsuarioDestino() != null) {
+            dto.setUsuarioDestinoUsername(n.getUsuarioDestino().getUsername());
+        }
+        return dto;
     }
 
     /**

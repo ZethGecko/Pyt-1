@@ -4,8 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
+@Audited
 @Table(name = "ficha_inspeccion")
 public class FichaInspeccion {
 
@@ -92,6 +95,7 @@ public class FichaInspeccion {
     // Relación con ValorCampo (valores de los campos de esta ficha)
     @OneToMany(mappedBy = "fichaInspeccion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private List<ValorCampo> valores;
 
     // Lifecycle callbacks

@@ -6,8 +6,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.envers.Audited;
 
 @Entity
+@Audited
 @Table(name = "instancia_tramite")
 public class InstanciaTramite {
 

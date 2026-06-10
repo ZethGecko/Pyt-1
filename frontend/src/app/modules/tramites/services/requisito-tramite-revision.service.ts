@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
-import { AuthStateService } from 'src/app/core/auth/state/auth.state';
+import { environment } from '@env';
+import { AuthStateService } from '@app/core/auth/state/auth.state';
 
 export interface RequisitoRevision {
   id: number;

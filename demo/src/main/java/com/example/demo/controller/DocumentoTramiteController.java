@@ -1,31 +1,50 @@
 package com.example.demo.controller;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.core.io.InputStreamResource;
-
-import com.example.demo.model.DocumentoTramite;
-import com.example.demo.service.DocumentoTramiteService;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.example.demo.config.StoragePathResolver;
+import com.example.demo.model.DocumentoTramite;
+import com.example.demo.service.DocumentoTramiteService;
 
 @RestController
 @RequestMapping("/api/documentos-tramite")
 public class DocumentoTramiteController {
 
     private final DocumentoTramiteService service;
+    private final StoragePathResolver storagePathResolver;
 
-    public DocumentoTramiteController(DocumentoTramiteService service) {
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
+
+    public DocumentoTramiteController(DocumentoTramiteService service,
+                                      StoragePathResolver storagePathResolver) {
         this.service = service;
+        this.storagePathResolver = storagePathResolver;
     }
 
     @GetMapping
@@ -109,17 +128,12 @@ public class DocumentoTramiteController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El archivo no puede estar vacío");
         }
         
-        String uploadDir = "uploads/";
-        File uploadPath = new File(uploadDir);
-        if (!uploadPath.exists()) {
-            uploadPath.mkdirs();
-        }
-        
         String filename = System.currentTimeMillis() + "_" + archivo.getOriginalFilename();
-        File destination = new File(uploadPath, filename);
+        Path destination = storagePathResolver.resolve(uploadDir).resolve(filename);
+        Files.createDirectories(destination.getParent());
         archivo.transferTo(destination);
         
-        doc.setRutaArchivo(destination.getAbsolutePath());
+        doc.setRutaArchivo(destination.toString());
         doc.setNombreArchivo(archivo.getOriginalFilename());
         doc.setTipoArchivo(archivo.getContentType());
         doc.setTamanoArchivo(archivo.getSize());

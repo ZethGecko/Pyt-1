@@ -2,9 +2,12 @@ package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
 @Table(name = "requisito_tupac")
+@Audited
 public class RequisitoTUPAC {
 
     @Id
@@ -45,6 +48,7 @@ public class RequisitoTUPAC {
     @ManyToOne
     @JoinColumn(name = "formato_id")
     @JsonIgnore
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Formatos formato;
 
     // Relación con DocumentoTramite

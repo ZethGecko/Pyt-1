@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env';
 import { ParametroInspeccion } from './ficha-inspeccion.service';
 
 @Injectable({ providedIn: 'root' })
