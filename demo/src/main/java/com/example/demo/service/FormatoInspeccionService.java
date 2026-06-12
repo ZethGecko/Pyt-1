@@ -53,8 +53,6 @@ public class FormatoInspeccionService {
 
         asignarFormatoAInspeccion(guardado, request.getInspeccionId());
 
-        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(guardado);
-
         return convertirAResponseDTO(guardado);
     }
 
@@ -80,8 +78,6 @@ public class FormatoInspeccionService {
         formatoRepository.flush();
 
         asignarFormatoAInspeccion(guardado, request.getInspeccionId());
-
-        fichaInspeccionService.sincronizarTodasLasFichasDeFormato(guardado);
 
         FormatoInspeccionResponseDTO response = convertirAResponseDTO(guardado);
         return response;
@@ -236,6 +232,16 @@ public class FormatoInspeccionService {
     public FormatoInspeccionResponseDTO obtenerPorInspeccion(Long inspeccionId) {
         FormatoInspeccion formato = formatoRepository.findByInspecciones_IdInspeccion(inspeccionId)
                 .orElse(null);
+        if (formato == null) {
+            FormatoInspeccion formatoGlobal = formatoRepository.findByNombreAndActivoTrue(FORMATO_GLOBAL_NOMBRE).orElse(null);
+            if (formatoGlobal != null) {
+                inspeccionRepository.findById(inspeccionId).ifPresent(inspeccion -> {
+                    inspeccion.setFormatoInspeccion(formatoGlobal);
+                    inspeccionRepository.save(inspeccion);
+                });
+            }
+            formato = formatoGlobal;
+        }
         if (formato == null) {
             FormatoInspeccionResponseDTO global = obtenerFormatoGlobal();
             if (global == null) {

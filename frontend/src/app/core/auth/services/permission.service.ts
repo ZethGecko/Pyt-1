@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import { AuthStateService } from '../state/auth.state';
 
 @Injectable({
@@ -9,7 +10,7 @@ import { AuthStateService } from '../state/auth.state';
 export class PermissionService {
   private http = inject(HttpClient);
   private authState = inject(AuthStateService);
-   private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = environment.apiUrl;
 
   getUserPermissions(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/profile`).pipe(

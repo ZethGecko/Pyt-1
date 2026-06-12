@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.model.Empresa;
 import com.example.demo.repository.EmpresaRepository;
+import com.example.demo.repository.TUCRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -12,13 +13,21 @@ import java.util.List;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final TUCRepository tucRepository;
 
-    public EmpresaService(EmpresaRepository empresaRepository) {
+    public EmpresaService(EmpresaRepository empresaRepository, TUCRepository tucRepository) {
         this.empresaRepository = empresaRepository;
+        this.tucRepository = tucRepository;
     }
 
     public List<Empresa> listarTodas() {
-        return empresaRepository.findAll();
+        List<Empresa> empresas = empresaRepository.findAll();
+        LocalDateTime now = LocalDateTime.now();
+        for (Empresa empresa : empresas) {
+            Long unidadesHabilitadas = tucRepository.countVehiculosHabilitadosPorEmpresa(empresa.getIdEmpresa(), now);
+            empresa.setUnidadesHabilitadas(unidadesHabilitadas != null ? unidadesHabilitadas.intValue() : 0);
+        }
+        return empresas;
     }
 
     public Empresa guardar(Empresa empresa) {

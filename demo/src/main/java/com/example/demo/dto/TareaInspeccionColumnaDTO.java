@@ -1,7 +1,5 @@
 package com.example.demo.dto;
 
-import java.util.List;
-
 /**
  * DTO que define la configuración de columnas para la tabla de Tareas de Inspección.
  * Cada entrada describe una columna: su encabezado visible, la propiedad del objeto de fila

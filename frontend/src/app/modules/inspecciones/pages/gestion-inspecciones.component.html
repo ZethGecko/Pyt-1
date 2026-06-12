@@ -150,7 +150,7 @@
                   Estado general:
                  <span [class.badge]="true"
                        [class.badge-info]="bloque.estado === 'PROGRAMADA'"
-                       [class.badge-warning]="bloque.estado === 'INICIADA' || bloque.estado === 'EN_PROCESO'"
+                        [class.badge-warning]="bloque.estado === 'INICIADA' || bloque.estado === 'EN_CURSO' || bloque.estado === 'EN_PROCESO'"
                        [class.badge-success]="bloque.estado === 'FINALIZADA'"
                        [class.badge-danger]="bloque.estado === 'CANCELADA'">
                    {{ getEstadoLabel(bloque.estado) }}
@@ -196,7 +196,7 @@
                 <td>
                   <span class="badge"
                         [class.badge-info]="inspeccion.estado === 'PROGRAMADA'"
-                        [class.badge-warning]="inspeccion.estado === 'INICIADA' || inspeccion.estado === 'EN_PROCESO'"
+                        [class.badge-warning]="inspeccion.estado === 'INICIADA' || inspeccion.estado === 'EN_CURSO' || inspeccion.estado === 'EN_PROCESO'"
                         [class.badge-success]="inspeccion.estado === 'FINALIZADA'"
                         [class.badge-danger]="inspeccion.estado === 'CANCELADA'">
                     {{ getEstadoLabel(inspeccion.estado) }}
@@ -272,8 +272,8 @@
                      </svg>
                    </button>
 
-                   <!-- Botón Terminar (si INICIADA o EN_PROCESO) -->
-                   <button *ngIf="inspeccion.estado === 'INICIADA' || inspeccion.estado === 'EN_PROCESO'"
+                   <!-- Botón Terminar (si INICIADA, EN_CURSO o EN_PROCESO) -->
+                   <button *ngIf="inspeccion.estado === 'INICIADA' || inspeccion.estado === 'EN_CURSO' || inspeccion.estado === 'EN_PROCESO'"
                            class="btn-icon btn-finish"
                            (click)="terminarInspeccion(inspeccion)"
                            title="Terminar Inspección">
@@ -390,10 +390,10 @@
                               </span>
                             </td>
                              <td class="px-4 py-2 text-sm">
-                               <ng-container *ngIf="inspeccionSeleccionadaParaVer?.estado !== 'FINALIZADA'; else readonlyFicha">
+                               <ng-container *ngIf="puedeEditarFichaDesdeModal(inspeccionSeleccionadaParaVer?.estado); else readonlyFicha">
                                  <button class="btn btn-sm btn-primary"
                                          (click)="verFichaVehiculo(inst)"
-                                         [disabled]="inspeccionSeleccionadaParaVer?.estado === 'FINALIZADA'"
+                                         [disabled]="inspeccionSeleccionadaParaVer?.estado === 'FINALIZADA' || inspeccionSeleccionadaParaVer?.estado === 'CANCELADA'"
                                          title="Ver ficha de inspección del vehículo">
                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>

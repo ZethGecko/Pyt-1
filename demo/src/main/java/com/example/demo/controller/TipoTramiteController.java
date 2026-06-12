@@ -178,7 +178,14 @@ public class TipoTramiteController {
         }
         Long tupacId = tipo.getTupac().getIdTupac();
         List<RequisitoTUPAC> requisitos = requisitoService.listarPorTupac(tupacId);
-        return ResponseEntity.ok(requisitos);
+        List<Long> requisitosIds = parseRequisitosIds(tipo.getRequisitosIds());
+        if (requisitosIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<RequisitoTUPAC> seleccionados = requisitos.stream()
+                .filter(r -> r.getId() != null && requisitosIds.contains(r.getId()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(seleccionados);
     }
 
     @GetMapping("/{id}/requisitos/tupac/{tupacId}")
@@ -266,6 +273,18 @@ public class TipoTramiteController {
         tipo.setRequisitosIds("");
         service.actualizar(id, tipo);
         return ResponseEntity.ok().build();
+    }
+
+    private List<Long> parseRequisitosIds(String requisitosIds) {
+        if (requisitosIds == null || requisitosIds.trim().isEmpty()) {
+            return List.of();
+        }
+
+        return java.util.Arrays.stream(requisitosIds.split(","))
+                .map(String::trim)
+                .filter(part -> !part.isEmpty())
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
     }
 
     private TipoTramiteEnriquecidoDTO toEnriquecidoDTO(TipoTramite t) {

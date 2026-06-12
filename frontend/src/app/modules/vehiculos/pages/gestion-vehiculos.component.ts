@@ -188,8 +188,7 @@ export class GestionVehiculosComponent implements OnInit {
   }
 
   calcularEstado(vehiculo: VehiculoResponse): string {
-    if (!vehiculo.activo) return 'no_habilitado';
-    return 'habilitado';
+    return this.esVehiculoHabilitado(vehiculo) ? 'habilitado' : 'no_habilitado';
   }
   
   get page(): number { return this.currentPage; }
@@ -206,12 +205,12 @@ export class GestionVehiculosComponent implements OnInit {
   }
   
   get totalVehiculos(): number { return this.vehiculos.length; }
-  get habilitados(): number { return this.vehiculos.filter(v => v.activo === true).length; }
-  get noHabilitados(): number { return this.vehiculos.filter(v => v.activo === false).length; }
+  get habilitados(): number { return this.vehiculos.filter(v => this.esVehiculoHabilitado(v)).length; }
+  get noHabilitados(): number { return this.vehiculos.filter(v => !this.esVehiculoHabilitado(v)).length; }
   get enTramite(): number { return 0; }
   
   getEstadoFormateado(vehiculo: VehiculoResponse): string {
-    if (!vehiculo.activo) return 'No Habilitado';
+    if (!this.esVehiculoHabilitado(vehiculo)) return 'No Habilitado';
     if (vehiculo.estadoTecnico) {
       const estados: { [key: string]: string } = {
         'apto': 'Apto',
@@ -225,7 +224,7 @@ export class GestionVehiculosComponent implements OnInit {
   }
   
   getColorEstado(vehiculo: VehiculoResponse): string {
-    if (!vehiculo.activo) return 'bg-gray-100 text-gray-800 border-gray-200';
+    if (!this.esVehiculoHabilitado(vehiculo)) return 'bg-gray-100 text-gray-800 border-gray-200';
     const colores: { [key: string]: string } = {
       'apto': 'bg-green-100 text-green-800 border-green-200',
       'condicional': 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -233,6 +232,11 @@ export class GestionVehiculosComponent implements OnInit {
       'pendiente_inspeccion': 'bg-blue-100 text-blue-800 border-blue-200'
     };
     return colores[vehiculo.estadoTecnico] || 'bg-green-100 text-green-800 border-green-200';
+  }
+
+  private esVehiculoHabilitado(vehiculo: VehiculoResponse): boolean {
+    const estado = (vehiculo.estado || '').toUpperCase();
+    return vehiculo.activo === true || estado === 'HABILITADO' || estado === 'ACTIVO';
   }
   
    abrirModalVehiculo(vehiculo?: VehiculoResponse): void {

@@ -13,6 +13,7 @@ public class NotificacionRequest {
     private String urlDestino;
     private Boolean paraTodos;
     private Boolean activo;
+    private Long usuarioDestinoId;
 
     public String getTitulo() {
         return titulo;
@@ -84,5 +85,13 @@ public class NotificacionRequest {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
+    }
+
+    public Long getUsuarioDestinoId() {
+        return usuarioDestinoId;
+    }
+
+    public void setUsuarioDestinoId(Long usuarioDestinoId) {
+        this.usuarioDestinoId = usuarioDestinoId;
     }
 }

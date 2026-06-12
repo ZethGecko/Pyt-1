@@ -15,6 +15,8 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
 
     Optional<Vehiculo> findByPlaca(String placa);
 
+    List<Vehiculo> findByPlacaIn(List<String> placas);
+
     Optional<Vehiculo> findByNumeroMotor(String numeroMotor);
 
     Optional<Vehiculo> findByNumeroChasis(String numeroChasis);
@@ -57,7 +59,13 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
     @Query("SELECT v FROM Vehiculo v WHERE v.tuc.idTuc = :tucId")
     List<Vehiculo> findByTucId(@Param("tucId") Long tucId);
 
-    @Query("SELECT v FROM Vehiculo v WHERE v.estado = 'ACTIVO'")
+    @Query("SELECT v FROM Vehiculo v WHERE v.tuc.idTuc IN :tucIds")
+    List<Vehiculo> findByTucIdIn(@Param("tucIds") List<Long> tucIds);
+
+    @Query("SELECT v FROM Vehiculo v WHERE v.idVehiculo IN :ids")
+    List<Vehiculo> findByIdIn(@Param("ids") List<Long> ids);
+
+    @Query("SELECT v FROM Vehiculo v WHERE v.estado IN ('ACTIVO', 'HABILITADO')")
     List<Vehiculo> findAllActivos();
 
     @Query("SELECT v FROM Vehiculo v WHERE LOWER(v.placa) LIKE LOWER(CONCAT('%', :termino, '%')) OR LOWER(v.marca) LIKE LOWER(CONCAT('%', :termino, '%')) OR LOWER(v.modelo) LIKE LOWER(CONCAT('%', :termino, '%'))")

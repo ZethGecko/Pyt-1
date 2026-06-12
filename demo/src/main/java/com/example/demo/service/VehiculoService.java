@@ -47,7 +47,7 @@ public class VehiculoService {
 
     public List<Vehiculo> listarActivos() {
         return repo.findAllWithDetails().stream()
-                .filter(v -> "ACTIVO".equals(v.getEstado()))
+                .filter(v -> "ACTIVO".equals(v.getEstado()) || "HABILITADO".equals(v.getEstado()))
                 .collect(Collectors.toList());
     }
 

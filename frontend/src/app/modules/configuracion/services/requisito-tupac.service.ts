@@ -123,12 +123,12 @@ export class RequisitoTUPACService {
 
   // ========== CONSULTAS POR TIPO DE TRÁMITE ==========
 
-  listarParaTipoTramite(codigoTipoTramite: string): Observable<RequisitoTUPAC[]> {
-    return this.http.get<RequisitoTUPAC[]>(`${this.baseUrl}/tipo-tramite/${codigoTipoTramite}`);
+  listarParaTipoTramite(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
+    return this.http.get<RequisitoTUPAC[]>(`${environment.apiUrl}/tipos-tramite/${tipoTramiteId}/requisitos`);
   }
 
-  listarQueAplicanParaTipoTramite(codigoTipoTramite: string): Observable<RequisitoTUPAC[]> {
-    return this.http.get<RequisitoTUPAC[]>(`${this.baseUrl}/tipo-tramite/${codigoTipoTramite}/aplican`);
+  listarQueAplicanParaTipoTramite(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
+    return this.listarParaTipoTramite(tipoTramiteId);
   }
 
   esRequisitoValidoParaTipoTramite(requisitoId: number, codigoTipoTramite: string): Observable<boolean> {

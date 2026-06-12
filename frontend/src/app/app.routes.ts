@@ -76,7 +76,7 @@ export const routes: Routes = [
   {
     path: 'admin/auditoria',
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
+    data: { roles: ['SUPER_ADMIN'] },
     loadComponent: () => import('./modules/admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent)
   },
 
@@ -105,28 +105,33 @@ export const routes: Routes = [
     // Rutas específicas primero (más específicas antes que la general 'inspecciones')
      {
        path: 'inspecciones/ficha/:fichaId',
-       canActivate: [authGuard],
+       canActivate: [authGuard, roleGuard],
+       data: { roles: ['SUPER_ADMIN'] },
        loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
      },
      {
        path: 'inspecciones/realizar/:id',
-       canActivate: [authGuard],
+       canActivate: [authGuard, roleGuard],
+       data: { roles: ['SUPER_ADMIN'] },
        loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
      },
     // Rutas separadas para evitar conflictos con parámetro opcional
     {
       path: 'inspecciones/campos',
-      canActivate: [authGuard],
+      canActivate: [authGuard, roleGuard],
+      data: { roles: ['SUPER_ADMIN'] },
       loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
     },
     {
       path: 'inspecciones/campos/:inspeccionId',
-      canActivate: [authGuard],
+      canActivate: [authGuard, roleGuard],
+      data: { roles: ['SUPER_ADMIN'] },
       loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
     },
     {
       path: 'inspecciones/fichas',
-      canActivate: [authGuard],
+      canActivate: [authGuard, roleGuard],
+      data: { roles: ['SUPER_ADMIN'] },
       loadComponent: () => import('./modules/inspecciones/pages/gestion-fichas-inspeccion.component').then(m => m.GestionFichasInspeccionComponent)
     },
     {
@@ -136,7 +141,8 @@ export const routes: Routes = [
     // Ruta general (debe ir al final para no interceptar subrutas)
     {
       path: 'inspecciones',
-      canActivate: [authGuard],
+      canActivate: [authGuard, roleGuard],
+      data: { roles: ['SUPER_ADMIN'] },
       pathMatch: 'full',
       loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
     },
@@ -171,7 +177,8 @@ export const routes: Routes = [
    // Privadas - Exámenes
    {
      path: 'examenes',
-     canActivate: [authGuard],
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
      loadComponent: () => import('./modules/examenes/pages/gestion-examenes.component').then(m => m.GestionExamenesComponent)
    },
 

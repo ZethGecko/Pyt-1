@@ -366,18 +366,11 @@ export class GestionTiposTramiteComponent implements OnInit {
   // --- Modal Requisitos por Tipo de Trámite ---
 
   verRequisitosTipo(tipo: TipoTramiteEnriquecido) {
-    // Verificar si el tipo tiene requisitos usando totalRequisitos
-    if (!tipo.totalRequisitos || tipo.totalRequisitos === 0) {
-      this.notificationService.showWarning('Este tipo de trámite no tiene requisitos asignados', 'Sin requisitos');
-      return;
-    }
-
     this.cargandoRequisitosPorTipo = true;
     this.tipoSeleccionado = null;
     this.mostrarModalRequisitosPorTipo = true;
 
-    // Obtener los requisitos del tipo desde el backend
-    this.requisitoTUPACService.listarParaTipoTramite(tipo.id.toString()).subscribe({
+    this.requisitoTUPACService.listarParaTipoTramite(tipo.id).subscribe({
       next: (requisitos) => {
         this.tipoSeleccionado = {
           ...tipo,

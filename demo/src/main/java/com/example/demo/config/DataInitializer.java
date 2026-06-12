@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,14 +48,19 @@ import jakarta.annotation.PostConstruct;
 
 @Component
 public class DataInitializer {
+    @Value("${SUPERADMIN_PASSWORD}")
+    private String superAdminPassword;
+
+    @Value("${ADMIN_PASSWORD}")
+    private String adminPassword;
 
     @Autowired private RolesRepository rolesRepository;
     @Autowired private DepartamentoRepository departamentoRepository;
     @Autowired private UsersRepository usersRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private EmpresaRepository empresaRepository;
     @Autowired private GerenteRepository gerenteRepository;
     @Autowired private PersonaNaturalRepository personaNaturalRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private TUPACRepository tupacRepository;
     @Autowired private RequisitoTUPACRepository requisitoTUPACRepository;
     @Autowired private FormatosRepository formatosRepository;
@@ -72,6 +78,9 @@ public class DataInitializer {
         // 1. Crear/asegurar roles ADMIN y SUPER_ADMIN con permisos completos
         Roles adminRole = createOrUpdateRole("ADMIN", "Administrador del sistema");
         Roles superAdminRole = createOrUpdateRole("SUPER_ADMIN", "Super Administrador del sistema");
+
+        validarPasswordInicializacion(superAdminPassword, "SUPERADMIN_PASSWORD");
+        validarPasswordInicializacion(adminPassword, "ADMIN_PASSWORD");
 
         // 2. Crear departamentos si no existen
         if (departamentoRepository.count() == 0L) {
@@ -254,22 +263,23 @@ public class DataInitializer {
             if (usersRepository.findByUsername("superadmin") == null) {
                 Users superAdmin = new Users();
                 superAdmin.setUsername("superadmin");
-                superAdmin.setPassword(passwordEncoder.encode("admin123"));
                 superAdmin.setEmail("superadmin@test.com");
                 superAdmin.setActive(true);
                 superAdmin.setRole(superAdminRole);
                 superAdmin.setDepartamento(deptos.get(1)); // Departamento Técnico
                 superAdmin.setTokenVersion(SUPERADMIN_TOKEN_VERSION);
+                superAdmin.setPassword(passwordEncoder.encode(superAdminPassword));
                 usersRepository.save(superAdmin);
-                System.out.println("Usuario superadmin creado (contraseña: admin123, tokenVersion=" + SUPERADMIN_TOKEN_VERSION + ")");
             } else {
                 // Asegurar que el tokenVersion no cambie entre restarts
                 Users superAdmin = usersRepository.findByUsername("superadmin");
                 if (superAdmin.getTokenVersion() == null) {
                     superAdmin.setTokenVersion(SUPERADMIN_TOKEN_VERSION);
-                    usersRepository.save(superAdmin);
-                    System.out.println("superadmin tokenVersion inicializado a " + SUPERADMIN_TOKEN_VERSION);
                 }
+                if (superAdmin.getPassword() == null || superAdmin.getPassword().isBlank()) {
+                    superAdmin.setPassword(passwordEncoder.encode(superAdminPassword));
+                }
+                usersRepository.save(superAdmin);
             }
 
             // Usuario admin — mismo patrón determinista
@@ -277,21 +287,22 @@ public class DataInitializer {
             if (usersRepository.findByUsername("admin") == null) {
                 Users admin = new Users();
                 admin.setUsername("admin");
-                admin.setPassword(passwordEncoder.encode("admin123"));
                 admin.setEmail("admin@test.com");
                 admin.setActive(true);
                 admin.setRole(adminRole);
                 admin.setDepartamento(deptos.get(0)); // Departamento Administrativo
                 admin.setTokenVersion(ADMIN_TOKEN_VERSION);
+                admin.setPassword(passwordEncoder.encode(adminPassword));
                 usersRepository.save(admin);
-                System.out.println("Usuario admin creado (contraseña: admin123, tokenVersion=" + ADMIN_TOKEN_VERSION + ")");
             } else {
                 Users admin = usersRepository.findByUsername("admin");
                 if (admin.getTokenVersion() == null) {
                     admin.setTokenVersion(ADMIN_TOKEN_VERSION);
-                    usersRepository.save(admin);
-                    System.out.println("admin tokenVersion inicializado a " + ADMIN_TOKEN_VERSION);
                 }
+                if (admin.getPassword() == null || admin.getPassword().isBlank()) {
+                    admin.setPassword(passwordEncoder.encode(adminPassword));
+                }
+                usersRepository.save(admin);
             }
         } else {
             System.out.println("ERROR: No hay suficientes departamentos para crear usuarios");
@@ -745,5 +756,11 @@ public class DataInitializer {
             tablePerms.put(tabla, p);
         }
         return tablePerms;
+    }
+
+    private void validarPasswordInicializacion(String password, String variable) {
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException(variable + " debe configurarse para inicializar usuarios privilegiados.");
+        }
     }
 }

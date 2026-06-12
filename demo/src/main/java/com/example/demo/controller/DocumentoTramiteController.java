@@ -7,10 +7,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,23 @@ public class DocumentoTramiteController {
                                       StoragePathResolver storagePathResolver) {
         this.service = service;
         this.storagePathResolver = storagePathResolver;
+    }
+
+    private Path validarRutaArchivoPermitida(String rutaArchivo) {
+        if (rutaArchivo == null || rutaArchivo.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El documento no tiene archivo adjunto");
+        }
+
+        try {
+            Path uploadDirPath = storagePathResolver.resolve(uploadDir).toRealPath().normalize();
+            Path filePath = storagePathResolver.resolve(rutaArchivo).toRealPath().normalize();
+            if (!filePath.startsWith(uploadDirPath)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ruta de archivo no válida");
+            }
+            return filePath;
+        } catch (java.io.IOException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Archivo físico no encontrado");
+        }
     }
 
     @GetMapping
@@ -99,7 +117,32 @@ public class DocumentoTramiteController {
 
     @PostMapping
     public DocumentoTramite presentar(@RequestBody DocumentoTramite doc) {
+        if (doc.getRutaArchivo() != null && !doc.getRutaArchivo().isBlank()) {
+            validarRutaArchivoPermitida(doc.getRutaArchivo());
+        }
         return service.presentarDocumento(doc);
+    }
+
+    private String sanitizedExtension(String originalFilename) {
+        if (originalFilename == null) {
+            return null;
+        }
+
+        int dotIndex = originalFilename.lastIndexOf('.');
+        if (dotIndex <= 0 || dotIndex == originalFilename.length() - 1) {
+            return null;
+        }
+
+        String extension = originalFilename.substring(dotIndex + 1).trim().toLowerCase(Locale.ROOT);
+        StringBuilder sanitized = new StringBuilder();
+        for (int i = 0; i < extension.length(); i++) {
+            char c = extension.charAt(i);
+            if (Character.isLetterOrDigit(c)) {
+                sanitized.append(c);
+            }
+        }
+
+        return sanitized.length() == 0 ? null : sanitized.toString();
     }
 
       @PutMapping("/{id}")
@@ -128,18 +171,29 @@ public class DocumentoTramiteController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El archivo no puede estar vacío");
         }
         
-        String filename = System.currentTimeMillis() + "_" + archivo.getOriginalFilename();
-        Path destination = storagePathResolver.resolve(uploadDir).resolve(filename);
-        Files.createDirectories(destination.getParent());
+        Path targetDir = storagePathResolver.resolve(uploadDir);
+        Files.createDirectories(targetDir);
+        String originalFilename = archivo.getOriginalFilename();
+        String extension = sanitizedExtension(originalFilename);
+        if (extension == null || extension.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El archivo debe tener una extensión válida");
+        }
+
+        String safeFilename = UUID.randomUUID() + "." + extension;
+        Path targetDirCanonical = targetDir.toRealPath();
+        Path destination = targetDirCanonical.resolve(safeFilename).toAbsolutePath().normalize();
+        if (!destination.startsWith(targetDirCanonical)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ruta de archivo no válida");
+        }
+
         archivo.transferTo(destination);
         
         doc.setRutaArchivo(destination.toString());
-        doc.setNombreArchivo(archivo.getOriginalFilename());
+        doc.setNombreArchivo(originalFilename);
         doc.setTipoArchivo(archivo.getContentType());
         doc.setTamanoArchivo(archivo.getSize());
         doc.setFechaPresentacion(java.time.LocalDateTime.now());
         doc.setFechaActualizacion(java.time.LocalDateTime.now());
-        doc.setVersion((doc.getVersion() != null ? doc.getVersion() : 0) + 1);
         doc.setEstado("PRESENTADO");
         
         DocumentoTramite guardado = service.guardar(doc);
@@ -187,6 +241,7 @@ public class DocumentoTramiteController {
     @PutMapping("/{id}/re-presentar")
     public DocumentoTramite rePresentar(@PathVariable Long id,
                                         @RequestBody DocumentoTramite datos) {
+        validarRutaArchivoPermitida(datos.getRutaArchivo());
         return service.rePresentarDocumento(id, datos.getRutaArchivo(), datos.getNombreArchivo(),
                                            datos.getTipoArchivo(), datos.getTamanoArchivo());
     }
@@ -204,16 +259,13 @@ public class DocumentoTramiteController {
     @GetMapping("/{id}/download")
     public ResponseEntity<InputStreamResource> download(@PathVariable Long id) throws IOException {
         DocumentoTramite doc = service.getDocumentoConArchivo(id);
+        Path filePath = validarRutaArchivoPermitida(doc.getRutaArchivo());
         
-        if (doc.getRutaArchivo() == null || doc.getNombreArchivo() == null) {
+        if (doc.getNombreArchivo() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Documento no tiene archivo adjunto");
         }
         
-        File file = new File(doc.getRutaArchivo());
-        if (!file.exists()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Archivo físico no encontrado");
-        }
-        
+        File file = filePath.toFile();
         InputStream resourceStream = new FileInputStream(file);
         InputStreamResource resource = new InputStreamResource(resourceStream);
         
@@ -221,7 +273,6 @@ public class DocumentoTramiteController {
         
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + doc.getNombreArchivo() + "\"")
                 .body(resource);
     }
 }

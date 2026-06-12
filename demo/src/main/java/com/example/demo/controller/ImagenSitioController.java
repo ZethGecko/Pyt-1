@@ -8,13 +8,16 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -75,10 +78,13 @@ public class ImagenSitioController {
         }
         
         ImagenSitio imagen = imagenOpt.get();
-        File file = new File(imagen.getUrl());
-        if (!file.exists()) {
-            return ResponseEntity.notFound().build();
+        Path filePath;
+        try {
+            filePath = imagenSitioService.validarArchivoPermitido(imagen.getUrl());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+        File file = filePath.toFile();
         
         InputStream resourceStream = new FileInputStream(file);
         InputStreamResource resource = new InputStreamResource(resourceStream);

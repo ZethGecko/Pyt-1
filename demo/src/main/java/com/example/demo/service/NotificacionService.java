@@ -274,10 +274,28 @@ public class NotificacionService {
 
     @Transactional
     public Notificacion marcarComoLeido(Long id, Users usuario) {
+        if (usuario == null || usuario.getIdUsuarios() == null) {
+            return null;
+        }
+
         return repo.findById(id).map(n -> {
+            if (!puedeMarcarComoLeido(n, usuario)) {
+                return null;
+            }
             n.setLeido(true);
             return repo.save(n);
         }).orElse(null);
+    }
+
+    private boolean puedeMarcarComoLeido(Notificacion notificacion, Users usuario) {
+        if (notificacion == null || usuario == null || usuario.getIdUsuarios() == null) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(notificacion.getParaTodos())) {
+            return true;
+        }
+        return notificacion.getUsuarioDestino() != null
+                && usuario.getIdUsuarios().equals(notificacion.getUsuarioDestino().getIdUsuarios());
     }
 
     public NotificacionAuthDTO convertToAuthDTO(Notificacion n) {

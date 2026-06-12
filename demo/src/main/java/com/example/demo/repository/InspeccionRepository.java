@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface InspeccionRepository extends JpaRepository<Inspeccion, Long> {
 
@@ -23,6 +25,37 @@ public interface InspeccionRepository extends JpaRepository<Inspeccion, Long> {
            "LEFT JOIN FETCH e2.gerente " +
            "LEFT JOIN FETCH i.usuarioInspector")
     List<Inspeccion> findAllWithDetails();
+
+    @Query("SELECT DISTINCT i FROM Inspeccion i " +
+           "LEFT JOIN FETCH i.instancias ii " +
+           "LEFT JOIN FETCH ii.instanciaTramite it " +
+           "LEFT JOIN FETCH it.tramite t " +
+           "LEFT JOIN FETCH t.empresa e " +
+           "LEFT JOIN FETCH e.gerente " +
+           "LEFT JOIN FETCH i.empresa emp " +
+           "LEFT JOIN FETCH emp.gerente " +
+           "LEFT JOIN FETCH i.tramite t2 " +
+           "LEFT JOIN FETCH t2.empresa e2 " +
+           "LEFT JOIN FETCH e2.gerente " +
+           "LEFT JOIN FETCH i.usuarioInspector " +
+           "WHERE i.fechaProgramada = :fecha AND i.lugar = :lugar")
+    List<Inspeccion> findBloqueWithDetails(@Param("fecha") LocalDate fecha,
+                                           @Param("lugar") String lugar);
+
+    @Query("SELECT DISTINCT i FROM Inspeccion i " +
+           "LEFT JOIN FETCH i.empresa e " +
+           "LEFT JOIN FETCH i.tramite t " +
+           "LEFT JOIN FETCH t.empresa te " +
+           "WHERE (:desde IS NULL OR i.fechaProgramada >= :desde) " +
+           "AND (:hasta IS NULL OR i.fechaProgramada <= :hasta) " +
+           "AND (:empresaNombre IS NULL OR TRIM(:empresaNombre) = '' OR " +
+           "LOWER(COALESCE(e.nombre, '')) LIKE LOWER(CONCAT('%', TRIM(:empresaNombre), '%')) OR " +
+           "LOWER(COALESCE(te.nombre, '')) LIKE LOWER(CONCAT('%', TRIM(:empresaNombre), '%'))) " +
+           "ORDER BY COALESCE(i.fechaEjecucion, i.fechaCreacion) DESC, i.fechaProgramada DESC")
+    Page<Inspeccion> findPublicas(@Param("desde") LocalDate desde,
+                                  @Param("hasta") LocalDate hasta,
+                                  @Param("empresaNombre") String empresaNombre,
+                                  Pageable pageable);
 
     @Query("SELECT DISTINCT i FROM Inspeccion i " +
            "LEFT JOIN FETCH i.instancias ii " +
@@ -45,10 +78,10 @@ public interface InspeccionRepository extends JpaRepository<Inspeccion, Long> {
     @Query("SELECT i FROM Inspeccion i WHERE i.tramite.empresa.nombre LIKE LOWER(CONCAT('%', :empresaNombre, '%'))")
     List<Inspeccion> findByEmpresaNombreContainingIgnoreCase(@Param("empresaNombre") String empresaNombre);
 
-    @Query("SELECT DISTINCT i FROM Inspeccion i " +
-           "LEFT JOIN FETCH i.empresa e " +
-           "LEFT JOIN FETCH i.tramite t " +
-           "LEFT JOIN FETCH t.empresa te " +
+    @Query("SELECT i FROM Inspeccion i " +
+           "LEFT JOIN i.empresa e " +
+           "LEFT JOIN i.tramite t " +
+           "LEFT JOIN t.empresa te " +
            "WHERE e.idEmpresa = :empresaId OR te.idEmpresa = :empresaId " +
            "ORDER BY COALESCE(i.fechaEjecucion, i.fechaCreacion) DESC, i.fechaProgramada DESC")
     List<Inspeccion> findByEmpresaIdEmpresaOrderByFechaDesc(@Param("empresaId") Long empresaId);

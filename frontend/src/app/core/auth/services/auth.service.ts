@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, timeout, throwError, catchError } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import { LoginRequest, RegisterRequest, AuthResponse, UserProfile } from '../models/user.model';
 import { TokenService } from './token.service';
 import { AuthStateService } from '../state/auth.state';
@@ -12,7 +13,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private tokenService = inject(TokenService);
   private authState = inject(AuthStateService);
-   private apiUrl = 'http://localhost:8080/api/auth';
+   private apiUrl = `${environment.apiUrl}/auth`;
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     console.log('[AuthService] login() llamado con:', credentials.username);

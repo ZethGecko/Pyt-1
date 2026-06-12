@@ -112,19 +112,19 @@
                    <span class="submenu-text">Vehículos</span>
                  </a>
                </li>
-               <li class="submenu-item">
+               <li class="submenu-item" *ngIf="isAdminOrSuperAdmin()">
                  <a routerLink="/tramites/expedientes" routerLinkActive="active" class="submenu-link">
                    <app-icon name="archive" size="xs" class="submenu-icon"></app-icon>
                    <span class="submenu-text">Expedientes</span>
                  </a>
                </li>
-               <li class="submenu-item">
+               <li class="submenu-item" *ngIf="isSuperAdmin()">
                  <a routerLink="/inspecciones" routerLinkActive="active" class="submenu-link">
                    <app-icon name="clipboard-check" size="xs" class="submenu-icon"></app-icon>
                    <span class="submenu-text">Inspecciones</span>
                  </a>
                </li>
-             <li class="submenu-item">
+             <li class="submenu-item" *ngIf="isAdminOrSuperAdmin()">
                <a routerLink="/examenes" routerLinkActive="active" class="submenu-link">
                  <app-icon name="calendar" size="xs" class="submenu-icon"></app-icon>
                  <span class="submenu-text">Exámenes</span>
@@ -142,12 +142,14 @@
                   <span class="submenu-text">Notificaciones</span>
                 </a>
               </li>
-              <li class="submenu-item">
-                <a routerLink="/admin/auditoria" routerLinkActive="active" class="submenu-link">
-                  <app-icon name="eye" size="xs" class="submenu-icon"></app-icon>
-                  <span class="submenu-text">Auditoría</span>
-                </a>
-              </li>
+              @if (isSuperAdmin()) {
+                <li class="submenu-item">
+                  <a routerLink="/admin/auditoria" routerLinkActive="active" class="submenu-link">
+                    <app-icon name="eye" size="xs" class="submenu-icon"></app-icon>
+                    <span class="submenu-text">Auditoría</span>
+                  </a>
+                </li>
+              }
             </ul>
           }
         </li>

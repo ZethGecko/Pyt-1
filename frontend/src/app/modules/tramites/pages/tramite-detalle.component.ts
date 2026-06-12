@@ -186,12 +186,12 @@ export class TramiteDetalleComponent implements OnInit, OnChanges, OnDestroy {
   }
 
    cargarRequisitosDisponibles(): void {
-    if (!this.tramite?.tipoTramiteCodigo) {
-      console.warn('No se puede cargar requisitos: tipoTramiteCodigo no disponible');
+    if (!this.tramite?.tipoTramiteId) {
+      console.warn('No se puede cargar requisitos: tipoTramiteId no disponible');
       return;
     }
 
-    this.requisitoService.listarQueAplicanParaTipoTramite(this.tramite.tipoTramiteCodigo).subscribe({
+    this.requisitoService.listarQueAplicanParaTipoTramite(this.tramite.tipoTramiteId).subscribe({
       next: (requisitos) => {
         this.requisitosDisponibles = requisitos.filter(r => r.activo);
       },

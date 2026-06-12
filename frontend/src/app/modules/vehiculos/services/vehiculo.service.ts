@@ -21,6 +21,7 @@ export interface VehiculoResponse {
     ruc: string;
   };
   activo: boolean;
+  estado?: string;
   estadoTecnico: string;
   fechaHabilitacion?: Date;
   fechaVencimientoTUC?: Date;

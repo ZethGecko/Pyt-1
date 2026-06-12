@@ -51,6 +51,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.notificacionesRecientes().filter(n => !n.leido).length;
   });
 
+  isSuperAdmin = computed(() => this.authState.userRole() === 'SUPER_ADMIN');
+
+  isAdmin = computed(() => this.authState.userRole() === 'ADMIN');
+
+  isAdminOrSuperAdmin = computed(() => this.isAdmin() || this.isSuperAdmin());
+
   ngOnInit(): void {
     this.updateExpandedMenus(this.router.url);
 

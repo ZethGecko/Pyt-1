@@ -7,6 +7,14 @@
         <p class="sidebar-subtitle">
           {{ modoDiseno ? 'Editar Formato' : 'Ficha de Inspección' }}
         </p>
+        <select *ngIf="!modoDiseno && fichasDeInspeccion.length > 1"
+                [(ngModel)]="fichaSeleccionadaId"
+                (ngModelChange)="seleccionarFicha($event)"
+                class="resultado-select w-full mt-3">
+          <option *ngFor="let fichaItem of fichasDeInspeccion" [value]="fichaItem.id || fichaItem.idFichaInspeccion">
+            Ficha {{ fichaItem.id || fichaItem.idFichaInspeccion }} - {{ fichaItem.vehiculoPlaca || fichaItem.vehiculoId || 'Sin vehículo' }}
+          </option>
+        </select>
       </div>
 
       <nav class="action-nav">
@@ -94,16 +102,20 @@
         <!-- Separador -->
         <hr class="sidebar-separator">
 
-        <!-- Sección de Finalización (solo en modo ejecución) -->
-        <div class="finalizacion-section" *ngIf="!modoDiseno && ficha && ficha.id">
-          <h4 class="finalizacion-title">Resultado de la Inspección</h4>
+        <!-- Sección de Resultado de Ficha (modo ejecución) -->
+        <div class="finalizacion-section" *ngIf="!modoDiseno && ficha && (ficha.id || ficha.idFichaInspeccion)">
+          <h4 class="finalizacion-title">Resultado de la Ficha</h4>
           <div class="form-group">
             <label>Resultado:</label>
-             <select [(ngModel)]="resultado" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarFirma()" class="resultado-select">
-              <option value="APROBADO">Aprobado</option>
-              <option value="OBSERVADO">Observado</option>
-              <option value="DESAPROBADO">Desaprobado</option>
-            </select>
+              <select [(ngModel)]="resultado" (ngModelChange)="onInputChange()" [disabled]="!puedeEditarFirma()" class="resultado-select">
+               <option value="">Seleccione resultado</option>
+               <option value="APROBADO">Aprobado</option>
+               <option value="OBSERVADO">Observado</option>
+               <option value="DESAPROBADO">Desaprobado</option>
+             </select>
+          </div>
+          <div *ngIf="resultado && !puedeEditarFirma()" class="readonly-result">
+            Resultado actual: {{ resultado }}
           </div>
           <div class="form-group">
             <label>Firma del Responsable:</label>
@@ -120,15 +132,17 @@
                    [disabled]="!puedeEditarFirma()"
                    class="fecha-input">
           </div>
+          <p *ngIf="!puedeEditarFirma()" class="readonly-note">La ficha está en solo lectura porque la inspección ya fue finalizada, cancelada o aún no está iniciada.</p>
           <button class="action-btn finalize"
+                  *ngIf="puedeEditarFirma()"
                   (click)="finalizarInspeccion()"
-                  [disabled]="!puedeEditarFirma() || !firmaResponsable.trim()">
+                  [disabled]="!resultado || !firmaResponsable.trim() || !fechaFirma">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
             </svg>
             <div class="btn-content">
               <span class="btn-label">Finalizar</span>
-              <span class="btn-description">Cerrar inspección</span>
+              <span class="btn-description">Guardar ficha y cerrar inspección</span>
             </div>
           </button>
         </div>

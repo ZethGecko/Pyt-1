@@ -353,41 +353,29 @@
               <p>No hay requisitos asignados a este tipo de trámite</p>
             </div>
           } @else {
-            <div class="requisitos-lista" style="max-height: 400px; overflow-y: auto;">
-              <table class="data-table" style="margin: 0;">
-                <thead>
-                  <tr>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Tipo</th>
-                    <th>Formato</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (req of tipoSeleccionado.requisitosDetalle; track req.id) {
-                    <tr>
-                      <td>
-                        <span class="code-badge">{{ req.codigo }}</span>
-                      </td>
-                      <td>{{ req.descripcion }}</td>
-                      <td>
-                        <span class="badge" style="background: #dbeafe; color: #2563eb; font-size: 11px;">
-                          {{ req.tipoDocumento }}
-                        </span>
-                      </td>
-                      <td>
-                        @if (req.formatoId) {
-                          <button class="btn btn-sm btn-primary" (click)="verFormatoDesdeLista(req.formatoId)" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">
-                            Ver Formato
-                          </button>
-                        } @else {
-                          <span class="text-gray-400">Sin formato</span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+            <div class="requisitos-lista-simple" style="display: grid; gap: 10px;">
+              @for (req of tipoSeleccionado.requisitosDetalle; track req.id) {
+                <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb;">
+                  <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;">
+                    <div>
+                      <strong>{{ req.codigo }}</strong>
+                      <p style="margin: 4px 0 0; color: #374151;">{{ req.descripcion }}</p>
+                    </div>
+                    <span class="badge" style="background: #dbeafe; color: #2563eb; font-size: 11px; white-space: nowrap;">
+                      {{ req.tipoDocumento }}
+                    </span>
+                  </div>
+                  <div style="margin-top: 8px; color: #6b7280; font-size: 13px;">
+                    @if (req.formatoId) {
+                      <button class="btn btn-sm btn-primary" (click)="verFormatoDesdeLista(req.formatoId)" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">
+                        Ver formato
+                      </button>
+                    } @else {
+                      Sin formato
+                    }
+                  </div>
+                </div>
+              }
             </div>
           }
         </div>

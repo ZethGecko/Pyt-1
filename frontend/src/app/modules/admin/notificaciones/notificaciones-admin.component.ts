@@ -39,7 +39,7 @@ export class NotificacionesAdminComponent implements OnInit {
   notifEditId: number | null = null;
   form: NotificacionCreateDTO = {
     titulo: '', mensaje: '', tipo: 'INFO',
-    fechaExpiracion: null, prioridad: 0, urlDestino: null, paraTodos: true
+    fechaExpiracion: null, prioridad: 0, urlDestino: null, usuarioDestinoId: null, paraTodos: true
   };
 
   readonly tiposNotificacion = ['INFO', 'WARNING', 'ERROR', 'SUCCESS', 'ANUNCIO'] as const;
@@ -77,13 +77,13 @@ export class NotificacionesAdminComponent implements OnInit {
   // ── Modal ──────────────────────────────────────────
   abrirModalCrear(): void {
     this.editando = false; this.notifEditId = null;
-    this.form = { titulo: '', mensaje: '', tipo: 'INFO', fechaExpiracion: null, prioridad: 0, urlDestino: null, paraTodos: true };
+    this.form = { titulo: '', mensaje: '', tipo: 'INFO', fechaExpiracion: null, prioridad: 0, urlDestino: null, usuarioDestinoId: null, paraTodos: true };
     this.mostrarModal = true;
   }
 
   abrirModalEditar(notif: NotificacionAdminDTO): void {
     this.editando = true; this.notifEditId = notif.id;
-    this.form = { titulo: notif.titulo, mensaje: notif.mensaje, tipo: notif.tipo, fechaExpiracion: notif.fechaExpiracion, prioridad: notif.prioridad, urlDestino: notif.urlDestino, paraTodos: notif.paraTodos };
+    this.form = { titulo: notif.titulo, mensaje: notif.mensaje, tipo: notif.tipo, fechaExpiracion: notif.fechaExpiracion, prioridad: notif.prioridad, urlDestino: notif.urlDestino, usuarioDestinoId: null, paraTodos: notif.paraTodos };
     this.mostrarModal = true;
   }
 

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { publicGuard } from '../../core/auth/guards/public.guard';
 import { authGuard } from '../../core/auth/guards/auth.guard';
+import { roleGuard } from '../../core/auth/guards/role.guard';
 
 export const TRAMITES_ROUTES: Routes = [
   // ========== RUTA PÚBLICA (sin auth) ==========
@@ -24,12 +25,14 @@ export const TRAMITES_ROUTES: Routes = [
   // Detalle público (ambas vistas lo usan)
   {
     path: 'detalle/:id',
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/tramite-detalle.component')
       .then(m => m.TramiteDetalleComponent)
   },
   // Ver (alias)
   {
     path: 'ver/:id',
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/tramite-detalle.component')
       .then(m => m.TramiteDetalleComponent)
   },
@@ -70,8 +73,8 @@ export const TRAMITES_ROUTES: Routes = [
    // Expedientes (listado de instancias de trámite)
    {
      path: 'expedientes',
-     canActivate: [authGuard],
-     loadComponent: () => import('./pages/gestion-expedientes.component').then(m => m.GestionExpedientesComponent),
-     data: { title: 'Expedientes' }
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['ADMIN', 'SUPER_ADMIN'], title: 'Expedientes' },
+     loadComponent: () => import('./pages/gestion-expedientes.component').then(m => m.GestionExpedientesComponent)
    }
  ];

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -19,16 +18,16 @@ import com.example.demo.dto.FichaInspeccionUpdateRequestDTO;
 import com.example.demo.dto.ParametroInspeccionDTO;
 import com.example.demo.dto.ParametroInspeccionResponseDTO;
  import com.example.demo.model.CampoFormato;
- import com.example.demo.model.FormatoInspeccion;
  import com.example.demo.model.FichaInspeccion;
+ import com.example.demo.model.FormatoInspeccion;
  import com.example.demo.model.Inspeccion;
- import com.example.demo.model.InstanciaTramite;
  import com.example.demo.model.ValorCampo;
  import com.example.demo.model.Vehiculo;
  import com.example.demo.model.VehiculoApto;
 import com.example.demo.repository.CampoFormatoRepository;
 import com.example.demo.repository.FichaInspeccionRepository;
 import com.example.demo.repository.FormatoInspeccionRepository;
+import com.example.demo.repository.InspeccionInstanciaRepository;
 import com.example.demo.repository.InspeccionRepository;
 import com.example.demo.repository.ValorCampoRepository;
 import com.example.demo.repository.VehiculoRepository;
@@ -41,6 +40,7 @@ public class FichaInspeccionService {
     private final FichaInspeccionRepository fichaRepository;
     private final VehiculoRepository vehiculoRepository;
     private final InspeccionRepository inspeccionRepository;
+    private final InspeccionInstanciaRepository inspeccionInstanciaRepository;
     private final FormatoInspeccionRepository formatoRepository;
     private final CampoFormatoRepository campoRepository;
     private final ValorCampoRepository valorRepository;
@@ -48,12 +48,14 @@ public class FichaInspeccionService {
     public FichaInspeccionService(FichaInspeccionRepository fichaRepository,
                                    VehiculoRepository vehiculoRepository,
                                    InspeccionRepository inspeccionRepository,
+                                   InspeccionInstanciaRepository inspeccionInstanciaRepository,
                                    FormatoInspeccionRepository formatoRepository,
                                    CampoFormatoRepository campoRepository,
                                    ValorCampoRepository valorRepository) {
         this.fichaRepository = fichaRepository;
         this.vehiculoRepository = vehiculoRepository;
         this.inspeccionRepository = inspeccionRepository;
+        this.inspeccionInstanciaRepository = inspeccionInstanciaRepository;
         this.formatoRepository = formatoRepository;
         this.campoRepository = campoRepository;
         this.valorRepository = valorRepository;
@@ -102,24 +104,32 @@ public class FichaInspeccionService {
       */
     @Transactional
     public FichaInspeccionResponseDTO guardar(FichaInspeccionCreateRequestDTO request) {
+        if (request == null) {
+            throw new IllegalArgumentException("La solicitud de ficha es requerida");
+        }
+
         Long inspeccionId = request.getInspeccionId();
         if (inspeccionId == null) {
             throw new IllegalArgumentException("InspeccionId es requerido");
         }
 
-        Long instanciaTramiteId = request.getInstanciaTramiteId();
-        if (instanciaTramiteId == null) {
-            throw new IllegalArgumentException("InstanciaTramiteId es requerido para asociar la ficha a una instancia del expediente");
-        }
-
-        Optional<FichaInspeccion> fichaExistente = fichaRepository.findByInstanciaTramiteIdAndInspeccion(inspeccionId, instanciaTramiteId);
-
-        Inspeccion inspeccion = inspeccionRepository.findById(inspeccionId)
-                .or(() -> inspeccionRepository.findByIdWithInstancias(inspeccionId))
+        Inspeccion inspeccion = inspeccionRepository.findByIdWithInstancias(inspeccionId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Inspección no encontrada con id " + inspeccionId
                 ));
 
+        Long instanciaTramiteId = request.getInstanciaTramiteId();
+        if (instanciaTramiteId == null) {
+            instanciaTramiteId = inspeccion.getInstancias() != null ? inspeccion.getInstancias().stream()
+                    .map(ii -> ii.getInstanciaTramite() != null ? ii.getInstanciaTramite().getIdInstancia() : null)
+                    .filter(id -> id != null)
+                    .findFirst()
+                    .orElse(null) : null;
+        }
+
+        Optional<FichaInspeccion> fichaExistente = fichaRepository.findByInstanciaTramiteIdAndInspeccion(inspeccionId, instanciaTramiteId);
+
+        Long instanciaTramiteIdFinal = instanciaTramiteId;
         Long vehiculoId = request.getVehiculoId();
         if (vehiculoId == null) {
             if (fichaExistente.isPresent() && fichaExistente.get().getVehiculo() != null) {
@@ -127,7 +137,7 @@ public class FichaInspeccionService {
             } else if (inspeccion.getInstancias() != null) {
                 vehiculoId = inspeccion.getInstancias().stream()
                         .filter(ii -> ii.getInstanciaTramite() != null
-                                && ii.getInstanciaTramite().getIdInstancia().equals(instanciaTramiteId))
+                                && ii.getInstanciaTramite().getIdInstancia().equals(instanciaTramiteIdFinal))
                         .findFirst()
                         .flatMap(ii -> {
                             try {
@@ -145,7 +155,8 @@ public class FichaInspeccionService {
         FormatoInspeccion formato = obtenerOCrearFormatoActivo(inspeccion);
 
         FichaInspeccion ficha = fichaExistente.orElseGet(FichaInspeccion::new);
-        if (ficha.getIdFichaInspeccion() == null) {
+        boolean fichaNueva = ficha.getIdFichaInspeccion() == null;
+        if (fichaNueva) {
             ficha.setInspeccion(inspeccionId);
             ficha.setInstanciaTramiteId(instanciaTramiteId);
             ficha.setFechaCreacion(LocalDateTime.now());
@@ -157,13 +168,28 @@ public class FichaInspeccionService {
             ficha.setInstanciaTramiteId(instanciaTramiteId);
         }
 
+        if (request.getEstado() != null) {
+            if (Boolean.TRUE.equals(request.getEstado())) {
+                throw new IllegalArgumentException("No se puede finalizar una ficha sin firma y fecha de firma");
+            }
+            ficha.setEstado(request.getEstado());
+        } else if (fichaNueva) {
+            ficha.setEstado(false);
+        }
+        if (request.getResultado() != null) {
+            ficha.setResultado(request.getResultado());
+        } else if (fichaNueva) {
+            ficha.setResultado(null);
+        }
+        if (fichaNueva) {
+            ficha.setFechaInspeccion(null);
+            ficha.setFirmaResponsable(null);
+            ficha.setFechaFirma(null);
+        }
+
         ficha.setVehiculo(vehiculoId);
         if (request.getUsuarioInspectorId() != null) {
             ficha.setUsuarioInspector(request.getUsuarioInspectorId());
-        }
-        ficha.setEstado(request.getEstado() != null ? request.getEstado() : true);
-        if (request.getResultado() != null) {
-            ficha.setResultado(request.getResultado());
         }
         if (request.getObservaciones() != null) {
             ficha.setObservaciones(request.getObservaciones());
@@ -171,19 +197,54 @@ public class FichaInspeccionService {
         ficha.setFormatoInspeccion(formato);
 
         FichaInspeccion guardada = fichaRepository.save(ficha);
-
-        sincronizarValoresConFormato(guardada, formato);
-
-        if (request.getParametros() != null) {
-            actualizarParametros(guardada, request.getParametros());
-            sincronizarValoresConFormato(guardada, formato);
-        }
-
         return convertirAResponseDTO(guardada);
     }
 
+    @Transactional
+    public FichaInspeccionResponseDTO actualizarResultado(Long id, String resultado, Boolean estado) {
+        FichaInspeccion ficha = fichaRepository.findByIdWithAssociations(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada"));
+
+        if (resultado == null || resultado.isBlank()) {
+            throw new IllegalArgumentException("El resultado de la ficha es requerido");
+        }
+
+        validarFichaEditableParaResultado(ficha);
+
+        String resultadoNormalizado = resultado.trim().toUpperCase();
+        if (!"APROBADO".equals(resultadoNormalizado) &&
+            !"OBSERVADO".equals(resultadoNormalizado) &&
+            !"DESAPROBADO".equals(resultadoNormalizado)) {
+            throw new IllegalArgumentException("Resultado inválido. Use APROBADO, OBSERVADO o DESAPROBADO");
+        }
+
+        ficha.setResultado(resultadoNormalizado);
+        if (Boolean.TRUE.equals(estado)) {
+            throw new IllegalArgumentException("No se puede finalizar una ficha solo con resultado. Envíe firma y fecha.");
+        }
+        if (estado != null && !Boolean.TRUE.equals(estado)) {
+            ficha.setEstado(false);
+        }
+        FichaInspeccion guardada = fichaRepository.save(ficha);
+        return convertirAResponseDTO(guardada);
+    }
+
+    private void validarFichaEditableParaResultado(FichaInspeccion ficha) {
+        if (Boolean.TRUE.equals(ficha.getEstado())) {
+            throw new IllegalArgumentException("No se puede modificar el resultado de una ficha finalizada");
+        }
+
+        if (ficha.getInspeccion() != null) {
+            Inspeccion inspeccion = inspeccionRepository.findById(ficha.getInspeccion())
+                    .orElseThrow(() -> new IllegalArgumentException("Inspección no encontrada"));
+            if ("FINALIZADA".equals(inspeccion.getEstado()) || "CANCELADA".equals(inspeccion.getEstado())) {
+                throw new IllegalArgumentException("No se puede modificar el resultado de una ficha de una inspección finalizada o cancelada");
+            }
+        }
+    }
+
     /**
-     * Busca ficha por ID con asociaciones
+      * Busca ficha por ID con asociaciones
      */
     public FichaInspeccionResponseDTO buscarPorId(Long id) {
         FichaInspeccion ficha = fichaRepository.findByIdWithAssociations(id)
@@ -262,14 +323,21 @@ public class FichaInspeccionService {
         FichaInspeccion ficha = fichaRepository.findByIdWithAssociations(id)
                 .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada"));
 
-        boolean solicitudFinalizaFicha = Boolean.TRUE.equals(request.getEstado()) && !Boolean.TRUE.equals(ficha.getEstado());
+        boolean solicitudFinalizaFicha = Boolean.TRUE.equals(request.getEstado()) && !fichaFinalizadaRealmente(ficha);
         boolean inspeccionFinalizada = esInspeccionFinalizada(ficha);
+        boolean inspeccionEditable = esInspeccionEditable(ficha);
 
-        if (inspeccionFinalizada && !solicitudFinalizaFicha) {
-            throw new IllegalStateException("No se puede editar una ficha de una inspección finalizada.");
+        if (inspeccionFinalizada) {
+            throw new IllegalStateException("No se puede editar una ficha de una inspección finalizada o cancelada.");
         }
-        if (Boolean.TRUE.equals(ficha.getEstado()) && !solicitudFinalizaFicha) {
+        if (!inspeccionEditable) {
+            throw new IllegalStateException("La inspección debe estar en curso para editar o finalizar fichas.");
+        }
+        if (fichaFinalizadaRealmente(ficha) && !solicitudFinalizaFicha) {
             throw new IllegalStateException("No se puede editar una ficha finalizada.");
+        }
+        if (solicitudFinalizaFicha && !esFinalizacionValida(ficha, request)) {
+            throw new IllegalArgumentException("Para finalizar la ficha son obligatorios resultado, firma del responsable y fecha de firma.");
         }
 
         // Actualizar datos de la ficha
@@ -277,10 +345,17 @@ public class FichaInspeccionService {
             ficha.setUsuarioInspector(request.getUsuarioInspectorId());
         }
         if (request.getEstado() != null) {
+            if (Boolean.TRUE.equals(request.getEstado()) && !esFinalizacionValida(ficha, request)) {
+                throw new IllegalArgumentException("Para finalizar la ficha son obligatorios resultado, firma del responsable y fecha de firma.");
+            }
             ficha.setEstado(request.getEstado());
+        } else if (fichaFinalizadaRealmente(ficha)) {
+            ficha.setEstado(true);
+        } else {
+            ficha.setEstado(false);
         }
         if (request.getResultado() != null) {
-            ficha.setResultado(request.getResultado());
+            ficha.setResultado(request.getResultado().isBlank() ? null : normalizarResultadoFicha(request.getResultado()));
         }
         if (request.getObservaciones() != null) {
             ficha.setObservaciones(request.getObservaciones());
@@ -349,6 +424,42 @@ public class FichaInspeccionService {
     }
 
     /**
+     * Una ficha solo está realmente cerrada si tiene estado true, resultado válido y datos mínimos de cierre.
+     * Esto evita que una ficha marcada como finalizada por error quede bloqueada con resultado PENDIENTE
+     * o sin firma/fecha.
+     */
+    private boolean fichaFinalizadaRealmente(FichaInspeccion ficha) {
+        if (!Boolean.TRUE.equals(ficha.getEstado())) {
+            return false;
+        }
+        if (!esResultadoFinalizable(ficha.getResultado())) {
+            return false;
+        }
+        return !isBlank(ficha.getFirmaResponsable()) && !isBlank(ficha.getFechaFirma());
+    }
+
+    private boolean esFinalizacionValida(FichaInspeccion ficha, FichaInspeccionUpdateRequestDTO request) {
+        String resultado = request.getResultado() != null ? request.getResultado() : ficha.getResultado();
+        String firma = request.getFirmaResponsable() != null ? request.getFirmaResponsable() : ficha.getFirmaResponsable();
+        String fecha = request.getFechaFirma() != null ? request.getFechaFirma() : ficha.getFechaFirma();
+        return esResultadoFinalizable(resultado) && !isBlank(firma) && !isBlank(fecha);
+    }
+
+    private boolean esResultadoFinalizable(String resultado) {
+        if (resultado == null) {
+            return false;
+        }
+        String normalizado = resultado.trim().toUpperCase();
+        return "APROBADO".equals(normalizado)
+                || "OBSERVADO".equals(normalizado)
+                || "DESAPROBADO".equals(normalizado);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    /**
      * Valida si la inspección asociada a la ficha ya está cerrada.
      */
     private boolean esInspeccionFinalizada(FichaInspeccion ficha) {
@@ -362,6 +473,34 @@ public class FichaInspeccionService {
                     return "FINALIZADA".equalsIgnoreCase(estado) || "CANCELADA".equalsIgnoreCase(estado);
                 })
                 .orElse(false);
+    }
+
+    /**
+     * Valida si la inspección asociada a la ficha está en curso.
+     */
+    private boolean esInspeccionEditable(FichaInspeccion ficha) {
+        Long inspeccionId = ficha.getInspeccion();
+        if (inspeccionId == null) {
+            return true;
+        }
+        return inspeccionRepository.findById(inspeccionId)
+                .map(inspeccion -> {
+                    String estado = inspeccion.getEstado();
+                    return "EN_CURSO".equalsIgnoreCase(estado)
+                            || "INICIADA".equalsIgnoreCase(estado)
+                            || "EN_PROCESO".equalsIgnoreCase(estado);
+                })
+                .orElse(true);
+    }
+
+    private String normalizarResultadoFicha(String resultado) {
+        String normalizado = resultado.trim().toUpperCase();
+        if (!"APROBADO".equals(normalizado) &&
+            !"OBSERVADO".equals(normalizado) &&
+            !"DESAPROBADO".equals(normalizado)) {
+            throw new IllegalArgumentException("Resultado inválido. Use APROBADO, OBSERVADO o DESAPROBADO");
+        }
+        return normalizado;
     }
 
     /**
@@ -460,7 +599,7 @@ public class FichaInspeccionService {
             throw new IllegalArgumentException("La inspección es requerida para obtener/crear el formato activo");
         }
 
-        FormatoInspeccion formato = formatoRepository.findByNombre(FORMATO_GLOBAL_NOMBRE).orElse(null);
+        FormatoInspeccion formato = formatoRepository.findByNombreAndActivoTrue(FORMATO_GLOBAL_NOMBRE).orElse(null);
         if (formato != null) {
             inspeccion.setFormatoInspeccion(formato);
             inspeccionRepository.save(inspeccion);
@@ -513,6 +652,10 @@ public class FichaInspeccionService {
             c.setFormatoInspeccion(guardado);
             campoRepository.save(c);
         }
+
+        inspeccion.setFormatoInspeccion(guardado);
+        inspeccionRepository.save(inspeccion);
+
         return guardado;
     }
 
@@ -521,11 +664,6 @@ public class FichaInspeccionService {
         c.setTipoEvaluacion("EVALUACION");
         c.setObligatorio(true);
         return c;
-    }
-
-    @Deprecated
-    private FormatoInspeccion crearFormatoPorDefectoSiNoExiste(Inspeccion inspeccion) {
-        return crearFormatoPorDefectoParaInspeccion(inspeccion);
     }
 
     /**
@@ -546,7 +684,7 @@ public class FichaInspeccionService {
 
         List<CampoFormato> camposFormato = campoRepository.findByFormatoInspeccion_IdFormatoInspeccionOrderByOrdenAsc(
                 formato.getIdFormatoInspeccion());
-        Set<Long> idsFormato = camposFormato.stream()
+        java.util.Set<Long> idsFormato = camposFormato.stream()
                 .map(CampoFormato::getIdCampoFormato)
                 .collect(Collectors.toSet());
 
@@ -585,20 +723,6 @@ public class FichaInspeccionService {
             }
             valorRepository.save(valor);
         }
-    }
-
-    /**
-     * @deprecated Usar {@link #obtenerOCrearFormatoActivo} en su lugar.
-     * Mantenido por compatibilidad.
-     */
-    @Deprecated
-    private FormatoInspeccion crearFormatoPorDefecto(Inspeccion inspeccion) {
-        return crearFormatoPorDefectoSiNoExiste(inspeccion);
-    }
-
-    @Deprecated
-    private void crearValoresPorDefecto(FichaInspeccion ficha, FormatoInspeccion formato) {
-        crearValoresCamposParaFicha(ficha, formato);
     }
 
     // Conversión a DTO de respuesta simple (sin profundidad)

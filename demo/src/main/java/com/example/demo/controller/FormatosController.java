@@ -27,6 +27,14 @@ public class FormatosController {
         this.service = service;
     }
 
+    private String sanitizeHeaderFilename(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "archivo";
+        }
+        String safeName = filename.replaceAll("[^a-zA-Z0-9._-]", "_").replaceAll("_+", "_");
+        return safeName.length() > 120 ? safeName.substring(0, 120) : safeName;
+    }
+
     private FormatoResponseDTO toResponseDTO(Formatos f) {
         if (f == null) return null;
         return new FormatoResponseDTO(
@@ -94,7 +102,7 @@ public class FormatosController {
             }
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + sanitizeHeaderFilename(filename) + "\"")
                     .body(resource);
         } catch (IOException e) {
             e.printStackTrace();

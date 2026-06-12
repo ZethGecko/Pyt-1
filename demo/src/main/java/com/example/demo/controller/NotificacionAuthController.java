@@ -16,13 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.example.demo.dto.NotificacionAuthDTO;
 import com.example.demo.dto.NotificacionCountDTO;
 import com.example.demo.model.Notificacion;
 import com.example.demo.model.Users;
-import com.example.demo.repository.UsersRepository;
 import com.example.demo.service.NotificacionService;
 
 @RestController
@@ -31,9 +28,6 @@ public class NotificacionAuthController {
 
     @Autowired
     private NotificacionService notificacionService;
-
-    @Autowired
-    private UsersRepository usersRepository;
 
     @Autowired
     private com.fasterxml.jackson.databind.ObjectMapper objectMapper;

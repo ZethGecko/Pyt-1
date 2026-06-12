@@ -91,13 +91,13 @@ export class RequisitoTUPACService {
   }
 
   /** Listar requisitos para tipo de trámite */
-  listarParaTipoTramite(codigoTipoTramite: string): Observable<RequisitoTUPAC[]> {
-    return this.http.get<RequisitoTUPAC[]>(`${this.apiUrl}/tipo-tramite/${codigoTipoTramite}`);
+  listarParaTipoTramite(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
+    return this.http.get<RequisitoTUPAC[]>(`${environment.apiUrl}/tipos-tramite/${tipoTramiteId}/requisitos`);
   }
 
   /** Listar requisitos que aplican para tipo de trámite */
-  listarQueAplicanParaTipoTramite(codigoTipoTramite: string): Observable<RequisitoTUPAC[]> {
-    return this.http.get<RequisitoTUPAC[]>(`${this.apiUrl}/tipo-tramite/${codigoTipoTramite}/aplican`);
+  listarQueAplicanParaTipoTramite(tipoTramiteId: number): Observable<RequisitoTUPAC[]> {
+    return this.listarParaTipoTramite(tipoTramiteId);
   }
 
   /** Buscar requisitos por término */

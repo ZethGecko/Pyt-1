@@ -81,6 +81,13 @@ export class FichaInspeccionService {
     return this.http.put<FichaInspeccion>(`${this.apiUrl}/${id}`, ficha);
   }
 
+  actualizarResultado(id: number, resultado: string, estado?: boolean): Observable<FichaInspeccion> {
+    return this.http.patch<FichaInspeccion>(`${this.apiUrl}/${id}/resultado`, {
+      resultado,
+      estado
+    });
+  }
+
   finalize(id: number, resultado: string, observaciones: string): Observable<FichaInspeccion> {
     return this.http.patch<FichaInspeccion>(`${this.apiUrl}/${id}/finalizar`, {
       resultado,

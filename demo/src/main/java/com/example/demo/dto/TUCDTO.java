@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class TUCDTO {
     private Long idTuc;
@@ -22,6 +23,7 @@ public class TUCDTO {
     private String vehiculoPlaca;
     private String vehiculoMarca;
     private String vehiculoModelo;
+    private List<VehiculoTucDTO> vehiculos;
 
     public TUCDTO() {}
 
@@ -69,4 +71,7 @@ public class TUCDTO {
 
     public String getVehiculoModelo() { return vehiculoModelo; }
     public void setVehiculoModelo(String vehiculoModelo) { this.vehiculoModelo = vehiculoModelo; }
+
+    public List<VehiculoTucDTO> getVehiculos() { return vehiculos; }
+    public void setVehiculos(List<VehiculoTucDTO> vehiculos) { this.vehiculos = vehiculos; }
 }

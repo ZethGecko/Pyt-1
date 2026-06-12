@@ -9,11 +9,20 @@ import java.util.List;
 
 public interface TUCRepository extends JpaRepository<TUC, Long> {
 
-    @Query("SELECT t FROM TUC t JOIN t.vehiculos v WHERE v.idVehiculo = :vehiculoId AND t.fechaVencimiento > :fecha ORDER BY t.fechaEmision DESC")
+    @Query("SELECT t FROM TUC t JOIN t.vehiculos v WHERE v.idVehiculo = :vehiculoId AND t.fechaVencimiento > :fecha AND t.estado = 'ACTIVO' ORDER BY t.fechaEmision DESC")
     List<TUC> findTopByVehiculosIdVehiculoAndFechaVencimientoAfterOrderByFechaEmisionDesc(@Param("vehiculoId") Long vehiculoId, @Param("fecha") LocalDateTime fecha);
+
+    @Query("SELECT DISTINCT t FROM TUC t JOIN t.vehiculos v WHERE v.idVehiculo IN :vehiculoIds AND t.fechaVencimiento > :fecha AND t.estado = 'ACTIVO' ORDER BY t.fechaEmision DESC")
+    List<TUC> findActiveByVehiculoIds(@Param("vehiculoIds") List<Long> vehiculoIds, @Param("fecha") LocalDateTime fecha);
 
     @Query("SELECT t FROM TUC t WHERE t.empresa.idEmpresa = :empresaId AND t.fechaVencimiento > :fecha")
     List<TUC> findByEmpresaIdEmpresaAndFechaVencimientoAfter(@Param("empresaId") Long empresaId, @Param("fecha") LocalDateTime fecha);
+
+    @Query("SELECT t FROM TUC t WHERE t.estado = 'ACTIVO' AND t.fechaVencimiento <= :fecha ORDER BY t.fechaVencimiento ASC")
+    List<TUC> findActivosVencidos(@Param("fecha") LocalDateTime fecha);
+
+    @Query("SELECT COUNT(DISTINCT v.idVehiculo) FROM TUC t JOIN t.vehiculos v WHERE t.empresa.idEmpresa = :empresaId AND t.estado = 'ACTIVO' AND t.fechaVencimiento > :fecha")
+    Long countVehiculosHabilitadosPorEmpresa(@Param("empresaId") Long empresaId, @Param("fecha") LocalDateTime fecha);
 
     @Query("SELECT t FROM TUC t WHERE t.fechaVencimiento > :fecha ORDER BY t.fechaEmision DESC")
     List<TUC> findByFechaVencimientoAfterOrderByFechaEmisionDesc(@Param("fecha") LocalDateTime fecha);

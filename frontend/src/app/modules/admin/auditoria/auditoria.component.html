@@ -9,11 +9,6 @@
       <h3 class="filter-title">Filtros</h3>
       <div class="filters-grid">
         <div class="filter-group">
-          <label class="filter-label">Tabla</label>
-          <input type="text" class="filter-input" placeholder="Nombre de tabla..."
-                 [(ngModel)]="filtroTabla">
-        </div>
-        <div class="filter-group">
           <label class="filter-label">Usuario</label>
           <input type="text" class="filter-input" placeholder="Nombre de usuario..."
                  [(ngModel)]="filtroUsuario">
@@ -112,7 +107,7 @@
                   <pre>{{ log.descripcion }}</pre>
                   <div class="detail-raw">
                     <strong>Datos nuevos:</strong>
-                    <pre>{{ detailData.datosNuevos | json }}</pre>
+                    <pre>{{ maskSensitiveAuditData(detailData.datosNuevos) | json }}</pre>
                   </div>
                 </div>
               </div>
@@ -122,11 +117,11 @@
                 <div class="detail-comparison">
                   <div class="comparison-col">
                     <span class="comparison-label">Datos anteriores</span>
-                    <pre class="comparison-data">{{ detailData.datosAnteriores | json }}</pre>
+                    <pre class="comparison-data">{{ maskSensitiveAuditData(detailData.datosAnteriores) | json }}</pre>
                   </div>
                   <div class="comparison-col">
                     <span class="comparison-label">Datos actuales</span>
-                    <pre class="comparison-data">{{ detailData.datosNuevos | json }}</pre>
+                    <pre class="comparison-data">{{ maskSensitiveAuditData(detailData.datosNuevos) | json }}</pre>
                   </div>
                 </div>
               </div>
@@ -137,7 +132,7 @@
                   <pre>{{ log.descripcion }}</pre>
                   <div class="detail-raw">
                     <strong>Datos eliminados:</strong>
-                    <pre>{{ detailData.datosNuevos | json }}</pre>
+                    <pre>{{ maskSensitiveAuditData(detailData.datosNuevos) | json }}</pre>
                   </div>
                   <p class="detail-who">
                     <strong>Eliminado por:</strong> {{ detailData.usuario || log.usuario }} |

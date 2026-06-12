@@ -4,14 +4,22 @@ import { Observable } from 'rxjs';
 import { environment } from '@env';
 
 export interface TUCResponse {
-  id: number;
-  numero: string;
-  vehiculoId: number;
+  id?: number;
+  idTuc?: number;
+  numero?: string;
+  codigo?: string;
+  tipo?: string;
+  vehiculoId?: number;
   vehiculoPlaca?: string;
-  fechaEmision: Date;
-  fechaVencimiento: Date;
-  estado: string;
-  categoria: string;
+  vehiculoMarca?: string;
+  vehiculoModelo?: string;
+  fechaEmision?: Date;
+  fechaVencimiento?: Date;
+  estado?: string;
+  categoria?: string;
+  empresaId?: number;
+  empresaNombre?: string;
+  empresaRuc?: string;
   observaciones?: string;
   archivoUrl?: string;
 }
@@ -40,6 +48,7 @@ export interface TucInspeccionResponse {
   empresaId?: number;
   empresaNombre?: string;
   empresaRuc?: string;
+  vehiculos?: TucVehiculoResponse[];
 }
 
 export interface TucVehiculoResponse {

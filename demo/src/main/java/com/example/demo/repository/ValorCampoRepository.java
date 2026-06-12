@@ -1,11 +1,11 @@
 package com.example.demo.repository;
 
-import com.example.demo.model.ValorCampo;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.example.demo.model.ValorCampo;
 
 @Repository
 public interface ValorCampoRepository extends JpaRepository<ValorCampo, Long> {

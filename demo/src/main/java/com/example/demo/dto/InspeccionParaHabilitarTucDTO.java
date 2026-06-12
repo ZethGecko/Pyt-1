@@ -2,6 +2,7 @@ package com.example.demo.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class InspeccionParaHabilitarTucDTO {
     private Long idInspeccion;
@@ -16,6 +17,7 @@ public class InspeccionParaHabilitarTucDTO {
     private Long empresaId;
     private String empresaNombre;
     private String empresaRuc;
+    private List<VehiculoParaHabilitarTucDTO> vehiculos;
 
     public Long getIdInspeccion() { return idInspeccion; }
     public void setIdInspeccion(Long idInspeccion) { this.idInspeccion = idInspeccion; }
@@ -52,4 +54,7 @@ public class InspeccionParaHabilitarTucDTO {
 
     public String getEmpresaRuc() { return empresaRuc; }
     public void setEmpresaRuc(String empresaRuc) { this.empresaRuc = empresaRuc; }
+
+    public List<VehiculoParaHabilitarTucDTO> getVehiculos() { return vehiculos; }
+    public void setVehiculos(List<VehiculoParaHabilitarTucDTO> vehiculos) { this.vehiculos = vehiculos; }
 }

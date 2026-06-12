@@ -195,6 +195,50 @@ export class AuditoriaComponent implements OnInit {
     }
   }
 
+  maskSensitiveAuditData(value: any): any {
+    const sensitiveKeys = [
+      'password',
+      'token',
+      'secret',
+      'jwt',
+      'credential',
+      'clave',
+      'contrasena',
+      'contraseña',
+      'dni',
+      'cedula',
+      'email',
+      'telefono',
+      'direccion'
+    ];
+
+    const mask = (item: any, seen = new WeakSet<object>()): any => {
+      if (item === null || typeof item !== 'object') {
+        return item;
+      }
+
+      if (seen.has(item)) {
+        return item;
+      }
+      seen.add(item);
+
+      if (Array.isArray(item)) {
+        return item.map((entry) => mask(entry, seen));
+      }
+
+      const masked: Record<string, any> = {};
+      for (const [key, entry] of Object.entries(item)) {
+        const normalizedKey = key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        masked[key] = sensitiveKeys.some((sensitiveKey) => normalizedKey.includes(sensitiveKey))
+          ? '[REDACTADO]'
+          : mask(entry, seen);
+      }
+      return masked;
+    };
+
+    return mask(value);
+  }
+
   formatDate(date: string | undefined): string {
     if (!date) return '-';
     try {

@@ -98,6 +98,17 @@ public class NotificacionController {
         notificacion.setPrioridad(request.getPrioridad());
         notificacion.setUrlDestino(request.getUrlDestino());
         notificacion.setParaTodos(request.getParaTodos() != null ? request.getParaTodos() : true);
+        if (Boolean.TRUE.equals(notificacion.getParaTodos())) {
+            notificacion.setUsuarioDestino(null);
+        } else {
+            Long usuarioDestinoId = request.getUsuarioDestinoId();
+            if (usuarioDestinoId == null) {
+                throw new IllegalArgumentException("usuarioDestinoId es obligatorio cuando paraTodos es false");
+            }
+            Users destinatario = usersRepository.findById(usuarioDestinoId)
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario destino no encontrado"));
+            notificacion.setUsuarioDestino(destinatario);
+        }
 
         if (principal != null) {
             // Obtener el usuario desde la base de datos
@@ -124,6 +135,15 @@ public class NotificacionController {
         datos.setUrlDestino(request.getUrlDestino());
         datos.setParaTodos(request.getParaTodos());
         datos.setActivo(request.getActivo());
+        if (Boolean.TRUE.equals(request.getParaTodos())) {
+            datos.setUsuarioDestino(null);
+        } else if (request.getUsuarioDestinoId() != null) {
+            Users destinatario = usersRepository.findById(request.getUsuarioDestinoId())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario destino no encontrado"));
+            datos.setUsuarioDestino(destinatario);
+        } else if (Boolean.FALSE.equals(request.getParaTodos())) {
+            throw new IllegalArgumentException("usuarioDestinoId es obligatorio cuando paraTodos es false");
+        }
 
         Notificacion actualizada = notificacionService.actualizar(id, datos);
         if (actualizada == null) {

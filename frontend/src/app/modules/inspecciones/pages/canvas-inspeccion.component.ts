@@ -32,6 +32,8 @@ type ParametroFichaExtendido = ParametroInspeccion & {
     inspeccionId: number = 0;
     modoEdicion: boolean = false;
     ficha: FichaInspeccion | null = null;
+    fichasDeInspeccion: FichaInspeccion[] = [];
+    fichaSeleccionadaId: number | null = null;
     formatoId: number | null = null;
     inspeccion?: InspeccionResponse;
     parametrosFicha: ParametroFichaExtendido[] = [];
@@ -174,17 +176,19 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        this.modoDiseno = false;
        this.cargandoFicha = true;
        this.fichaInspeccionService.getById(idNum).subscribe({
-         next: (ficha: FichaInspeccion) => {
-           this.cargandoFicha = false;
-           this.ficha = ficha;
-           if (ficha.inspeccionId) {
-             this.inspeccionId = ficha.inspeccionId;
-             this.cargarDatos(); // carga normal
-           } else {
-             this.errorCarga = true;
-             this.mensajeError = 'La ficha no está asociada a ninguna inspección.';
-           }
-         },
+          next: (ficha: FichaInspeccion) => {
+            this.cargandoFicha = false;
+            this.ficha = ficha;
+            this.normalizarFichaEditable(ficha);
+            if (ficha.inspeccionId) {
+              this.inspeccionId = ficha.inspeccionId;
+              this.cargarDatos(); // carga normal
+            } else {
+              this.errorCarga = true;
+              this.mensajeError = 'La ficha no está asociada a ninguna inspección.';
+            }
+          },
+
          error: (err) => {
            this.cargandoFicha = false;
            this.errorCarga = true;
@@ -290,10 +294,13 @@ type ParametroFichaExtendido = ParametroInspeccion & {
           }
 
           if (fichas && fichas.length > 0) {
+            this.fichasDeInspeccion = fichas;
             const fichaIdDesdeRuta = Number(this.route.snapshot.paramMap.get('fichaId') || 0);
             this.ficha = fichaIdDesdeRuta > 0
-              ? (fichas.find(f => (f.id || f.idFichaInspeccion) === fichaIdDesdeRuta) || fichas[0])
-              : fichas.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+              ? (fichas.find(f => Number(f.id || f.idFichaInspeccion || 0) === fichaIdDesdeRuta) || fichas[0])
+              : fichas.sort((a, b) => (Number(b.id || b.idFichaInspeccion || 0)) - (Number(a.id || a.idFichaInspeccion || 0)))[0];
+            this.normalizarFichaEditable(this.ficha);
+            this.fichaSeleccionadaId = Number(this.ficha.id || this.ficha.idFichaInspeccion || 0);
             // En modo EJECUCION, NUNCA sobrescribir formatoId con el id de la ficha
             // formatoId solo se modifica en modo DISENO
             console.log('[CanvasInspeccion] Ficha cargada:', {
@@ -363,6 +370,8 @@ type ParametroFichaExtendido = ParametroInspeccion & {
               this.sincronizarTitulosDesdeFormato(formato);
             }
          } else {
+           this.fichasDeInspeccion = [];
+           this.fichaSeleccionadaId = null;
            this.errorCarga = true;
            this.mensajeError = `
              <strong>No existe una ficha de inspección para esta inspección.</strong><br><br>
@@ -504,6 +513,25 @@ type ParametroFichaExtendido = ParametroInspeccion & {
   }
 
 
+     private obtenerInstanciaTramiteIdParaFichaManual(): number | null {
+       const fichaInstanciaId = Number((this.ficha as any)?.instanciaTramiteId || 0);
+       if (fichaInstanciaId > 0) {
+         return fichaInstanciaId;
+       }
+
+       const rutaInstanciaId = Number(
+         this.route.snapshot.queryParamMap.get('instanciaTramiteId') ||
+         this.route.snapshot.queryParamMap.get('instanciaId') ||
+         0
+       );
+       if (rutaInstanciaId > 0) {
+         return rutaInstanciaId;
+       }
+
+       const instancias = this.inspeccion?.instancias || [];
+       return instancias.length === 1 ? instancias[0].idInstancia : null;
+     }
+
      crearFichaManual(): void {
       if (!this.inspeccionId || this.inspeccionId <= 0) {
         alert('No es posible crear la ficha: la inspección no tiene un identificador válido. Recargue la página o navegue nuevamente a la inspección.');
@@ -527,13 +555,20 @@ type ParametroFichaExtendido = ParametroInspeccion & {
             return;
           }
 
-      this.cargandoFicha = true;
-      const currentUserId = this.authState.currentUser()?.id;
-      this.fichaInspeccionService.create({
-        inspeccionId: this.inspeccionId,
-        estado: false,
-        usuarioInspector: currentUserId
-      }).subscribe({
+       this.cargandoFicha = true;
+       const currentUserId = this.authState.currentUser()?.id;
+       const instanciaTramiteId = this.obtenerInstanciaTramiteIdParaFichaManual();
+       if (!instanciaTramiteId) {
+         this.cargandoFicha = false;
+         alert('No se pudo determinar la instancia de trámite para crear la ficha. Seleccione una instancia antes de crear la ficha.');
+         return;
+       }
+       this.fichaInspeccionService.create({
+         inspeccionId: this.inspeccionId,
+         instanciaTramiteId,
+         estado: false,
+         usuarioInspector: currentUserId
+       }).subscribe({
         next: () => {
           this.cargarDatos();
           this.errorCarga = false;
@@ -632,6 +667,7 @@ type ParametroFichaExtendido = ParametroInspeccion & {
    private rellenarDatosAutomaticos(): void {
      if (!this.inspeccion || !this.parametrosFicha) return;
 
+     const fechaInspeccion = this.formatearFechaParaFicha(this.inspeccion.fechaProgramada);
      const mapping: { [key: string]: string } = {};
 
      // Datos de la empresa
@@ -645,26 +681,7 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        mapping['Lugar:'] = this.inspeccion.lugar;
      }
      if (this.inspeccion.fechaProgramada) {
-       const fecha = this.inspeccion.fechaProgramada;
-       let day: string, month: string, year: string;
-       if (fecha instanceof Date) {
-         day = fecha.getDate().toString().padStart(2, '0');
-         month = (fecha.getMonth() + 1).toString().padStart(2, '0');
-         year = fecha.getFullYear().toString();
-       } else {
-         const parts = String(fecha).split('-');
-         if (parts.length === 3) {
-           year = parts[0];
-           month = parts[1];
-           day = parts[2];
-         } else {
-           const d = new Date(fecha);
-           day = d.getDate().toString().padStart(2, '0');
-           month = (d.getMonth() + 1).toString().padStart(2, '0');
-           year = d.getFullYear().toString();
-         }
-       }
-       mapping['Fecha:'] = `${day}/${month}/${year}`;
+       mapping['Fecha:'] = fechaInspeccion;
      }
      if (this.inspeccion.gerenteNombre) {
        mapping['Representante:'] = this.inspeccion.gerenteNombre;
@@ -675,10 +692,60 @@ type ParametroFichaExtendido = ParametroInspeccion & {
 
      for (const param of this.parametrosFicha) {
        const key = param.parametro?.trim();
-       if (key && mapping[key] !== undefined && (!param.valor || param.valor.trim() === '')) {
-         param.valor = mapping[key];
+       if (!key) continue;
+       if (this.esCampoFecha(key)) {
+         param.valor = fechaInspeccion;
+         continue;
+       }
+       const mappedValue = mapping[key];
+       if (mappedValue !== undefined && (!param.valor || param.valor.trim() === '')) {
+         param.valor = mappedValue;
        }
      }
+   }
+
+   private formatearFechaParaFicha(fecha: Date | string | undefined): string {
+     if (!fecha) return '';
+
+     if (fecha instanceof Date) {
+       if (Number.isNaN(fecha.getTime())) return '';
+       return this.fechaConCeros(fecha.getDate(), fecha.getMonth() + 1, fecha.getFullYear());
+     }
+
+     const texto = String(fecha);
+     const partesFecha = texto.split('-');
+     if (partesFecha.length === 3 && /^\d{4}$/.test(partesFecha[0])) {
+       return this.fechaConCeros(Number(partesFecha[2]), Number(partesFecha[1]), Number(partesFecha[0]));
+     }
+
+     const fechaParseada = new Date(texto);
+     if (Number.isNaN(fechaParseada.getTime())) return '';
+     return this.fechaConCeros(fechaParseada.getDate(), fechaParseada.getMonth() + 1, fechaParseada.getFullYear());
+   }
+
+   private fechaConCeros(day: number, month: number, year: number): string {
+     return `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+   }
+
+   private esCampoFecha(parametro: string): boolean {
+     const normalizado = this.normalizarTexto(parametro).replace(/:/g, '').trim();
+     return [
+       'fecha',
+       'fecha de inspeccion',
+       'fecha de programa',
+       'fecha programada'
+     ].includes(normalizado);
+   }
+
+   private normalizarTexto(valor: string): string {
+     return valor
+       .normalize('NFD')
+       .replace(/[\u0300-\u036f]/g, '')
+       .toLowerCase();
+   }
+
+   private validarResultadoFicha(resultado: string): boolean {
+     return ['APROBADO', 'OBSERVADO', 'DESAPROBADO'].includes(resultado.trim().toUpperCase());
    }
 
    private inicializarFichaVacia(): void {
@@ -807,6 +874,11 @@ type ParametroFichaExtendido = ParametroInspeccion & {
       this.clasificarPorSecciones();
     }
 
+   seleccionarFicha(fichaId: number): void {
+     if (!fichaId) return;
+     this.router.navigate(['/inspecciones', 'ficha', fichaId]);
+   }
+
    volverAtras(): void {
      this.prepararParaSalida();
      this.router.navigate(['/inspecciones']);
@@ -910,12 +982,20 @@ type ParametroFichaExtendido = ParametroInspeccion & {
         return;
       }
 
-      const estadoFicha = finalizando || this.finalizandoInspeccion ? true : (this.ficha.estado || false);
+      const estadoFicha = finalizando || this.finalizandoInspeccion ? true : false;
+      this.resultado = this.resultado ? this.resultado.trim().toUpperCase() : '';
 
       (this.ficha as any).firmaResponsable = this.firmaResponsable || null;
       (this.ficha as any).fechaFirma = this.fechaFirma || null;
       this.ficha.resultado = this.resultado || undefined;
 
+      if (!finalizando && !this.finalizandoInspeccion && this.inspeccion && !this.inspeccionEnCurso()) {
+        this.cargandoFicha = false;
+        if (!soloSync) {
+          alert('La inspección debe estar iniciada para editar o guardar la ficha.');
+        }
+        return;
+      }
       if (!finalizando && !this.finalizandoInspeccion && this.inspeccionBloqueada()) {
         this.cargandoFicha = false;
         if (!soloSync) {
@@ -966,11 +1046,12 @@ type ParametroFichaExtendido = ParametroInspeccion & {
         }
         return;
       }
+      const instanciaTramiteId = (this.ficha as any)?.instanciaTramiteId || this.obtenerInstanciaTramiteIdParaFichaManual();
       const fichaDTO = {
         inspeccionId: this.inspeccionId,
         estado: estadoFicha,
         usuarioInspector: this.authState.currentUser()?.id || null,
-        instanciaTramiteId: (this.ficha as any).instanciaTramiteId || null,
+        instanciaTramiteId,
         vehiculoId: this.inspeccion?.vehiculoId || null,
         parametros: this.parametrosFicha.map(p => ({
           idParametros: p.idParametros,
@@ -1004,12 +1085,13 @@ type ParametroFichaExtendido = ParametroInspeccion & {
           this.limpiarBorrador();
           if (finalizando || this.finalizandoInspeccion) {
             this.finalizandoInspeccion = false;
-            if (this.inspeccionId) {
-              this.inspeccionService.cambiarEstado(this.inspeccionId, 'FINALIZADA').subscribe({
-                next: () => this.cargarDatos(),
-                error: () => this.cargarDatos()
-              });
-            } else {
+              if (this.inspeccionId) {
+                this.inspeccionService.terminar(this.inspeccionId, { resultadoGeneral: undefined }).subscribe({
+                  next: () => this.cargarDatos(),
+                  error: () => this.cargarDatos()
+                });
+              } else {
+
               this.cargarDatos();
             }
             return;
@@ -1391,25 +1473,48 @@ type ParametroFichaExtendido = ParametroInspeccion & {
      this.subtitulo2Temp = '';
    }
 
-    private inspeccionBloqueada(): boolean {
+    inspeccionBloqueada(): boolean {
       const estado = this.inspeccion?.estado?.toUpperCase();
       return estado === 'FINALIZADA' || estado === 'CANCELADA';
     }
 
+    inspeccionEnCurso(): boolean {
+      const estado = this.inspeccion?.estado?.toUpperCase();
+      return estado === 'EN_CURSO' || estado === 'INICIADA' || estado === 'EN_PROCESO';
+    }
+
     private fichaBloqueada(): boolean {
-      return Boolean(this.ficha?.estado);
+      return this.fichaFinalizadaRealmente(this.ficha);
+    }
+
+    private esResultadoFinalizable(resultado?: string): boolean {
+      const normalizado = (resultado || '').trim().toUpperCase();
+      return normalizado === 'APROBADO' || normalizado === 'OBSERVADO' || normalizado === 'DESAPROBADO';
+    }
+
+    private fichaFinalizadaRealmente(ficha?: FichaInspeccion | null): boolean {
+      return Boolean(ficha?.estado)
+        && this.esResultadoFinalizable(ficha?.resultado)
+        && Boolean(ficha?.firmaResponsable?.trim())
+        && Boolean(ficha?.fechaFirma);
+    }
+
+    private normalizarFichaEditable(ficha?: FichaInspeccion | null): void {
+      if (ficha && !this.fichaFinalizadaRealmente(ficha)) {
+        ficha.estado = false;
+      }
     }
 
     puedeEditarFirma(): boolean {
-      return !this.fichaBloqueada() && !this.inspeccionBloqueada();
+      return this.inspeccionEnCurso() && !this.fichaBloqueada() && !this.inspeccionBloqueada();
     }
 
     puedeEditarCampo(): boolean {
-      return !this.modoDiseno && !this.fichaBloqueada() && !this.inspeccionBloqueada();
+      return this.inspeccionEnCurso() && !this.modoDiseno && !this.fichaBloqueada() && !this.inspeccionBloqueada();
     }
 
     puedeGuardarFicha(): boolean {
-      return this.finalizandoInspeccion || (!this.fichaBloqueada() && !this.inspeccionBloqueada());
+      return this.finalizandoInspeccion || (this.inspeccionEnCurso() && !this.fichaBloqueada() && !this.inspeccionBloqueada());
     }
 
     getCodigoFicha(): string {
@@ -1420,6 +1525,18 @@ type ParametroFichaExtendido = ParametroInspeccion & {
    finalizarInspeccion(): void {
     if (!this.ficha) {
       alert('No hay una ficha cargada');
+      return;
+    }
+    if (!this.inspeccionEnCurso()) {
+      alert('La inspección debe estar iniciada para finalizarla');
+      return;
+    }
+    if (!this.resultado) {
+      alert('Debe seleccionar el resultado de la ficha para finalizar');
+      return;
+    }
+    if (!this.validarResultadoFicha(this.resultado)) {
+      alert('Resultado inválido. Use APROBADO, OBSERVADO o DESAPROBADO');
       return;
     }
     if (!this.firmaResponsable || !this.firmaResponsable.trim()) {
@@ -1485,7 +1602,7 @@ type ParametroFichaExtendido = ParametroInspeccion & {
     * Guarda el estado actual como borrador (auto-guardado)
     */
    private guardarBorradorAutomatico(): void {
-     if (this.modoDiseno || this.fichaBloqueada() || this.inspeccionBloqueada()) return; // No guardar borradores en modo diseño ni fichas cerradas
+     if (this.modoDiseno || !this.inspeccionEnCurso() || this.fichaBloqueada() || this.inspeccionBloqueada()) return; // No guardar borradores en modo diseño ni fichas cerradas
 
      this.draftService.saveDraft(this.inspeccionId, {
        parametrosFicha: this.parametrosFicha,
@@ -1504,7 +1621,8 @@ type ParametroFichaExtendido = ParametroInspeccion & {
     * Guarda borrador al navegar away o cerrar
     */
    private prepararParaSalida(): void {
-     if (this.modoDiseno || this.fichaBloqueada() || this.inspeccionBloqueada()) return;
+      if (this.modoDiseno || !this.inspeccionEnCurso() || this.fichaBloqueada() || this.inspeccionBloqueada()) return;
+
      // Solo guardar si hay datos
      const tieneDatos = this.parametrosFicha.some(p => p.valor && p.valor.trim() !== '') ||
                        this.firmaResponsable.trim() !== '' ||

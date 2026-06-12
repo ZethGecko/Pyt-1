@@ -101,6 +101,15 @@ export interface InspeccionRezagadaRequest {
   vehiculosIds: number[];
 }
 
+export interface InspeccionIniciarRequest {
+  usuarioInspectorId?: number;
+  fechaInspeccion?: string | Date;
+}
+
+export interface InspeccionTerminarRequest {
+  resultadoGeneral?: string;
+}
+
 export interface FichaInspeccionResponse {
   id: number;
   inspeccionId: number;
@@ -188,6 +197,14 @@ export class InspeccionService {
 
    actualizar(id: number, inspeccion: Partial<InspeccionCreateRequest>): Observable<InspeccionResponse> {
      return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}`, inspeccion);
+   }
+
+   iniciar(id: number, request: InspeccionIniciarRequest): Observable<InspeccionResponse> {
+     return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}/iniciar`, request);
+   }
+
+   terminar(id: number, request: InspeccionTerminarRequest): Observable<InspeccionResponse> {
+     return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}/terminar`, request);
    }
 
    eliminar(id: number): Observable<void> {

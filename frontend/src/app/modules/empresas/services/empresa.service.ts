@@ -18,6 +18,11 @@ export interface EmpresaResponse {
   numeroResolucion?: string;
   unidadesVehiculares?: number;
   unidadesHabilitadas?: number;
+  gerente?: {
+    id: number;
+    nombre: string;
+    dni?: number;
+  };
   inicioVigencia?: Date | string;
   finVigencia?: Date | string;
   activo: boolean;

@@ -26,6 +26,7 @@ export interface NotificacionCreateDTO {
   prioridad?: number;
   urlDestino?: string | null;
   paraTodos?: boolean;
+  usuarioDestinoId?: number | null;
 }
 
 @Injectable({ providedIn: 'root' })

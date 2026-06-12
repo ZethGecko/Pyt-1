@@ -8,6 +8,7 @@ import { GerenteService, GerenteResponse, GerenteCreateRequest } from '../servic
 import { SubtipoTransporteService, SubtipoTransporte } from '../../configuracion/services/subtipo-transporte.service';
 import { NotificationService } from '../../../shared/services/notification.service';
 import { TucService, TucHabilitacionRequest, TucInspeccionResponse, TucVehiculoResponse } from '../../vehiculos/services/tuc.service';
+import { FichaInspeccionService } from '../../inspecciones/services/ficha-inspeccion.service';
 
 @Component({
   selector: 'app-gestion-empresas',
@@ -92,6 +93,7 @@ export class GestionEmpresasComponent implements OnInit {
     private gerenteService: GerenteService,
     private subtipoService: SubtipoTransporteService,
     private tucService: TucService,
+    private fichaInspeccionService: FichaInspeccionService,
     private notificationService: NotificationService,
     private changeDetectorRef: ChangeDetectorRef
   ) {}
@@ -161,7 +163,7 @@ export class GestionEmpresasComponent implements OnInit {
     this.inspeccionTUCSeleccionada = inspeccion;
     this.observacionesVehiculosTUC = {};
     this.vehiculosTUCSeleccionados = this.vehiculosDeInspeccion(inspeccion)
-      .filter(vehiculo => vehiculo.resultadoFicha === 'APROBADO')
+      .filter(vehiculo => vehiculo.resultadoFicha === 'APROBADO' && vehiculo.estadoFicha === true)
       .map(vehiculo => vehiculo.idVehiculo)
       .filter((vehiculoId): vehiculoId is number => vehiculoId !== undefined);
   }
@@ -174,6 +176,26 @@ export class GestionEmpresasComponent implements OnInit {
     } else {
       this.vehiculosTUCSeleccionados = this.vehiculosTUCSeleccionados.filter(id => id !== vehiculoId);
     }
+  }
+
+  actualizarResultadoFicha(vehiculo: TucVehiculoResponse, resultado: string): void {
+    if (!vehiculo.fichaId) {
+      return;
+    }
+
+    this.fichaInspeccionService.actualizarResultado(vehiculo.fichaId, resultado, false).subscribe({
+      next: () => {
+        vehiculo.resultadoFicha = resultado;
+        vehiculo.estadoFicha = false;
+        if (resultado !== 'APROBADO') {
+          this.vehiculosTUCSeleccionados = this.vehiculosTUCSeleccionados.filter(id => id !== vehiculo.idVehiculo);
+        }
+        this.notificationService.success('Resultado de ficha actualizado', 'Éxito', 2000);
+      },
+      error: (err) => {
+        this.notificationService.error(err.error?.message || 'Error al actualizar resultado de ficha', 'Error', 5000);
+      }
+    });
   }
 
   vehiculosDeInspeccion(inspeccion: TucInspeccionResponse | null): TucVehiculoResponse[] {
@@ -251,7 +273,7 @@ export class GestionEmpresasComponent implements OnInit {
         this.cargandoTUC = false;
         this.notificationService.success(`TUC habilitado para ${resultado.totalHabilitados} vehículo(s)`, 'Éxito', 5000);
         this.cerrarModalHabilitarTUC();
-        this.cargarEmpresas();
+        this.cargarEmpresasYGerentes();
       },
       error: (err) => {
         this.cargandoTUC = false;
@@ -654,7 +676,7 @@ export class GestionEmpresasComponent implements OnInit {
       direccionLegal: empresa.direccionLegal || '',
       contactoTelefono: empresa.contactoTelefono || '',
       email: empresa.email || '',
-      gerenteId: empresa.gerenteId,
+      gerenteId: empresa.gerenteId ?? empresa.gerente?.id,
       subtipoTransporteId: empresa.subtipoTransporteId,
       inicioVigencia: inicioVigenciaFormateada,
       finVigencia: finVigenciaFormateada,
@@ -731,7 +753,7 @@ export class GestionEmpresasComponent implements OnInit {
       this.cargando = false;
       this.notificationService.success('Empresa creada exitosamente', 'Éxito', 3000);
       this.cerrarModal();
-      this.cargarEmpresas(); // ✅ Recargar solo empresas (optimizado)
+      this.cargarEmpresasYGerentes();
     },
     error: (err: any) => {
       this.cargando = false;
@@ -776,7 +798,7 @@ export class GestionEmpresasComponent implements OnInit {
       this.cargando = false;
       this.notificationService.success('Empresa actualizada exitosamente', 'Éxito', 3000);
       this.cerrarModal();
-      this.cargarEmpresas(); // ✅ Recargar solo empresas (optimizado)
+      this.cargarEmpresasYGerentes();
     },
     error: (err: any) => {
       this.cargando = false;
@@ -792,7 +814,7 @@ export class GestionEmpresasComponent implements OnInit {
     this.empresaService.activar(empresa.id).subscribe({
       next: () => {
         this.notificationService.success('Empresa activada exitosamente', 'Éxito', 3000);
-        this.cargarEmpresas(); // ✅ Recargar solo empresas (optimizado)
+        this.cargarEmpresasYGerentes();
       },
       error: (err: any) => {
         this.notificationService.error(err.error?.message || 'Error al activar empresa', 'Error', 5000);
@@ -806,7 +828,7 @@ export class GestionEmpresasComponent implements OnInit {
     this.empresaService.desactivar(empresa.id).subscribe({
       next: () => {
         this.notificationService.success('Empresa desactivada exitosamente', 'Éxito', 3000);
-        this.cargarEmpresas(); // ✅ Recargar solo empresas (optimizado)
+        this.cargarEmpresasYGerentes();
       },
       error: (err: any) => {
         this.notificationService.error(err.error?.message || 'Error al desactivar empresa', 'Error', 5000);
@@ -820,7 +842,7 @@ export class GestionEmpresasComponent implements OnInit {
     this.empresaService.eliminar(empresa.id).subscribe({
       next: () => {
         this.notificationService.success('Empresa eliminada exitosamente', 'Éxito', 3000);
-        this.cargarEmpresas(); // ✅ Recargar solo empresas (optimizado)
+        this.cargarEmpresasYGerentes();
       },
       error: (err: any) => {
         this.notificationService.error(err.error?.message || 'Error al eliminar empresa', 'Error', 5000);
@@ -862,9 +884,8 @@ export class GestionEmpresasComponent implements OnInit {
   }
   
   // 🎯 Get nombre corto de gerente
-  getGerenteNombreCorto(gerenteId?: number): string {
-    if (!gerenteId) return 'Sin asignar';
-    const gerente = this.gerentes.find(g => g.id === gerenteId);
+  getGerenteNombreCorto(empresa: EmpresaResponse): string {
+    const gerente = empresa.gerente || this.gerentes.find(g => g.id === empresa.gerenteId);
     return gerente ? gerente.nombre : 'Sin asignar';
   }
   

@@ -10,7 +10,17 @@ import java.nio.file.Paths;
 public class StoragePathResolver {
 
     public Path resolve(String configuredPath) {
+        if (configuredPath == null || configuredPath.isBlank()) {
+            throw new IllegalArgumentException("La ruta de almacenamiento no puede estar vacía");
+        }
+
         Path path = Paths.get(configuredPath);
+        for (Path part : path) {
+            if ("..".equals(part.toString())) {
+                throw new IllegalArgumentException("La ruta de almacenamiento no puede contener segmentos '..'");
+            }
+        }
+
         if (path.isAbsolute()) {
             return path.normalize();
         }

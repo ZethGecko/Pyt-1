@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
 export interface PersonaNatural {
   id: number;
@@ -28,7 +29,7 @@ export interface PersonaNatural {
   providedIn: 'root'
 })
 export class PersonaNaturalService {
-   private apiUrl = 'http://localhost:8080/api/personas-naturales';
+   private apiUrl = `${environment.apiUrl}/personas-naturales`;
 
   constructor(private http: HttpClient) {}
 

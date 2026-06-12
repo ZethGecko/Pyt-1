@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/fichas-inspeccion")
@@ -81,6 +82,16 @@ public class FichaInspeccionController {
       public ResponseEntity<FichaInspeccionResponseDTO> actualizar(@PathVariable Long id,
                                                                      @RequestBody FichaInspeccionUpdateRequestDTO request) {
           FichaInspeccionResponseDTO actualizado = fichaInspeccionService.actualizar(id, request);
+          return actualizado != null ? ResponseEntity.ok(actualizado) : ResponseEntity.notFound().build();
+      }
+
+      @PatchMapping("/{id}/resultado")
+      @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+      public ResponseEntity<FichaInspeccionResponseDTO> actualizarResultado(@PathVariable Long id,
+                                                                            @RequestBody Map<String, Object> request) {
+          String resultado = request.get("resultado") != null ? request.get("resultado").toString().trim() : null;
+          Boolean estado = request.get("estado") != null ? Boolean.valueOf(request.get("estado").toString()) : null;
+          FichaInspeccionResponseDTO actualizado = fichaInspeccionService.actualizarResultado(id, resultado, estado);
           return actualizado != null ? ResponseEntity.ok(actualizado) : ResponseEntity.notFound().build();
       }
 

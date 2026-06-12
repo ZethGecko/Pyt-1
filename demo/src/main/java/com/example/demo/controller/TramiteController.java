@@ -259,7 +259,11 @@ public class TramiteController {
         if (usuarioId == null) {
             throw new SecurityException("Usuario no autenticado");
         }
-        List<TramiteListadoDTO> tramites = service.listarPorUsuarioResponsable(usuarioId);
+        Users user = usersRepo.findById(usuarioId).orElse(null);
+        if (user == null || user.getDepartamento() == null) {
+            throw new SecurityException("Usuario sin departamento asignado");
+        }
+        List<TramiteListadoDTO> tramites = service.listarPorDepartamento(user.getDepartamento().getIdDepartamento());
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("content", tramites);
         response.put("totalElements", tramites.size());

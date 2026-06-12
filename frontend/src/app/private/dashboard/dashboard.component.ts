@@ -75,7 +75,7 @@ export class DashboardComponent implements OnInit {
       const dept = user?.departamento;
       const role = user?.role?.name;
       if (role === 'SUPER_ADMIN') {
-        this.departamentoNombre.set('Todos los departamentos');
+        this.departamentoNombre.set(dept?.nombre || 'Todos los departamentos');
       } else if (dept) {
         this.departamentoNombre.set(dept.nombre || 'Departamento');
       } else {
@@ -116,24 +116,15 @@ export class DashboardComponent implements OnInit {
      console.log('[Dashboard] Role desde user:', user?.role);
      console.log('[Dashboard] Role desde token:', tokenRole);
      
-     // SUPER_ADMIN o usuarios con canViewAllData ven todos los trámites
-     const esSuperAdmin = user?.role?.name === 'SUPER_ADMIN' || tokenRole === 'SUPER_ADMIN';
-     const puedeVerTodos = esSuperAdmin || user?.role?.canViewAllData === true;
-     
-     console.log('[Dashboard] esSuperAdmin:', esSuperAdmin, 'puedeVerTodos:', puedeVerTodos);
-
      let observable$: Observable<TramiteEnriquecido[]>;
-     if (!deptId && !puedeVerTodos) {
-       console.log('[Dashboard] Sin departamento y sin permisos -> mostrando vacío');
+     if (!deptId) {
+       console.log('[Dashboard] Sin departamento -> mostrando vacío');
        this.tramitesDepartamento.set([]);
        this.tramitesFiltrados.set([]);
        this.loadingTramites.set(false);
        return;
-     } else if (puedeVerTodos) {
-       console.log('[Dashboard] Usuario con permisos amplios -> listando todos los trámites');
-       observable$ = this.tramiteService.listarTodosEnriquecidos();
      } else {
-       console.log('[Dashboard] Usuario con departamento', deptId, '-> listando por departamento');
+       console.log('[Dashboard] Listando trámites del departamento', deptId);
        observable$ = this.tramiteService.listarPorDepartamento(deptId);
      }
 

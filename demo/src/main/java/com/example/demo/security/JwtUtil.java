@@ -1,5 +1,7 @@
 package com.example.demo.security;
 
+import jakarta.annotation.PostConstruct;
+
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -17,11 +19,21 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String SECRET_KEY;
 
-    @Value("${jwt.expiration}")
+    @Value("${JWT_EXPIRATION:2592000000}")
     private Long EXPIRATION_TIME;
+
+    @PostConstruct
+    public void validateSecret() {
+        if (SECRET_KEY == null
+                || SECRET_KEY.isBlank()
+                || SECRET_KEY.length() < 32
+                || "local_dev_jwt_secret_at_least_32_chars".equals(SECRET_KEY)) {
+            throw new IllegalStateException("Set JWT_SECRET to a secure value with at least 32 characters.");
+        }
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

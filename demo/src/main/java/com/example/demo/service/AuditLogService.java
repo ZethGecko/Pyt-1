@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +64,33 @@ public class AuditLogService {
             2, "ELIMINACIÓN"
     );
 
+    private static final List<String> SENSITIVE_AUDIT_COLUMN_PATTERNS = List.of(
+            "password",
+            "token",
+            "secret",
+            "jwt",
+            "credential",
+            "credentials",
+            "clave",
+            "contrasena",
+            "contraseña",
+            "dni",
+            "ruc",
+            "email",
+            "correo",
+            "telefono",
+            "teléfono",
+            "direccion",
+            "dirección",
+            "licencia"
+    );
+
+    private static final int MAX_AUDIT_COUNT_CAP = 10_000;
+    private static final long AUDIT_TABLES_CACHE_TTL_MILLIS = 60_000L;
+    private static final String REDACTED_AUDIT_VALUE = "***REDACTADO***";
+    private static volatile List<String> cachedAuditedTables = List.of();
+    private static volatile long cachedAuditedTablesAt = 0L;
+
     private static final Map<String, Class<?>> TABLE_TO_ENTITY = new java.util.HashMap<>();
 
     static {
@@ -96,6 +126,15 @@ public class AuditLogService {
     }
 
     private List<String> getAuditedTableNames() {
+        long now = System.currentTimeMillis();
+        List<String> cached = cachedAuditedTables;
+        if (now - cachedAuditedTablesAt < AUDIT_TABLES_CACHE_TTL_MILLIS) {
+            return cached;
+        }
+        return loadAuditedTableNames();
+    }
+
+    private List<String> loadAuditedTableNames() {
         List<String> tables = new ArrayList<>();
         try {
             Query query = entityManager.createNativeQuery(
@@ -106,6 +145,8 @@ public class AuditLogService {
             @SuppressWarnings("unchecked")
             List<String> result = query.getResultList();
             tables.addAll(result);
+            cachedAuditedTables = List.copyOf(tables);
+            cachedAuditedTablesAt = System.currentTimeMillis();
         } catch (Exception e) {
             System.err.println("[AuditLogService] Error obteniendo tablas auditadas: " + e.getMessage());
         }
@@ -147,9 +188,21 @@ public class AuditLogService {
 
     @Transactional(readOnly = true)
     public Page<AuditLogResponseDTO> getAuditLogs(AuditLogFilterRequest filter, Pageable pageable) {
+        Pageable normalizedPageable = pageable == null
+                ? PageRequest.of(0, 50)
+                : PageRequest.of(
+                        Math.max(0, pageable.getPageNumber()),
+                        Math.min(Math.max(1, pageable.getPageSize()), 100),
+                        pageable.getSort() != null ? pageable.getSort() : Sort.unsorted()
+                );
+
         List<String> auditTables = getAuditedTableNames();
+        if (filter != null && filter.getTabla() != null && !filter.getTabla().isEmpty()) {
+            String requestedAuditTable = filter.getTabla().toLowerCase(Locale.ROOT) + "_aud";
+            auditTables.removeIf(table -> !table.equals(requestedAuditTable));
+        }
         if (auditTables.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
+            return new PageImpl<>(List.of(), normalizedPageable, 0);
         }
 
         List<Object> params = new java.util.ArrayList<>();
@@ -160,7 +213,7 @@ public class AuditLogService {
                 .append("FROM revinfo r ")
                 .append("JOIN (");
 
-        countSql.append("SELECT COUNT(*) FROM revinfo r JOIN (");
+        countSql.append("SELECT COUNT(*) FROM (SELECT 1 FROM revinfo r JOIN (");
 
         for (int i = 0; i < auditTables.size(); i++) {
             String table = auditTables.get(i);
@@ -232,7 +285,7 @@ public class AuditLogService {
 
         String whereStr = where.toString();
         mainSql.append(whereStr).append("ORDER BY r.id DESC");
-        countSql.append(whereStr);
+        countSql.append(whereStr).append(" LIMIT ? ) limited");
 
         Query query = entityManager.createNativeQuery(mainSql.toString());
         Query countQuery = entityManager.createNativeQuery(countSql.toString());
@@ -241,9 +294,16 @@ public class AuditLogService {
             query.setParameter(i + 1, params.get(i));
             countQuery.setParameter(i + 1, params.get(i));
         }
+        countQuery.setParameter(params.size() + 1, MAX_AUDIT_COUNT_CAP);
 
-        query.setFirstResult((int) pageable.getOffset());
-        query.setMaxResults(pageable.getPageSize());
+        Pageable cappedPageable = PageRequest.of(
+                normalizedPageable.getPageNumber(),
+                normalizedPageable.getPageSize(),
+                normalizedPageable.getSort()
+        );
+
+        query.setFirstResult((int) cappedPageable.getOffset());
+        query.setMaxResults(cappedPageable.getPageSize());
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
@@ -268,7 +328,7 @@ public class AuditLogService {
             results.add(dto);
         }
 
-        return new PageImpl<>(results, pageable, totalCount.longValue());
+        return new PageImpl<>(results, cappedPageable, totalCount.longValue());
     }
 
     private String getTipoAccionCode(Integer revType) {
@@ -309,17 +369,24 @@ public class AuditLogService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getAuditLogDetail(String tableName, Long recordId, Long revision) {
+        if (tableName == null || tableName.trim().isEmpty()) {
+            return Map.of("error", "Tabla inválida");
+        }
+        if (recordId == null) {
+            return Map.of("error", "Registro inválido");
+        }
+
+        String normalizedTableName = tableName.trim().toLowerCase(Locale.ROOT);
         Map<String, Object> detalle = new LinkedHashMap<>();
 
         try {
-            Class<?> entityClass = TABLE_TO_ENTITY.get(tableName.toLowerCase());
-            if (entityClass == null) {
-                detalle.put("error", "Tabla no reconocida: " + tableName);
+            if (!TABLE_TO_ENTITY.containsKey(normalizedTableName)) {
+                detalle.put("error", "Tabla no reconocida: " + normalizedTableName);
                 return detalle;
             }
 
-            String auditTable = tableName.toLowerCase() + "_aud";
-            String pkColumn = getPkColumnForTable(tableName.toLowerCase());
+            String auditTable = normalizedTableName + "_aud";
+            String pkColumn = getPkColumnForTable(normalizedTableName);
 
             if (revision == null) {
                 String sqlMax = "SELECT MAX(r.id) FROM " + auditTable + " a JOIN revinfo r ON r.id = a.rev WHERE a." + pkColumn + " = ?";
@@ -352,7 +419,7 @@ public class AuditLogService {
             Integer revType = ((Number) row[2]).intValue();
             String accion = REV_TYPE_MAP.getOrDefault(revType, "DESCONOCIDO");
 
-            detalle.put("tabla", tableName);
+            detalle.put("tabla", normalizedTableName);
             detalle.put("registroId", recordId);
             detalle.put("revision", revision);
             detalle.put("accion", accion);
@@ -361,7 +428,7 @@ public class AuditLogService {
             detalle.put("fechaAccion", new Date(((Number) row[0]).longValue()).toInstant()
                     .atZone(ZoneId.systemDefault()).toLocalDateTime());
 
-            detalle.put("datosNuevos", row);
+            detalle.put("datosNuevos", convertirFilaAuditAFiltro(auditTable, row));
 
             if (revType == 1) {
                 String sqlAnt = "SELECT MAX(r.id) FROM " + auditTable + " a "
@@ -383,7 +450,7 @@ public class AuditLogService {
                     antDataQuery.setParameter(2, revAnt);
                     List<Object[]> antRows = antDataQuery.getResultList();
                     if (!antRows.isEmpty()) {
-                        detalle.put("datosAnteriores", antRows.get(0));
+                        detalle.put("datosAnteriores", convertirFilaAuditAFiltro(auditTable, antRows.get(0)));
                     }
                 }
             }
@@ -392,7 +459,7 @@ public class AuditLogService {
             datosFiltrados.put("revision", row[0]);
             datosFiltrados.put("usuario", row[1]);
             datosFiltrados.put("tipo", accion);
-            datosFiltrados.put("tabla", tableName);
+            datosFiltrados.put("tabla", normalizedTableName);
             datosFiltrados.put("idRegistro", recordId);
             detalle.put("resumenDatos", datosFiltrados);
 
@@ -402,6 +469,45 @@ public class AuditLogService {
         }
 
         return detalle;
+    }
+
+    private Map<String, Object> convertirFilaAuditAFiltro(String auditTable, Object[] row) {
+        Map<String, Object> datosFiltrados = new LinkedHashMap<>();
+        List<String> columnNames = obtenerColumnasTablaAudit(auditTable);
+        int dataStartIndex = 3;
+
+        for (int i = dataStartIndex; i < row.length; i++) {
+            String columnName = i - dataStartIndex < columnNames.size()
+                    ? columnNames.get(i - dataStartIndex)
+                    : "columna_" + (i - dataStartIndex + 1);
+            datosFiltrados.put(columnName, esColumnaAuditSensible(columnName) ? REDACTED_AUDIT_VALUE : row[i]);
+        }
+
+        return datosFiltrados;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> obtenerColumnasTablaAudit(String auditTable) {
+        try {
+            Query query = entityManager.createNativeQuery(
+                    "SELECT column_name FROM information_schema.columns " +
+                            "WHERE table_schema = 'public' AND table_name = ? " +
+                            "ORDER BY ordinal_position"
+            );
+            query.setParameter(1, auditTable.toLowerCase(Locale.ROOT));
+            return (List<String>) query.getResultList();
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private boolean esColumnaAuditSensible(String columnName) {
+        if (columnName == null) {
+            return false;
+        }
+
+        String normalized = columnName.toLowerCase(Locale.ROOT);
+        return SENSITIVE_AUDIT_COLUMN_PATTERNS.stream().anyMatch(normalized::contains);
     }
 
     @Transactional(readOnly = true)
@@ -414,7 +520,7 @@ public class AuditLogService {
 
     private int getRevType(String accion) {
         if (accion == null) return -1;
-        return switch (accion.toUpperCase()) {
+        return switch (accion.toUpperCase(Locale.ROOT)) {
             case "CREACIÓN", "INSERT" -> 0;
             case "MODIFICACIÓN", "UPDATE" -> 1;
             case "ELIMINACIÓN", "DELETE" -> 2;

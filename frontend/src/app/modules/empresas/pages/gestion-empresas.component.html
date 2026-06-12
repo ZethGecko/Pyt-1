@@ -144,20 +144,17 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Código</th>
           <th>Nombre</th>
           <th>RUC</th>
           <th>Gerente</th>
           <th>Teléfono</th>
           <th>Estado</th>
+          <th>Unidades habilitadas</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let empresa of empresasPaginadas">
-          <td>
-            <span class="codigo-badge">{{ empresa.codigo || 'N/A' }}</span>
-          </td>
           <td>
             <div class="empresa-nombre-cell">
               <div class="empresa-icon-small">
@@ -169,7 +166,7 @@
             </div>
           </td>
           <td class="ruc-cell">{{ empresa.ruc }}</td>
-          <td class="gerente-cell">{{ getGerenteNombreCorto(empresa.gerenteId) }}</td>
+          <td class="gerente-cell">{{ getGerenteNombreCorto(empresa) }}</td>
           <td>
             <span class="telefono-cell">
               {{ empresa.contactoTelefono || 'No registrado' }}
@@ -183,6 +180,7 @@
               {{ getEstadoLabel(empresa.estadoOperativo) }}
             </span>
           </td>
+          <td class="text-center">{{ empresa.unidadesHabilitadas ?? 0 }}</td>
           <td class="actions">
             <button class="btn-icon btn-view" (click)="verDetalles(empresa)" title="Ver detalles">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +227,7 @@
           </td>
         </tr>
         <tr *ngIf="empresasPaginadas.length === 0">
-          <td colspan="7" class="empty-state">
+          <td colspan="6" class="empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
             </svg>
@@ -551,12 +549,17 @@
                 <td>{{ vehiculo.marca || '' }} {{ vehiculo.modelo || '' }}</td>
                 <td>{{ vehiculo.categoria || 'N/A' }}</td>
                 <td>
-                  <span class="badge"
-                        [class.badge-success]="vehiculo.resultadoFicha === 'APROBADO'"
-                        [class.badge-warning]="vehiculo.resultadoFicha === 'OBSERVADO'"
-                        [class.badge-danger]="vehiculo.resultadoFicha === 'DESAPROBADO'">
-                    {{ vehiculo.resultadoFicha || 'Sin resultado' }}
-                  </span>
+                  <select
+                    class="form-select"
+                    [(ngModel)]="vehiculo.resultadoFicha"
+                    [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="actualizarResultadoFicha(vehiculo, $event)"
+                  >
+                    <option value="">Sin resultado</option>
+                    <option value="APROBADO">Aprobado</option>
+                    <option value="OBSERVADO">Observado</option>
+                    <option value="DESAPROBADO">Desaprobado</option>
+                  </select>
                 </td>
                 <td>
                   <span class="badge" [class.badge-success]="vehiculo.tieneTucActivo" [class.badge-secondary]="!vehiculo.tieneTucActivo">

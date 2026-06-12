@@ -259,7 +259,7 @@ public class VehiculoController {
         dto.setTipoTransporteNombre(tipoTransporteNombre);
          dto.setCategoriaTransporteId(categoriaTransporteId);
          dto.setCategoriaTransporteNombre(categoriaTransporteNombre);
-         dto.setActivo("ACTIVO".equals(v.getEstado()));
+         dto.setActivo("ACTIVO".equals(v.getEstado()) || "HABILITADO".equals(v.getEstado()));
          dto.setTotalTucs(v.getTuc() != null ? 1 : 0);
         dto.setInspeccionesCount(v.getInspecciones() != null ? v.getInspecciones().size() : 0);
 

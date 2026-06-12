@@ -9,6 +9,7 @@ import java.util.Optional;
 @Repository
 public interface FormatoInspeccionRepository extends JpaRepository<FormatoInspeccion, Long> {
     Optional<FormatoInspeccion> findByInspecciones_IdInspeccion(Long inspeccionId);
+    Optional<FormatoInspeccion> findByNombreAndActivoTrue(String nombre);
     Optional<FormatoInspeccion> findByNombre(String nombre);
     Optional<FormatoInspeccion> findByNombreStartingWith(String nombre);
 }

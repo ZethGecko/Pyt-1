@@ -84,6 +84,7 @@ public class TUCController {
     }
 
     @GetMapping("/empresa/{empresaId}/inspecciones-para-habilitar")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public List<InspeccionParaHabilitarTucDTO> listarInspeccionesParaHabilitar(@PathVariable Long empresaId) {
         return tucService.listarInspeccionesParaHabilitarTuc(empresaId);
     }

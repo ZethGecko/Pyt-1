@@ -74,6 +74,7 @@ export class GestionInspeccionesComponent implements OnInit {
   estadosInspeccion = [
     { value: 'todos', label: 'Todos' },
     { value: 'PROGRAMADA', label: 'Programada' },
+    { value: 'EN_CURSO', label: 'En curso' },
     { value: 'INICIADA', label: 'Iniciada' },
     { value: 'EN_PROCESO', label: 'En Proceso' },
     { value: 'FINALIZADA', label: 'Finalizada' },
@@ -82,6 +83,7 @@ export class GestionInspeccionesComponent implements OnInit {
 
   clasesEstado: { [key: string]: string } = {
     'PROGRAMADA': 'bg-blue-100 text-blue-800 border-blue-200',
+    'EN_CURSO': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'INICIADA': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'EN_PROCESO': 'bg-orange-100 text-orange-800 border-orange-200',
     'FINALIZADA': 'bg-green-100 text-green-800 border-green-200',
@@ -308,17 +310,36 @@ export class GestionInspeccionesComponent implements OnInit {
     }
     this.cargando = true;
 
-    this.inspeccionService.cambiarEstado(inspeccion.idInspeccion, 'INICIADA').subscribe({
-      next: () => {
-        this.notificationService.success('Inspección iniciada', 'Éxito', 2000);
-        this.cargarInspecciones();
-        this.verInstanciasDeInspeccion(inspeccion);
+    this.inspeccionService.iniciar(inspeccion.idInspeccion, {}).subscribe({
+      next: (data) => {
+        inspeccion.estado = data.estado || 'EN_CURSO';
+        this.notificationService.success('Inspección iniciada. Complete la ficha asignada.', 'Éxito', 2000);
+        this.fichaInspeccionService.getByInspeccion(inspeccion.idInspeccion).subscribe({
+          next: (fichas) => {
+            this.cargando = false;
+            const primeraFicha = fichas?.length ? fichas[0] : null;
+            if (primeraFicha?.id) {
+              this.router.navigate(['/inspecciones', 'ficha', primeraFicha.id]);
+            } else {
+              this.router.navigate(['/inspecciones', 'realizar', inspeccion.idInspeccion]);
+            }
+          },
+          error: () => {
+            this.cargando = false;
+            this.router.navigate(['/inspecciones', 'realizar', inspeccion.idInspeccion]);
+          }
+        });
       },
       error: (err) => {
         this.notificationService.error(err.error?.message || 'Error al iniciar inspección', 'Error', 5000);
         this.cargando = false;
       }
     });
+  }
+
+  puedeEditarFichaDesdeModal(estado?: string): boolean {
+    const estadoNormalizado = estado?.toUpperCase();
+    return estadoNormalizado !== 'FINALIZADA' && estadoNormalizado !== 'CANCELADA';
   }
 
   private crearFichasParaVehiculos(inspeccion: InspeccionResponse): void {
@@ -384,8 +405,7 @@ export class GestionInspeccionesComponent implements OnInit {
     const currentUserId = this.authState.currentUser()?.id;
     const datosFicha: any = {
       inspeccionId,
-      instanciaTramiteId: instanciaId,
-      estado: true
+      instanciaTramiteId: instanciaId
     };
     if (vehiculoId !== undefined) {
       datosFicha.vehiculoId = vehiculoId;
@@ -399,7 +419,7 @@ export class GestionInspeccionesComponent implements OnInit {
   terminarInspeccion(inspeccion: InspeccionResponse): void {
     if (!confirm(`¿Está seguro de terminar la inspección ${inspeccion.codigo}?`)) return;
     this.cargando = true;
-    this.inspeccionService.cambiarEstado(inspeccion.idInspeccion, 'FINALIZADA').subscribe({
+    this.inspeccionService.terminar(inspeccion.idInspeccion, {}).subscribe({
       next: () => {
         this.notificationService.success('Inspección finalizada exitosamente', 'Éxito', 2000);
         this.cargarInspecciones();
@@ -441,6 +461,7 @@ export class GestionInspeccionesComponent implements OnInit {
   getEstadoLabel(estado: string): string {
     const map: { [key: string]: string } = {
       'PROGRAMADA': 'Programada',
+      'EN_CURSO': 'En curso',
       'INICIADA': 'Iniciada',
       'EN_PROCESO': 'En Proceso',
       'FINALIZADA': 'Finalizada',
@@ -458,7 +479,7 @@ export class GestionInspeccionesComponent implements OnInit {
   }
   get iniciadas(): number {
     return this.bloques.reduce((sum, b) =>
-      sum + b.inspecciones.filter(i => i.estado === 'INICIADA' || i.estado === 'EN_PROCESO').length, 0);
+      sum + b.inspecciones.filter(i => i.estado === 'EN_CURSO' || i.estado === 'INICIADA' || i.estado === 'EN_PROCESO').length, 0);
   }
   get finalizadas(): number {
     return this.bloques.reduce((sum, b) =>

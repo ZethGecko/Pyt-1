@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
 export interface InscripcionExamen {
   id: number;
@@ -96,7 +97,7 @@ export interface InscripcionExamenResponse {
   providedIn: 'root'
 })
 export class InscripcionExamenService {
-   private apiUrl = 'http://localhost:8080/api/inscripcion-examen';
+   private apiUrl = `${environment.apiUrl}/inscripcion-examen`;
 
   constructor(private http: HttpClient) {}
 
