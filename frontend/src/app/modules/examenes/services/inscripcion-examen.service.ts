@@ -186,8 +186,8 @@ export class InscripcionExamenService {
   }): Observable<InscripcionExamen[]> {
     let httpParams = new HttpParams();
     if (params.grupoId) httpParams = httpParams.set('grupoId', params.grupoId.toString());
-    if (params.dni) httpParams = httpParams.set('dni', params.dni.toString());
-    if (params.resultado) httpParams = httpParams.set('resultado', params.resultado);
+    if (params.dni) httpParams = httpParams.set('personaId', params.dni.toString());
+    if (params.resultado) httpParams = httpParams.set('estado', params.resultado);
 
     return this.http.get<InscripcionExamen[]>(`${this.apiUrl}/buscar`, { params: httpParams }).pipe(
       catchError(this.handleError)

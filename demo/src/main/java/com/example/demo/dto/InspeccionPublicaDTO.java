@@ -9,12 +9,12 @@ public class InspeccionPublicaDTO {
     private String hora;
     private String lugar;
     private String empresaNombre;
-    private Integer numeroUnidades;
+    private Long numeroUnidades;
 
     public InspeccionPublicaDTO() {}
 
     public InspeccionPublicaDTO(Long idInspeccion, String codigo, LocalDate fechaProgramada,
-                                String hora, String lugar, String empresaNombre, Integer numeroUnidades) {
+                                String hora, String lugar, String empresaNombre, Long numeroUnidades) {
         this.idInspeccion = idInspeccion;
         this.codigo = codigo;
         this.fechaProgramada = fechaProgramada;
@@ -72,11 +72,11 @@ public class InspeccionPublicaDTO {
         this.empresaNombre = empresaNombre;
     }
 
-    public Integer getNumeroUnidades() {
+    public Long getNumeroUnidades() {
         return numeroUnidades;
     }
 
-    public void setNumeroUnidades(Integer numeroUnidades) {
+    public void setNumeroUnidades(Long numeroUnidades) {
         this.numeroUnidades = numeroUnidades;
     }
 }

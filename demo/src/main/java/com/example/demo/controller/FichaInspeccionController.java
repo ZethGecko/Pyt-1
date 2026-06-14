@@ -86,7 +86,7 @@ public class FichaInspeccionController {
       }
 
       @PatchMapping("/{id}/resultado")
-      @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+      @PreAuthorize("hasRole('SUPER_ADMIN')")
       public ResponseEntity<FichaInspeccionResponseDTO> actualizarResultado(@PathVariable Long id,
                                                                             @RequestBody Map<String, Object> request) {
           String resultado = request.get("resultado") != null ? request.get("resultado").toString().trim() : null;

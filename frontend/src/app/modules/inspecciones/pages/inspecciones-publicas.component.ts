@@ -62,7 +62,7 @@ export class InspeccionesPublicasComponent implements OnInit {
     if (this.fechaHasta) params = params.set('fechaHasta', this.fechaHasta);
     if (this.empresaFiltro) params = params.set('empresa', this.empresaFiltro);
 
-    this.http.get<InspeccionPublica[]>(`${environment.apiUrl}/inspecciones/publico`, { params })
+    this.http.get<InspeccionPublica[]>(`${environment.apiUrl}/publico/inspecciones`, { params })
       .subscribe({
         next: (data) => {
           this.inspecciones = data;
@@ -128,7 +128,7 @@ export class InspeccionesPublicasComponent implements OnInit {
     this.cargandoVehiculos = true;
     this.vehiculos = [];
 
-    this.http.get<any[]>(`${environment.apiUrl}/inspecciones/${inspeccionId}/vehiculos`)
+    this.http.get<any[]>(`${environment.apiUrl}/publico/inspecciones/${inspeccionId}/vehiculos`)
       .subscribe({
         next: (data) => {
           this.vehiculos = data.map((v: any) => ({

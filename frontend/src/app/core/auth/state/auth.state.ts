@@ -2,6 +2,12 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { UserProfile } from '../models/user.model';
 import { TokenService } from '../services/token.service';
 
+export const normalizeRoleName = (role: string | null | undefined): string | null => {
+  if (!role) return null;
+  const normalized = role.trim().toUpperCase();
+  return normalized.startsWith('ROLE_') ? normalized.slice(5) : normalized;
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -16,7 +22,7 @@ export class AuthStateService {
   });
 
   currentUser = computed(() => this.user());
-  userRole = computed(() => this.user()?.role?.name || null);
+  userRole = computed(() => normalizeRoleName(this.user()?.role?.name));
   username = computed(() => this.user()?.username || null);
 
   constructor() {
@@ -37,31 +43,27 @@ export class AuthStateService {
   }
 
   canManageUsers(): boolean {
-    const role = this.userRole();
-    return role === 'SUPER_ADMIN' || role === 'ADMIN';
+    return this.hasRole('SUPER_ADMIN') || this.hasRole('ADMIN');
   }
 
   canManageAllData(): boolean {
-    const role = this.userRole();
-    return role === 'SUPER_ADMIN' || role === 'ADMIN';
+    return this.hasRole('SUPER_ADMIN') || this.hasRole('ADMIN');
   }
 
   canCreateData(): boolean {
-    const role = this.userRole();
-    return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'MANAGER';
+    return this.hasRole('SUPER_ADMIN') || this.hasRole('ADMIN') || this.hasRole('MANAGER');
   }
 
   canDeleteData(): boolean {
-    const role = this.userRole();
-    return role === 'SUPER_ADMIN' || role === 'ADMIN';
+    return this.hasRole('SUPER_ADMIN') || this.hasRole('ADMIN');
   }
 
   hasAnyRole(roles: string[]): boolean {
     const userRole = this.userRole();
-    return userRole ? roles.includes(userRole) : false;
+    return userRole ? roles.map(normalizeRoleName).includes(userRole) : false;
   }
 
   hasRole(role: string): boolean {
-    return this.userRole() === role;
+    return this.userRole() === normalizeRoleName(role);
   }
 }

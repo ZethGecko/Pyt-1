@@ -8,6 +8,7 @@ import com.example.demo.model.InscripcionExamen;
 import com.example.demo.service.InscripcionExamenService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inscripcion-examen")
@@ -68,7 +69,14 @@ public class InscripcionExamenController {
         return service.actualizar(id, inscripcion);
     }
 
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/pago")
+    public InscripcionExamen actualizarPago(@PathVariable Long id, @RequestBody Map<String, Boolean> request) {
+        boolean pagado = request.getOrDefault("pagado", false);
+        return service.actualizarPago(id, pagado);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public void eliminar(@PathVariable Long id) {
         System.out.println("[InscripcionExamenController] DELETE /api/inscripcion-examen/" + id);

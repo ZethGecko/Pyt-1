@@ -6,6 +6,7 @@ public class InscripcionExamenRegistroDTO {
     private Integer dni;
     private Long grupoPresentacionId;
     private String codigoRUT;
+    private Long tramiteId;
     private String tipoTramite;
     private String observaciones;
     private Boolean pagado;
@@ -34,6 +35,14 @@ public class InscripcionExamenRegistroDTO {
 
     public void setCodigoRUT(String codigoRUT) {
         this.codigoRUT = codigoRUT;
+    }
+
+    public Long getTramiteId() {
+        return tramiteId;
+    }
+
+    public void setTramiteId(Long tramiteId) {
+        this.tramiteId = tramiteId;
     }
 
     public String getTipoTramite() {

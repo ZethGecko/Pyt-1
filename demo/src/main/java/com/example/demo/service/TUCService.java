@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.springframework.scheduling.annotation.Scheduled;
@@ -48,6 +49,7 @@ public class TUCService {
     private final InspeccionRepository inspeccionRepository;
     private final EmpresaRepository empresaRepository;
     private final SubtipoTransporteRepository subtipoTransporteRepository;
+    private final AtomicBoolean deshabilitarTucsVencidosRunning = new AtomicBoolean(false);
 
     public TUCService(TUCRepository tucRepository,
                       FichaInspeccionRepository fichaRepository,
@@ -74,31 +76,21 @@ public class TUCService {
     @Scheduled(initialDelay = 60_000, fixedDelay = 3_600_000)
     @Transactional
     public int deshabilitarTucsVencidos() {
-        LocalDateTime now = LocalDateTime.now();
-        List<TUC> tucsVencidos = tucRepository.findActivosVencidos(now);
-
-        for (TUC tuc : tucsVencidos) {
-            tuc.setEstado("VENCIDO");
-            tuc.setFechaSuspension(now);
-            tuc.setFechaActualizacion(now);
-            tuc.setObservaciones(combinarObservaciones(tuc.getObservaciones(), "TUC vencido automáticamente"));
-
-            List<Vehiculo> vehiculos = vehiculoRepository.findByTucId(tuc.getIdTuc());
-            for (Vehiculo vehiculo : vehiculos) {
-                if (vehiculo.getTuc() != null
-                        && tuc.getIdTuc() != null
-                        && tuc.getIdTuc().equals(vehiculo.getTuc().getIdTuc())) {
-                    vehiculo.setEstado("DESHABILITADO");
-                    vehiculo.setFechaVencimientoTUC(tuc.getFechaVencimiento());
-                    vehiculo.setObservaciones(combinarObservaciones(vehiculo.getObservaciones(), "TUC vencido automáticamente"));
-                    vehiculoRepository.save(vehiculo);
-                }
-            }
-
-            tucRepository.save(tuc);
+        if (!deshabilitarTucsVencidosRunning.compareAndSet(false, true)) {
+            return 0;
         }
-
-        return tucsVencidos.size();
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            long tucsVencidos = tucRepository.countActivosVencidos(now);
+            if (tucsVencidos == 0) {
+                return 0;
+            }
+            int actualizadosTucs = tucRepository.marcarTucsVencidos(now, "TUC vencido automáticamente");
+            int actualizadosVehiculos = tucRepository.deshabilitarVehiculosDeTucsVencidos(now, now, "TUC vencido automáticamente");
+            return Math.max(actualizadosTucs, actualizadosVehiculos);
+        } finally {
+            deshabilitarTucsVencidosRunning.set(false);
+        }
     }
 
     public TUC buscarPorId(Long id) {

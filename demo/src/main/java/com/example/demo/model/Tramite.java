@@ -74,17 +74,14 @@ public class Tramite {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa")
-    @JsonIgnore
     private Empresa empresa;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gerente")
-    @JsonIgnore
     private Gerente gerente;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "persona_natural")
-    @JsonIgnore
     private PersonaNatural personaNatural;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -177,6 +174,18 @@ public class Tramite {
     
     public Long getTipoTramiteId() { return tipoTramiteId; }
     public void setTipoTramiteId(Long tipoTramiteId) { this.tipoTramiteId = tipoTramiteId; }
+
+    public String getTipoTramiteCodigo() { return tipoTramiteCodigo; }
+    public void setTipoTramiteCodigo(String tipoTramiteCodigo) { this.tipoTramiteCodigo = tipoTramiteCodigo; }
+
+    public String getTipoTramiteDescripcion() { return tipoTramiteDescripcion; }
+    public void setTipoTramiteDescripcion(String tipoTramiteDescripcion) { this.tipoTramiteDescripcion = tipoTramiteDescripcion; }
+
+    public String getSolicitanteNombre() { return solicitanteNombre; }
+    public void setSolicitanteNombre(String solicitanteNombre) { this.solicitanteNombre = solicitanteNombre; }
+
+    public Long getSolicitanteId() { return solicitanteId; }
+    public void setSolicitanteId(Long solicitanteId) { this.solicitanteId = solicitanteId; }
 
     public String getCodigoRut() { return codigoRut; }
     public void setCodigoRut(String codigoRut) { this.codigoRut = codigoRut; }

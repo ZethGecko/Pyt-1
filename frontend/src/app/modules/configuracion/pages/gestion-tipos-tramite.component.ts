@@ -161,7 +161,6 @@ export class GestionTiposTramiteComponent implements OnInit {
       const coincideBusqueda = !this.filtro ||
         t.codigo.toLowerCase().includes(this.filtro.toLowerCase()) ||
         t.descripcion.toLowerCase().includes(this.filtro.toLowerCase());
-      // Nota: categoriaFiltro no está implementado en el modelo actual, se deja como referencia futura
       // const coincideCategoria = !this.categoriaFiltro || t.categoria === this.categoriaFiltro;
       return coincideBusqueda; // && coincideCategoria;
     });

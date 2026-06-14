@@ -173,9 +173,52 @@ public class TramiteController {
                 .toList();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @PutMapping("/{id}/cambiar-estado")
     public Tramite cambiarEstado(@PathVariable Long id, @RequestParam String nuevoEstado, @RequestParam(required = false) String motivo) {
         return service.cambiarEstado(id, nuevoEstado, motivo);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/aprobar")
+    public Tramite aprobar(@PathVariable Long id, @RequestParam(required = false) String observaciones) {
+        return service.aprobar(id, observaciones);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/rechazar")
+    public Tramite rechazar(@PathVariable Long id, @RequestParam String motivo) {
+        return service.rechazar(id, motivo);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/observar")
+    public Tramite observar(@PathVariable Long id, @RequestParam String observaciones) {
+        return service.observar(id, observaciones);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/finalizar")
+    public Tramite finalizar(@PathVariable Long id, @RequestParam(required = false) String observaciones) {
+        return service.finalizar(id, observaciones);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/cambiar-prioridad")
+    public Tramite cambiarPrioridad(@PathVariable Long id, @RequestParam String nuevaPrioridad) {
+        return service.cambiarPrioridad(id, nuevaPrioridad);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/{id}/reingresar")
+    public Tramite reingresar(@PathVariable Long id, @RequestParam String justificacion) {
+        return service.reingresar(id, justificacion);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PutMapping("/{id}/cancelar")
+    public void cancelar(@PathVariable Long id, @RequestParam String motivo) {
+        service.cancelar(id, motivo);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
@@ -184,41 +227,7 @@ public class TramiteController {
         return service.derivar(id, departamentoId, motivo, usuarioResponsableId);
     }
 
-    @PutMapping("/{id}/aprobar")
-    public Tramite aprobar(@PathVariable Long id, @RequestParam(required = false) String observaciones) {
-        return service.aprobar(id, observaciones);
-    }
-
-    @PutMapping("/{id}/rechazar")
-    public Tramite rechazar(@PathVariable Long id, @RequestParam String motivo) {
-        return service.rechazar(id, motivo);
-    }
-
-    @PutMapping("/{id}/observar")
-    public Tramite observar(@PathVariable Long id, @RequestParam String observaciones) {
-        return service.observar(id, observaciones);
-    }
-
-    @PutMapping("/{id}/finalizar")
-    public Tramite finalizar(@PathVariable Long id, @RequestParam(required = false) String observaciones) {
-        return service.finalizar(id, observaciones);
-    }
-
-    @PutMapping("/{id}/cambiar-prioridad")
-    public Tramite cambiarPrioridad(@PathVariable Long id, @RequestParam String nuevaPrioridad) {
-        return service.cambiarPrioridad(id, nuevaPrioridad);
-    }
-
-    @PostMapping("/{id}/reingresar")
-    public Tramite reingresar(@PathVariable Long id, @RequestParam String justificacion) {
-        return service.reingresar(id, justificacion);
-    }
-
-    @PutMapping("/{id}/cancelar")
-    public void cancelar(@PathVariable Long id, @RequestParam String motivo) {
-        service.cancelar(id, motivo);
-    }
-
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/verificar/existe-codigo/{codigoRut}")
     public Map<String, Boolean> verificarExisteCodigo(@PathVariable String codigoRut) {
         boolean existe = service.buscarPorCodigoRUT(codigoRut).isPresent();
@@ -240,30 +249,37 @@ public class TramiteController {
         return response;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/dashboard/mis-tramites")
     public Map<String, Object> obtenerDashboardTramites(Authentication authentication) {
-        // Obtener ID del usuario autenticado
-        Long usuarioId = null;
-        if (authentication != null) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof UserDetails) {
-                String username = ((UserDetails) principal).getUsername();
-                Users user = usersRepo.findByUsername(username);
-                if (user != null) {
-                    usuarioId = user.getIdUsuarios();
+        boolean isSuperAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+        List<TramiteListadoDTO> tramites;
+        if (isSuperAdmin) {
+            tramites = service.listarTodosEnriquecidos();
+        } else {
+            Long usuarioId = null;
+            if (authentication != null) {
+                Object principal = authentication.getPrincipal();
+                if (principal instanceof UserDetails) {
+                    String username = ((UserDetails) principal).getUsername();
+                    Users user = usersRepo.findByUsername(username);
+                    if (user != null) {
+                        usuarioId = user.getIdUsuarios();
+                    }
+                } else if (principal instanceof Users) {
+                    usuarioId = ((Users) principal).getIdUsuarios();
                 }
-            } else if (principal instanceof Users) {
-                usuarioId = ((Users) principal).getIdUsuarios();
             }
+            if (usuarioId == null) {
+                throw new SecurityException("Usuario no autenticado");
+            }
+            Users user = usersRepo.findById(usuarioId).orElse(null);
+            if (user == null || user.getDepartamento() == null) {
+                throw new SecurityException("Usuario sin departamento asignado");
+            }
+            tramites = service.listarPorDepartamento(user.getDepartamento().getIdDepartamento());
         }
-        if (usuarioId == null) {
-            throw new SecurityException("Usuario no autenticado");
-        }
-        Users user = usersRepo.findById(usuarioId).orElse(null);
-        if (user == null || user.getDepartamento() == null) {
-            throw new SecurityException("Usuario sin departamento asignado");
-        }
-        List<TramiteListadoDTO> tramites = service.listarPorDepartamento(user.getDepartamento().getIdDepartamento());
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("content", tramites);
         response.put("totalElements", tramites.size());
@@ -273,6 +289,7 @@ public class TramiteController {
         return response;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     @GetMapping("/con-instancias")
     public List<TramiteListadoDTO> listarConInstancias() {
         return service.listarConInstancias();

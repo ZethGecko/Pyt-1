@@ -38,9 +38,7 @@ html = html.replace(/@for\s*\(\s*let\s+(\w+)\s+of\s+([^;]+);\s*track\s+(\w+)\s*\
   // Por ahora, dejamos @for pero debería funcionar en Angular 18
 });
 
-// NOTA: Angular 18 soporta @for y @if nativamente. 
-// El problema original es el TS, no el HTML.
-// Así que revertiré y dejaré el HTML como está porque Angular 18 los soporta.
+// revertir y dejaré el HTML como está porque Angular 18 los soporta.
 
 fs.writeFileSync(outputFile, html);
 console.log('Conversión terminada. Archivo guardado en:', outputFile);

@@ -49,18 +49,20 @@ export const routes: Routes = [
   // Privadas - Admin
   {
     path: 'admin/users',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN'] },
     loadComponent: () => import('./modules/admin/users-management/users-management.component').then(m => m.UsersManagementComponent)
   },
   {
     path: 'admin/roles',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN'] },
     loadComponent: () => import('./modules/admin/roles-management/roles-management.component').then(m => m.RolesManagementComponent)
   },
   {
     path: 'admin/imagenes',
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
+    data: { roles: ['SUPER_ADMIN'] },
     loadComponent: () => import('./modules/admin/imagenes-sitio/imagenes-sitio.component').then(m => m.ImagenesSitioComponent)
   },
   {
@@ -106,32 +108,32 @@ export const routes: Routes = [
      {
        path: 'inspecciones/ficha/:fichaId',
        canActivate: [authGuard, roleGuard],
-       data: { roles: ['SUPER_ADMIN'] },
+       data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
        loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
      },
      {
        path: 'inspecciones/realizar/:id',
        canActivate: [authGuard, roleGuard],
-       data: { roles: ['SUPER_ADMIN'] },
+       data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
        loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
      },
     // Rutas separadas para evitar conflictos con parámetro opcional
     {
       path: 'inspecciones/campos',
       canActivate: [authGuard, roleGuard],
-      data: { roles: ['SUPER_ADMIN'] },
+      data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
       loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
     },
     {
       path: 'inspecciones/campos/:inspeccionId',
       canActivate: [authGuard, roleGuard],
-      data: { roles: ['SUPER_ADMIN'] },
+      data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
       loadComponent: () => import('./modules/inspecciones/pages/canvas-inspeccion.component').then(m => m.CanvasInspeccionComponent)
     },
     {
       path: 'inspecciones/fichas',
       canActivate: [authGuard, roleGuard],
-      data: { roles: ['SUPER_ADMIN'] },
+      data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
       loadComponent: () => import('./modules/inspecciones/pages/gestion-fichas-inspeccion.component').then(m => m.GestionFichasInspeccionComponent)
     },
     {
@@ -142,7 +144,7 @@ export const routes: Routes = [
     {
       path: 'inspecciones',
       canActivate: [authGuard, roleGuard],
-      data: { roles: ['SUPER_ADMIN'] },
+      data: { roles: ['ADMIN', 'SUPER_ADMIN'] },
       pathMatch: 'full',
       loadComponent: () => import('./modules/inspecciones/pages/gestion-inspecciones.component').then(m => m.GestionInspeccionesComponent)
     },
@@ -150,27 +152,32 @@ export const routes: Routes = [
    // Privadas - Configuración
    {
      path: 'tipos-transporte',
-     canActivate: [authGuard],
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['SUPER_ADMIN'] },
      loadComponent: () => import('./modules/configuracion/pages/gestion-tipos-transporte.component').then(m => m.GestionTiposTransporteComponent)
    },
    {
      path: 'tipos-tramite',
-     canActivate: [authGuard],
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['SUPER_ADMIN'] },
      loadComponent: () => import('./modules/configuracion/pages/gestion-tipos-tramite.component').then(m => m.GestionTiposTramiteComponent)
    },
    {
      path: 'requisitos-tupac',
-     canActivate: [authGuard],
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['SUPER_ADMIN'] },
      loadComponent: () => import('./modules/configuracion/pages/gestion-requisitos-tupac.component').then(m => m.GestionRequisitosTUPACComponent)
    },
    {
      path: 'tupac',
-     canActivate: [authGuard],
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['SUPER_ADMIN'] },
      loadComponent: () => import('./modules/configuracion/pages/gestion-tupac.component').then(m => m.GestionTUPACComponent)
    },
    {
      path: 'departamentos',
-     canActivate: [authGuard],
+     canActivate: [authGuard, roleGuard],
+     data: { roles: ['SUPER_ADMIN'] },
      loadComponent: () => import('./modules/configuracion/pages/gestion-departamentos.component').then(m => m.GestionDepartamentosComponent)
    },
 

@@ -487,10 +487,15 @@ interface DiaCalendario {
                    class="form-input"
                    placeholder="Ej: TRAM-2024-001"
                  >
-                 @if (buscandoTramite()) {
-                   <span class="search-indicator">Buscando trámite...</span>
-                 }
-               </div>
+               @if (buscandoTramite()) {
+                 <span class="search-indicator">Buscando trámite...</span>
+               }
+               @if (inscripcionForm.solicitanteNombre) {
+                 <small class="text-muted form-hint">
+                   Solicitante del trámite: {{ inscripcionForm.solicitanteNombre }}{{ inscripcionForm.solicitanteIdentificacion ? ' (' + inscripcionForm.solicitanteIdentificacion + ')' : '' }}
+                 </small>
+               }
+             </div>
 
                <!-- Tipo de Trámite -->
                <div class="form-group">
@@ -718,17 +723,19 @@ interface DiaCalendario {
                                 </span>
                               </td>
                              <td class="text-center">
-                               @if (inscripcion.pagado) {
-                                 <span class="pago-badge pagado">
-                                   <app-icon name="check" size="xs"></app-icon>
-                                   Pagado
-                                 </span>
-                               } @else {
-                                 <span class="pago-badge no-pagado">
-                                   <app-icon name="alert-circle" size="xs"></app-icon>
-                                   No Pagado
-                                 </span>
-                               }
+                               <button class="pago-toggle" (click)="togglePagoInscripcion(inscripcion)" [title]="inscripcion.pagado ? 'Marcar como no pagado' : 'Marcar como pagado'">
+                                 @if (inscripcion.pagado) {
+                                   <span class="pago-badge pagado">
+                                     <app-icon name="check" size="xs"></app-icon>
+                                     Pagado
+                                   </span>
+                                 } @else {
+                                   <span class="pago-badge no-pagado">
+                                     <app-icon name="alert-circle" size="xs"></app-icon>
+                                     No Pagado
+                                   </span>
+                                 }
+                               </button>
                              </td>
                                <td class="text-right">
                                  <div class="action-buttons">
@@ -1408,6 +1415,20 @@ interface DiaCalendario {
     .pago-badge.no-pagado {
       background: var(--color-red-100);
       color: var(--color-red-600);
+    }
+
+    .pago-toggle {
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pago-toggle:hover .pago-badge {
+      filter: brightness(0.96);
     }
 
     .observaciones-cell {
@@ -2282,6 +2303,11 @@ export class GestionExamenesComponent implements OnInit {
         grupoPresentacionId: null,
         codigoRUT: '',
         tipoTramite: '',
+        tipoSolicitante: '',
+        solicitanteId: null,
+        solicitanteNombre: '',
+        solicitanteIdentificacion: '',
+        tramiteId: null,
         nombres: '',
         apellidos: '',
         fechaNacimiento: null,
@@ -2484,7 +2510,7 @@ export class GestionExamenesComponent implements OnInit {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     const fechaExam = new Date(exam.fecha);
-    return fechaExam >= hoy && exam.cuposDisponibles > 0;
+    return exam.estado === 'PROGRAMADO' && fechaExam >= hoy && exam.cuposDisponibles > 0;
   }
 
   getTooltipInscripcion(exam: Examen): string {
@@ -2494,7 +2520,183 @@ export class GestionExamenesComponent implements OnInit {
     if (exam.cuposDisponibles <= 0) {
       return 'No se puede inscribir: no hay cupos disponibles';
     }
+    if (exam.estado !== 'PROGRAMADO') {
+      return 'No se puede inscribir: el grupo no está programado';
+    }
     return 'Inscribir participante';
+  }
+
+  openInscripcionModalForExam(exam: Examen): void {
+    if (!this.puedeInscribirse(exam)) {
+      this.notificationService.error(this.getTooltipInscripcion(exam), 'No se puede inscribir', 3000);
+      return;
+    }
+
+    this.selectedExam = exam;
+    this.inscripcionForm = {
+      ...this.getEmptyInscripcionForm(),
+      grupoPresentacionId: exam.id
+    };
+    this.personaEncontrada = null;
+    this.showInscripcionModal.set(true);
+  }
+
+  closeInscripcionModal(): void {
+    this.showInscripcionModal.set(false);
+    this.selectedExam = null;
+    this.inscripcionForm = this.getEmptyInscripcionForm();
+    this.personaEncontrada = null;
+  }
+
+  buscarPersonaPorDni(dni: any): void {
+    const dniLimpio = String(dni ?? '').replace(/\D/g, '');
+    this.inscripcionForm.dni = dniLimpio ? Number(dniLimpio) : null;
+
+    if (!dniLimpio) {
+      this.personaEncontrada = null;
+      return;
+    }
+
+    if (dniLimpio.length !== 8) {
+      this.personaEncontrada = null;
+      return;
+    }
+
+    this.buscandoDni.set(true);
+    this.personaNaturalService.buscarPorDni(Number(dniLimpio)).subscribe({
+      next: (persona) => {
+        this.personaEncontrada = persona;
+        if (persona) {
+          this.inscripcionForm.nombres = persona.nombres;
+          this.inscripcionForm.apellidos = persona.apellidos;
+          this.inscripcionForm.genero = persona.genero || '';
+          this.inscripcionForm.telefono = persona.telefono || '';
+          this.inscripcionForm.email = persona.email || '';
+          this.inscripcionForm.direccion = persona.direccion || '';
+          this.inscripcionForm.distrito = persona.distrito || '';
+          this.inscripcionForm.provincia = persona.provincia || '';
+          this.inscripcionForm.departamento = persona.departamento || '';
+        }
+        this.buscandoDni.set(false);
+      },
+      error: (err) => {
+        console.error('Error buscando persona:', err);
+        this.personaEncontrada = null;
+        this.buscandoDni.set(false);
+        this.notificationService.error('No se encontró una persona con ese DNI', 'Error', 3000);
+      }
+    });
+  }
+
+  buscarTramitePorCodigoRUT(): void {
+    const codigoRUT = String(this.inscripcionForm.codigoRUT || '').trim();
+    if (!codigoRUT) {
+      this.inscripcionForm.tipoTramite = '';
+      this.inscripcionForm.tipoSolicitante = '';
+      this.inscripcionForm.solicitanteId = null;
+      this.inscripcionForm.solicitanteNombre = '';
+      this.inscripcionForm.solicitanteIdentificacion = '';
+      this.inscripcionForm.tramiteId = null;
+      return;
+    }
+
+    this.buscandoTramite.set(true);
+    this.tramiteService.obtenerPorCodigoRUT(codigoRUT).subscribe({
+      next: (tramite: any) => {
+        this.inscripcionForm.tramiteId = tramite.idTramite ?? tramite.id ?? null;
+        this.inscripcionForm.tipoTramite = tramite.tipoTramiteCodigo || tramite.tipoTramite?.codigo || tramite.tipoTramiteDescripcion || tramite.tipoTramite?.descripcion || '';
+        this.inscripcionForm.tipoSolicitante = tramite.tipoSolicitante || '';
+        this.inscripcionForm.solicitanteId = tramite.solicitanteId || null;
+        this.inscripcionForm.solicitanteNombre = tramite.solicitanteNombre || '';
+        this.inscripcionForm.solicitanteIdentificacion = '';
+
+        const persona = tramite.personaNatural || null;
+        const empresa = tramite.empresa || null;
+        const gerente = tramite.gerente || null;
+
+        if (persona) {
+          this.personaEncontrada = persona;
+          this.inscripcionForm.dni = persona.dni;
+          this.inscripcionForm.nombres = persona.nombres || '';
+          this.inscripcionForm.apellidos = persona.apellidos || '';
+          this.inscripcionForm.genero = persona.genero || '';
+          this.inscripcionForm.telefono = persona.telefono || '';
+          this.inscripcionForm.email = persona.email || '';
+          this.inscripcionForm.solicitanteIdentificacion = persona.dni?.toString() || '';
+        } else if (empresa) {
+          this.personaEncontrada = null;
+          this.inscripcionForm.solicitanteNombre = empresa.nombre || this.inscripcionForm.solicitanteNombre;
+          this.inscripcionForm.solicitanteIdentificacion = empresa.ruc || '';
+        } else if (gerente) {
+          this.personaEncontrada = null;
+          this.inscripcionForm.solicitanteNombre = gerente.nombre || this.inscripcionForm.solicitanteNombre;
+          this.inscripcionForm.solicitanteIdentificacion = gerente.dni?.toString() || '';
+        } else {
+          this.personaEncontrada = null;
+        }
+
+        this.buscandoTramite.set(false);
+      },
+      error: (err) => {
+        console.error('Error buscando trámite:', err);
+        this.inscripcionForm.tipoTramite = '';
+        this.inscripcionForm.tipoSolicitante = '';
+        this.inscripcionForm.solicitanteId = null;
+        this.inscripcionForm.solicitanteNombre = '';
+        this.inscripcionForm.solicitanteIdentificacion = '';
+        this.inscripcionForm.tramiteId = null;
+        this.personaEncontrada = null;
+        this.buscandoTramite.set(false);
+        this.notificationService.error('No se encontró un trámite con ese código RUT', 'Error', 3000);
+      }
+    });
+  }
+
+  registrarInscripcion(): void {
+    if (!this.selectedExam) {
+      this.notificationService.error('Seleccione un grupo de examen', 'Validación', 3000);
+      return;
+    }
+
+    const dniLimpio = String(this.inscripcionForm.dni ?? '').replace(/\D/g, '');
+    if (dniLimpio.length !== 8) {
+      this.notificationService.error('Ingrese un DNI válido de 8 dígitos', 'Validación', 3000);
+      return;
+    }
+
+    if (!this.personaEncontrada) {
+      this.notificationService.error('Busque y seleccione la persona antes de inscribir', 'Validación', 3000);
+      return;
+    }
+
+    const request = {
+      dni: Number(dniLimpio),
+      grupoPresentacionId: this.selectedExam.id,
+      codigoRUT: this.inscripcionForm.codigoRUT?.trim() || '',
+      tipoTramite: this.inscripcionForm.tipoTramite || '',
+      tipoSolicitante: this.inscripcionForm.tipoSolicitante || '',
+      solicitanteId: this.inscripcionForm.solicitanteId || null,
+      solicitanteNombre: this.inscripcionForm.solicitanteNombre || '',
+      solicitanteIdentificacion: this.inscripcionForm.solicitanteIdentificacion || '',
+      tramiteId: this.inscripcionForm.tramiteId || null,
+      estado: this.inscripcionForm.estado || 'PENDIENTE',
+      pagado: !!this.inscripcionForm.pagado,
+      observaciones: this.inscripcionForm.observaciones || ''
+    };
+
+    this.inscripcionService.registrarInscripcion(request).subscribe({
+      next: (inscripcion) => {
+        this.notificationService.success('Participante inscrito correctamente', 'Éxito', 3000);
+        this.inscripcionStateService.agregarInscripcion(inscripcion);
+        this.loadExamenes();
+        this.loadInscripciones();
+        this.closeInscripcionModal();
+      },
+      error: (err: any) => {
+        console.error('Error registrando inscripción:', err);
+        this.notificationService.error(err.error?.message || 'Error al registrar la inscripción', 'Error', 3000);
+      }
+    });
   }
 
   selectDate(day: DiaCalendario): void {
@@ -2758,20 +2960,35 @@ export class GestionExamenesComponent implements OnInit {
       this.inscripcionStateService.cargarInscripcionesPorGrupo(this.selectedExam.id);
     }
 
-   actualizarResultadoInscripcion(inscripcion: any): void {
-     // Solo actualiza pago y observaciones, NO modifica estado/resultado
-     const request = {
-       pagado: inscripcion.pagado,
-       observaciones: inscripcion.observaciones
-     };
+   togglePagoInscripcion(inscripcion: any): void {
+     const nuevoEstado = !inscripcion.pagado;
 
-     this.inscripcionService.actualizarInscripcion(inscripcion.id, request).subscribe({
+     this.inscripcionService.cambiarPagoInscripcion(inscripcion.id, nuevoEstado).subscribe({
+       next: (updated) => {
+         this.inscripcionStateService.actualizarInscripcion(updated);
+         this.notificationService.success(
+           nuevoEstado ? 'Inscripción marcada como pagada' : 'Inscripción marcada como no pagada',
+           'Éxito',
+           2000
+         );
+       },
+       error: (err: any) => {
+         console.error('Error actualizando pago:', err);
+         this.notificationService.error('Error al actualizar el pago', 'Error', 2000);
+       }
+     });
+   }
+
+   actualizarResultadoInscripcion(inscripcion: any): void {
+     const nuevoEstado = !!inscripcion.pagado;
+
+     this.inscripcionService.cambiarPagoInscripcion(inscripcion.id, nuevoEstado).subscribe({
        next: (updated) => {
          this.inscripcionStateService.actualizarInscripcion(updated);
        },
        error: (err: any) => {
-         console.error('Error actualizando inscripción:', err);
-         alert('Error al actualizar la inscripción');
+         console.error('Error actualizando pago:', err);
+         alert('Error al actualizar el pago');
        }
      });
    }

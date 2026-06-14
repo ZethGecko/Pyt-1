@@ -35,13 +35,22 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String authorizationHeader = request.getHeader("Authorization");
-        System.out.println("[JwtRequestFilter] Path: " + request.getServletPath() + ", Method: " + request.getMethod() + ", Authorization header: " + authorizationHeader);
+        boolean hasAuthorizationHeader = authorizationHeader != null && !authorizationHeader.isBlank();
+        System.out.println("[JwtRequestFilter] Path: " + request.getServletPath() + ", Method: " + request.getMethod() + ", Authorization header present: " + hasAuthorizationHeader);
 
         String username = null;
         String jwt = null;
 
         if (authorizationHeader != null && authorizationHeader.startsWith(HEADER_PREFIX)) {
             jwt = authorizationHeader.substring(HEADER_PREFIX.length());
+        } else if (pathAllowsTokenQuery(request.getServletPath(), request.getMethod())) {
+            String tokenParam = request.getParameter("token");
+            if (tokenParam != null && !tokenParam.isBlank()) {
+                jwt = tokenParam;
+            }
+        }
+
+        if (jwt != null && !jwt.isBlank()) {
             try {
                 username = jwtUtil.extractUsername(jwt);
                 System.out.println("[JwtRequestFilter] Token válido extraído, username: " + username);
@@ -99,8 +108,12 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-        @Override
-        protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    private boolean pathAllowsTokenQuery(String path, String method) {
+        return "/api/auth/notificaciones/stream".equals(path) && "GET".equalsIgnoreCase(method);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
             String path = request.getServletPath();
             String method = request.getMethod();
             System.out.println("[JwtRequestFilter] Checking shouldNotFilter for path: " + path + ", method: " + method);
@@ -122,13 +135,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 path.startsWith("/api/tramites/buscar/enriquecidos") ||
                 path.startsWith("/api/tramites/enriquecidos") ||
                 path.startsWith("/api/rutas/buscar") ||
-                path.startsWith("/api/empresas") ||
-                (path.startsWith("/api/empresas/") && !path.contains("/auth")) ||
+                ((path.equals("/api/empresas") || path.startsWith("/api/empresas/")) && "GET".equalsIgnoreCase(method)) ||
                 path.startsWith("/api/puntos") ||
-                path.startsWith("/api/grupos-presentacion/") ||
-                path.startsWith("/api/parametros-inspeccion/") ||
-                path.startsWith("/api/inspecciones/publico") ||
-                (path.startsWith("/api/inspecciones/") && path.endsWith("/vehiculos")) ||
                 // Recursos públicos de publicaciones (GET público; POST protegido por SecurityConfig)
                 (path.startsWith("/api/publicaciones") && "GET".equalsIgnoreCase(method)) ||
                 // Recursos estáticos

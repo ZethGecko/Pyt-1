@@ -12,24 +12,26 @@
         <p class="page-subtitle">Administra las empresas de transporte</p>
       </div>
     </div>
-    <button class="btn btn-primary" (click)="abrirModalCrear()">
-      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      Nueva Empresa
-    </button>
-    <button class="btn btn-secondary" (click)="abrirListaGerentes()">
-      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-      </svg>
-      Ver Gerentes
-    </button>
-    <button class="btn btn-secondary" (click)="habilitarTUC()">
-      <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
-      </svg>
-      Habilitar TUC
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nueva Empresa
+      </button>
+      <button class="btn btn-secondary" (click)="habilitarTUC()">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
+        </svg>
+        Habilitar TUC
+      </button>
+      <button class="btn btn-secondary" (click)="abrirListaGerentes()">
+        <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        Ver Gerentes
+      </button>
+    </div>
   </div>
 
   <!-- Estadísticas -->
@@ -105,6 +107,8 @@
       </label>
       <select [(ngModel)]="filtroEstado">
         <option value="">Todos</option>
+        <option value="ACTIVO">Activo</option>
+        <option value="activo">Activo</option>
         <option value="habilitada">Habilitada</option>
         <option value="suspendida">Suspendida</option>
         <option value="en_proceso">En Proceso</option>
@@ -174,7 +178,7 @@
           </td>
           <td>
             <span class="badge"
-                  [class.badge-success]="empresa.estadoOperativo === 'habilitada'"
+                  [class.badge-success]="empresa.estadoOperativo === 'ACTIVO' || empresa.estadoOperativo === 'activo' || empresa.estadoOperativo === 'habilitada'"
                   [class.badge-warning]="empresa.estadoOperativo === 'suspendida' || empresa.estadoOperativo === 'en_proceso'"
                   [class.badge-danger]="empresa.estadoOperativo === 'inhabilitada'">
               {{ getEstadoLabel(empresa.estadoOperativo) }}
@@ -182,6 +186,12 @@
           </td>
           <td class="text-center">{{ empresa.unidadesHabilitadas ?? 0 }}</td>
           <td class="actions">
+            <button class="btn-icon btn-tuc" (click)="habilitarTUC(empresa)" title="Habilitar TUC">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
+              </svg>
+            </button>
+
             <button class="btn-icon btn-view" (click)="verDetalles(empresa)" title="Ver detalles">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -210,12 +220,6 @@
                     title="Activar">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-            </button>
-            
-            <button class="btn-icon btn-tuc" (click)="habilitarTUC(empresa)" title="Habilitar TUC">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 5H6a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2z"/>
               </svg>
             </button>
             
@@ -772,7 +776,7 @@
               </div>
               <div class="detail-item">
                 <span class="detail-label">Estado Operativo:</span>
-                <span class="badge" [class.badge-success]="empresaDetalle.estadoOperativo === 'habilitada'"
+                <span class="badge" [class.badge-success]="empresaDetalle.estadoOperativo === 'ACTIVO' || empresaDetalle.estadoOperativo === 'activo' || empresaDetalle.estadoOperativo === 'habilitada'"
                       [class.badge-warning]="empresaDetalle.estadoOperativo === 'suspendida' || empresaDetalle.estadoOperativo === 'en_proceso'"
                       [class.badge-danger]="empresaDetalle.estadoOperativo === 'inhabilitada'">
                   {{ getEstadoLabel(empresaDetalle.estadoOperativo) }}
@@ -1015,7 +1019,7 @@
                    </td>
               </tr>
               <tr *ngIf="gerentesFiltrados.length === 0">
-                <td colspan="6" class="empty-state">
+          <td colspan="7" class="empty-state">
                   <p>No hay gerentes registrados</p>
                 </td>
               </tr>

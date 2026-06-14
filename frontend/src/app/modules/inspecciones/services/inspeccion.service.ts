@@ -354,11 +354,11 @@ export class InspeccionService {
       if (fechaHasta) params.fechaHasta = fechaHasta;
       if (empresa) params.empresa = empresa;
 
-      return this.http.get<InspeccionPublicaDTO[]>(`${this.apiUrl}/publico`, { params });
+      return this.http.get<InspeccionPublicaDTO[]>(`${this.apiUrl}/publico/inspecciones`, { params });
     }
 
     obtenerVehiculosPorInspeccion(inspeccionId: number): Observable<VehiculoDTO[]> {
-      return this.http.get<VehiculoDTO[]>(`${this.apiUrl}/${inspeccionId}/vehiculos`);
+      return this.http.get<VehiculoDTO[]>(`${this.apiUrl}/publico/inspecciones/${inspeccionId}/vehiculos`);
     }
 
     replicarFormatoEnInspeccion(inspeccionId: number, fichaOrigenId: number): Observable<void> {

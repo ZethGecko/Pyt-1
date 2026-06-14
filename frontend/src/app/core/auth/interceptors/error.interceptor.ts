@@ -24,8 +24,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         req.url.includes('/api/rutas/buscar') ||
         req.url.includes('/api/empresas') ||
         req.url.includes('/api/puntos') ||
-        req.url.includes('/api/grupos-presentacion/') ||
-        req.url.includes('/api/parametros-inspeccion/') ||
+        req.url.includes('/api/publico/') ||
         req.url.includes('/api/fichas-inspeccion/') ||
         req.url.includes('/actuator/') ||
         req.url.includes('/swagger-ui') ||

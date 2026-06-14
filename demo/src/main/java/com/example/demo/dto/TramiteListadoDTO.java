@@ -121,6 +121,21 @@ public class TramiteListadoDTO {
         this.documentosRechazados = documentosRechazados;
     }
 
+    public TramiteListadoDTO(Long id, String codigoRUT, String estado, String prioridad,
+                            LocalDateTime fechaRegistro, LocalDateTime fechaActualizacion,
+                            String departamentoActualNombre, String usuarioRegistraNombre,
+                            String solicitanteNombre, String tipoTramiteDescripcion, Long tipoTramiteId,
+                            Long solicitanteId, String solicitanteTipo, String solicitanteIdentificacion,
+                            Long totalDocumentos, Long documentosAprobados, Long documentosPendientes,
+                            Long documentosObservados, Long documentosRechazados, Long conteoInstancias) {
+        this(id, codigoRUT, estado, prioridad, fechaRegistro, fechaActualizacion,
+                departamentoActualNombre, usuarioRegistraNombre, solicitanteNombre, tipoTramiteDescripcion,
+                tipoTramiteId, solicitanteId, solicitanteTipo, solicitanteIdentificacion,
+                totalDocumentos, documentosAprobados, documentosPendientes, documentosObservados,
+                documentosRechazados);
+        this.conteoInstancias = conteoInstancias;
+    }
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

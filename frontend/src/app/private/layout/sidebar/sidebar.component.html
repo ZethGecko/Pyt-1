@@ -112,13 +112,13 @@
                    <span class="submenu-text">Vehículos</span>
                  </a>
                </li>
-               <li class="submenu-item" *ngIf="isAdminOrSuperAdmin()">
+               <li class="submenu-item" *ngIf="canViewExpedientes()">
                  <a routerLink="/tramites/expedientes" routerLinkActive="active" class="submenu-link">
                    <app-icon name="archive" size="xs" class="submenu-icon"></app-icon>
                    <span class="submenu-text">Expedientes</span>
                  </a>
                </li>
-               <li class="submenu-item" *ngIf="isSuperAdmin()">
+               <li class="submenu-item" *ngIf="isAdminOrSuperAdmin()">
                  <a routerLink="/inspecciones" routerLinkActive="active" class="submenu-link">
                    <app-icon name="clipboard-check" size="xs" class="submenu-icon"></app-icon>
                    <span class="submenu-text">Inspecciones</span>
@@ -155,7 +155,7 @@
         </li>
 
         <!-- Configuración (Expandible) -->
-       <li class="nav-item has-submenu">
+       <li class="nav-item has-submenu" *ngIf="canManageConfiguracion()">
          <button (click)="toggleMenu('configuracion')" class="nav-link" [class.active]="expandedMenus().configuracion">
            <div class="nav-icon-wrapper">
              <app-icon [name]="expandedMenus().configuracion ? 'folder-open' : 'folder'" size="sm" customClass="nav-icon"></app-icon>
@@ -244,20 +244,22 @@
        </div>
      </div>
 
-      <div class="user-actions">
-        <button class="action-btn settings" title="Configuración">
-          <app-icon name="settings" size="sm"></app-icon>
-        </button>
-        <button class="action-btn bell-btn" (click)="toggleNotificationPanel()" title="Notificaciones">
-          <app-icon name="bell" size="sm"></app-icon>
-          @if (unreadCount() > 0) {
-            <span class="notification-badge">{{ unreadCount() }}</span>
-          }
-        </button>
-        <button class="action-btn logout" title="Cerrar sesión">
-          <app-icon name="log-out" size="sm"></app-icon>
-        </button>
-      </div>
+       <div class="user-actions">
+         @if (canManageConfiguracion()) {
+           <button class="action-btn settings" title="Configuración">
+             <app-icon name="settings" size="sm"></app-icon>
+           </button>
+         }
+         <button class="action-btn bell-btn" (click)="toggleNotificationPanel()" title="Notificaciones">
+           <app-icon name="bell" size="sm"></app-icon>
+           @if (unreadCount() > 0) {
+             <span class="notification-badge">{{ unreadCount() }}</span>
+           }
+         </button>
+         <button class="action-btn logout" title="Cerrar sesión">
+           <app-icon name="log-out" size="sm"></app-icon>
+         </button>
+       </div>
 
        <!-- Panel de notificaciones -->
        @if (showNotificationPanel()) {

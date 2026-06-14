@@ -1,7 +1,8 @@
 package com.example.demo.controller;
 
-import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,16 +97,29 @@ public class NotificacionAuthController {
      * Clients reconnect automatically (EventSource retries).
      */
     private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
+    private final Map<SseEmitter, String> emitterUsers = new HashMap<>();
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(Principal principal) {
+    public SseEmitter stream(Authentication authentication) {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        String username = authentication != null ? authentication.getName() : null;
         this.emitters.add(emitter);
+        if (username != null) {
+            this.emitterUsers.put(emitter, username);
+        }
 
-        // Auto-remove on completion / timeout / error
-        emitter.onCompletion(() -> this.emitters.remove(emitter));
-        emitter.onTimeout(() -> this.emitters.remove(emitter));
-        emitter.onError((e) -> this.emitters.remove(emitter));
+        emitter.onCompletion(() -> {
+            this.emitters.remove(emitter);
+            this.emitterUsers.remove(emitter);
+        });
+        emitter.onTimeout(() -> {
+            this.emitters.remove(emitter);
+            this.emitterUsers.remove(emitter);
+        });
+        emitter.onError((e) -> {
+            this.emitters.remove(emitter);
+            this.emitterUsers.remove(emitter);
+        });
 
         return emitter;
     }
@@ -116,7 +130,15 @@ public class NotificacionAuthController {
      */
     @SuppressWarnings("unused")
     public void broadcast(NotificacionAuthDTO notif) {
+        boolean paraTodos = Boolean.TRUE.equals(notif.getParaTodos());
+        String destinatario = notif.getUsuarioDestinoUsername();
         for (SseEmitter emitter : this.emitters) {
+            if (!paraTodos) {
+                String usuarioConectado = this.emitterUsers.get(emitter);
+                if (usuarioConectado == null || !usuarioConectado.equals(destinatario)) {
+                    continue;
+                }
+            }
             try {
                 String json = objectMapper.writeValueAsString(notif);
                 emitter.send(SseEmitter.event()
@@ -125,6 +147,7 @@ public class NotificacionAuthController {
             } catch (Exception e) {
                 System.err.println("[NotificacionAuthController] broadcast error for emitter, removing: " + e.getMessage());
                 this.emitters.remove(emitter);
+                this.emitterUsers.remove(emitter);
                 try { emitter.complete(); } catch (Exception ignored) {}
             }
         }

@@ -117,7 +117,10 @@ export class DashboardComponent implements OnInit {
      console.log('[Dashboard] Role desde token:', tokenRole);
      
      let observable$: Observable<TramiteEnriquecido[]>;
-     if (!deptId) {
+     if (tokenRole === 'SUPER_ADMIN') {
+       console.log('[Dashboard] SUPER_ADMIN listando todos los trámites');
+       observable$ = this.tramiteService.listarTodosEnriquecidos();
+     } else if (!deptId) {
        console.log('[Dashboard] Sin departamento -> mostrando vacío');
        this.tramitesDepartamento.set([]);
        this.tramitesFiltrados.set([]);

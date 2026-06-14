@@ -100,25 +100,11 @@ public class TramiteService {
     }
 
     public List<TramiteListadoDTO> listarTodosEnriquecidos() {
-        List<TramiteListadoDTO> dtos = repo.findAllEnriquecidos();
-        // Agregar conteo de instancias a cada DTO
-        dtos.forEach(dto -> {
-            Long tramiteId = dto.getId();
-            long count = instanciaRepository.countByTramite_IdTramite(tramiteId);
-            dto.setConteoInstancias(count);
-        });
-        return dtos;
+        return repo.findAllEnriquecidos();
     }
 
     public List<TramiteListadoDTO> buscarEnriquecidos(String termino) {
-        List<TramiteListadoDTO> dtos = repo.findEnriquecidosByTermino(termino);
-        // Agregar conteo de instancias a cada DTO
-        dtos.forEach(dto -> {
-            Long tramiteId = dto.getId();
-            long count = instanciaRepository.countByTramite_IdTramite(tramiteId);
-            dto.setConteoInstancias(count);
-        });
-        return dtos;
+        return repo.findEnriquecidosByTermino(termino);
     }
 
      public Map<String, Object> obtenerSeguimientoCompleto(String codigoRUT, Long instanciaId) {
@@ -1018,56 +1004,8 @@ public class TramiteService {
     }
 
     public List<TramiteListadoDTO> listarConInstancias() {
-        List<Tramite> tramites = repo.findAll();
-        return tramites.stream()
-                .filter(tramite -> instanciaRepository.countByTramite_IdTramite(tramite.getIdTramite()) > 0)
-                .map(tramite -> {
-                    TramiteListadoDTO dto = new TramiteListadoDTO();
-                    dto.setId(tramite.getIdTramite());
-                    dto.setCodigoRUT(tramite.getCodigoRut());
-                    dto.setEstado(tramite.getEstado() != null ? tramite.getEstado().toLowerCase() : null);
-                    dto.setPrioridad(tramite.getPrioridad());
-                    dto.setFechaRegistro(tramite.getFechaRegistro());
-                    dto.setFechaActualizacion(tramite.getFechaActualizacion());
-                    dto.setDepartamentoActualNombre(
-                        tramite.getDepartamentoActual() != null ? tramite.getDepartamentoActual().getNombre() : null
-                    );
-                    dto.setUsuarioRegistraNombre(
-                        tramite.getUsuarioRegistra() != null ? tramite.getUsuarioRegistra().getUsername() : null
-                    );
-
-                    // Solicitante: puede ser Empresa, PersonaNatural o Gerente
-                    if (tramite.getEmpresa() != null) {
-                        Empresa e = tramite.getEmpresa();
-                        dto.setSolicitanteNombre(e.getNombre());
-                        dto.setSolicitanteId(e.getIdEmpresa());
-                        dto.setSolicitanteTipo("EMPRESA");
-                        dto.setSolicitanteIdentificacion(e.getRuc() != null ? e.getRuc() : null);
-                    } else if (tramite.getPersonaNatural() != null) {
-                        PersonaNatural p = tramite.getPersonaNatural();
-                        String nombreCompleto = (p.getNombres() != null ? p.getNombres() : "") + " " +
-                                               (p.getApellidos() != null ? p.getApellidos() : "");
-                        dto.setSolicitanteNombre(nombreCompleto.trim());
-                        dto.setSolicitanteId(p.getIdPersonaNatural());
-                        dto.setSolicitanteTipo("PERSONA_NATURAL");
-                        dto.setSolicitanteIdentificacion(p.getDni() != null ? p.getDni().toString() : null);
-                    } else if (tramite.getGerente() != null) {
-                        Gerente g = tramite.getGerente();
-                        dto.setSolicitanteNombre(g.getNombre());
-                        dto.setSolicitanteId(g.getIdGerente());
-                        dto.setSolicitanteTipo("GERENTE");
-                        dto.setSolicitanteIdentificacion(g.getDni() != null ? g.getDni().toString() : null);
-                    }
-
-                    if (tramite.getTipoTramite() != null) {
-                        dto.setTipoTramiteDescripcion(tramite.getTipoTramite().getDescripcion());
-                        dto.setTipoTramiteId(tramite.getTipoTramite().getIdTipoTramite());
-                    }
-
-                    Long conteo = instanciaRepository.countByTramite_IdTramite(tramite.getIdTramite());
-                    dto.setConteoInstancias(conteo);
-                    return dto;
-                })
+        return repo.findAllEnriquecidos().stream()
+                .filter(dto -> dto.getConteoInstancias() != null && dto.getConteoInstancias() > 0)
                 .toList();
     }
 

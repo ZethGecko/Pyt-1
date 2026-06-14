@@ -197,6 +197,14 @@ public class InscripcionExamenService {
          inscripcion.setPersonaId(persona.getId());
          inscripcion.setGrupoPresentacion(grupo);
          inscripcion.setGrupoPresentacionId(request.getGrupoPresentacionId());
+         if (request.getTramiteId() != null) {
+             inscripcion.setTramiteId(request.getTramiteId());
+         } else if (request.getCodigoRUT() != null && !request.getCodigoRUT().isBlank()) {
+             Tramite tramite = tramiteRepo.findByCodigoRutWithFetch(request.getCodigoRUT());
+             if (tramite != null) {
+                 inscripcion.setTramiteId(tramite.getIdTramite());
+             }
+         }
 
          // Valores por defecto y sincronizar estado/resultado
          if (request.getEstado() == null) {
@@ -290,6 +298,7 @@ public class InscripcionExamenService {
             }
 
             if (changed) {
+                inscripcion.setActualizadoEn(LocalDateTime.now());
                 InscripcionExamen saved = repo.save(inscripcion);
                 System.out.println("[InscripcionExamenService] Inscripción guardada: id=" + saved.getIdInscripcion() +
                                   ", estado=" + saved.getEstado() + ", resultado=" + saved.getResultado() + ", pagado=" + saved.getPagado());
@@ -298,6 +307,18 @@ public class InscripcionExamenService {
                 System.out.println("[InscripcionExamenService] No hubo cambios, devolviendo entidad existente");
                 return inscripcion;
             }
+        }).orElse(null);
+    }
+
+    @Transactional
+    public InscripcionExamen actualizarPago(Long id, boolean pagado) {
+        System.out.println("[InscripcionExamenService] Actualizando pago inscripción id=" + id + ", pagado=" + pagado);
+        return repo.findById(id).map(inscripcion -> {
+            inscripcion.setPagado(pagado);
+            inscripcion.setActualizadoEn(LocalDateTime.now());
+            InscripcionExamen saved = repo.save(inscripcion);
+            System.out.println("[InscripcionExamenService] Pago guardado: id=" + saved.getIdInscripcion() + ", pagado=" + saved.getPagado());
+            return saved;
         }).orElse(null);
     }
 

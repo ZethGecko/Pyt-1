@@ -126,6 +126,10 @@ export class AuthNotificationService implements OnDestroy {
       this.sseEventSource.close();
     }
     this.refreshToken();
+    if (!this._token) {
+      this.stopSSE();
+      return;
+    }
     const url = this.authUrl;
     console.log('[AuthNotificationService] Conectando SSE a:', url.replace(/token=[^&]+/, 'token=***'));
     this.sseEventSource = new EventSource(url);
@@ -207,7 +211,9 @@ export class AuthNotificationService implements OnDestroy {
   private async silentRefresh(): Promise<void> {
     try {
       const items = await this.http
-        .get<AuthNotification[]>(`${this.api}/active`)
+        .get<AuthNotification[]>(`${this.api}/active`, {
+          headers: this._token ? { Authorization: `Bearer ${this._token}` } : undefined
+        })
         .toPromise()
         .then((data: any) => {
           let content: any[] = [];

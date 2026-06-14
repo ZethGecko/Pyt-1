@@ -180,13 +180,13 @@ export class EmpresaService {
   
   // ========== BÚSQUEDA ==========
   buscar(termino: string): Observable<EmpresaResponse[]> {
-    return this.http.get<EmpresaResponse[]>(`${this.apiUrl}/buscar`, {
+    return this.http.get<EmpresaResponse[]>(`${this.apiUrl}/search/projected`, {
       params: new HttpParams().set('termino', termino)
     });
   }
   
   buscarProjection(termino: string): Observable<EmpresaProjection[]> {
-    return this.http.get<EmpresaProjection[]>(`${this.apiUrl}/buscar/projected`, {
+    return this.http.get<EmpresaProjection[]>(`${this.apiUrl}/search/projected`, {
       params: new HttpParams().set('termino', termino)
     });
   }
@@ -201,11 +201,11 @@ export class EmpresaService {
   
   // ========== ESTADOS ==========
   activar(id: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/activar`, {});
+    return this.http.put<void>(`${this.apiUrl}/${id}/activar`, {});
   }
   
   desactivar(id: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/desactivar`, {});
+    return this.http.put<void>(`${this.apiUrl}/${id}/desactivar`, {});
   }
   
   // ========== VALIDACIONES ==========
@@ -218,7 +218,7 @@ export class EmpresaService {
   }
   
   puedeEliminar(id: number): Observable<{puedeEliminar: boolean, mensaje: string}> {
-    return this.http.get<{puedeEliminar: boolean, mensaje: string}>(`${this.apiUrl}/${id}/puede-eliminar`);
+    return this.http.get<{puedeEliminar: boolean, mensaje: string}>(`${this.apiUrl}/${id}/can-delete`);
   }
   
   // ========== ESTADÍSTICAS ==========

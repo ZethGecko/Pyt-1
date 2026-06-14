@@ -273,6 +273,8 @@ public class DocumentoTramiteController {
         
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
+                .header("Content-Disposition", "attachment; filename=\"" + doc.getNombreArchivo().replace("\"", "") + "\"")
+                .header("X-Content-Type-Options", "nosniff")
                 .body(resource);
     }
 }

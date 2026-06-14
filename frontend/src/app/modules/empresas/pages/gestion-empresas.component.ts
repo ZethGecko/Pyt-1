@@ -85,7 +85,7 @@ export class GestionEmpresasComponent implements OnInit {
     inicioVigencia: undefined,
     finVigencia: undefined,
     activo: true,
-    estadoOperativo: 'en_proceso'
+    estadoOperativo: 'ACTIVO'
   };
   
   constructor(
@@ -855,10 +855,12 @@ export class GestionEmpresasComponent implements OnInit {
     if (!estado) return 'bg-gray-100 text-gray-800';
     
     switch (estado) {
-      case 'habilitada': return 'bg-green-100 text-green-800';
-      case 'suspendida': return 'bg-red-100 text-red-800';
-      case 'en_proceso': return 'bg-yellow-100 text-yellow-800';
-      case 'inhabilitada': return 'bg-gray-100 text-gray-800';
+      case 'ACTIVO':
+      case 'activo': return 'Activo';
+      case 'habilitada': return 'Habilitada';
+      case 'suspendida': return 'Suspendida';
+      case 'en_proceso': return 'En Proceso';
+      case 'inhabilitada': return 'Inhabilitada';
       default: return 'bg-gray-100 text-gray-800';
     }
   }
@@ -868,6 +870,8 @@ export class GestionEmpresasComponent implements OnInit {
     if (!estado) return 'Sin estado';
     
     switch (estado) {
+      case 'ACTIVO':
+      case 'activo': return 'Activo';
       case 'habilitada': return 'Habilitada';
       case 'suspendida': return 'Suspendida';
       case 'en_proceso': return 'En Proceso';

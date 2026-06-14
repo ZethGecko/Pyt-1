@@ -1237,15 +1237,10 @@ public class InspeccionService {
 
     public List<InspeccionPublicaDTO> listarInspeccionesPublicas(LocalDate desde, LocalDate hasta, String empresaNombre, int limite) {
         limite = Math.max(1, Math.min(limite, 100));
+        String filtroEmpresa = (empresaNombre != null && !empresaNombre.trim().isEmpty()) ? empresaNombre.trim() : null;
 
-        Page<Inspeccion> page = inspeccionRepository.findPublicas(desde, hasta, empresaNombre, PageRequest.of(0, limite));
-        return page.getContent().stream()
-                .filter(i -> desde == null || (i.getFechaProgramada() != null && !i.getFechaProgramada().isBefore(desde)))
-                .filter(i -> hasta == null || (i.getFechaProgramada() != null && !i.getFechaProgramada().isAfter(hasta)))
-                .filter(i -> empresaNombre == null || empresaNombre.trim().isEmpty() ||
-                        (i.getEmpresaNombre() != null && i.getEmpresaNombre().toLowerCase().contains(empresaNombre.toLowerCase())))
-                .map(this::convertirAPublicaDTO)
-                .collect(java.util.stream.Collectors.toList());
+        Page<InspeccionPublicaDTO> page = inspeccionRepository.findPublicas(desde, hasta, filtroEmpresa, PageRequest.of(0, limite));
+        return page.getContent();
     }
 
     public List<InspeccionPublicaDTO> listarInspeccionesPublicas(LocalDate desde, LocalDate hasta, String empresaNombre) {
@@ -1268,14 +1263,14 @@ public class InspeccionService {
         if (inspeccion == null || inspeccion.getInstancias() == null) {
             return List.of();
         }
+        int[] indice = {1};
         return inspeccion.getInstancias().stream()
                 .map(ii -> {
                     VehiculoDTO dto = new VehiculoDTO();
                     InstanciaTramite it = ii.getInstanciaTramite();
-                    if (it != null) {
-                        dto.setIdentificador(it.getIdentificador());
-                    }
-                    dto.setPlaca(ii.getPlaca());
+                    dto.setIdentificador(it != null ? it.getIdentificador() : "Vehículo " + indice[0]);
+                    dto.setPlaca(ii.getPlaca() != null ? ii.getPlaca() : "No disponible");
+                    indice[0]++;
                     return dto;
                 })
                 .collect(java.util.stream.Collectors.toList());
