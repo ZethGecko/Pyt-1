@@ -344,19 +344,13 @@ public class FichaInspeccionService {
         if (request.getUsuarioInspectorId() != null) {
             ficha.setUsuarioInspector(request.getUsuarioInspectorId());
         }
-        if (request.getEstado() != null) {
-            if (Boolean.TRUE.equals(request.getEstado()) && !esFinalizacionValida(ficha, request)) {
-                throw new IllegalArgumentException("Para finalizar la ficha son obligatorios resultado, firma del responsable y fecha de firma.");
-            }
-            ficha.setEstado(request.getEstado());
-        } else if (fichaFinalizadaRealmente(ficha)) {
-            ficha.setEstado(true);
-        } else {
-            ficha.setEstado(false);
+        if (request.getEstado() != null && Boolean.TRUE.equals(request.getEstado()) && !esFinalizacionValida(ficha, request)) {
+            throw new IllegalArgumentException("Para finalizar la ficha son obligatorios resultado, firma del responsable y fecha de firma.");
         }
         if (request.getResultado() != null) {
             ficha.setResultado(request.getResultado().isBlank() ? null : normalizarResultadoFicha(request.getResultado()));
         }
+        ficha.setEstado(determinarEstadoFicha(ficha, request));
         if (request.getObservaciones() != null) {
             ficha.setObservaciones(request.getObservaciones());
         }
@@ -379,12 +373,28 @@ public class FichaInspeccionService {
                 formato.setSubtituloPrincipal(request.getSubtituloPrincipal());
                 formatoModificado = true;
             }
+            if (request.getSubtitulo2() != null) {
+                formato.setSubtitulo2(request.getSubtitulo2());
+                formatoModificado = true;
+            }
+            if (request.getSubtitulo3() != null) {
+                formato.setSubtitulo3(request.getSubtitulo3());
+                formatoModificado = true;
+            }
+            if (request.getSubtitulo4() != null) {
+                formato.setSubtitulo4(request.getSubtitulo4());
+                formatoModificado = true;
+            }
             if (request.getTituloSeccionDatosGenerales() != null) {
                 formato.setTituloSeccionDatosGenerales(request.getTituloSeccionDatosGenerales());
                 formatoModificado = true;
             }
             if (request.getTituloSeccionPlaca() != null) {
                 formato.setTituloSeccionPlaca(request.getTituloSeccionPlaca());
+                formatoModificado = true;
+            }
+            if (request.getTituloSeccionUnidadVehicular() != null) {
+                formato.setTituloSeccionUnidadVehicular(request.getTituloSeccionUnidadVehicular());
                 formatoModificado = true;
             }
             if (request.getTituloSeccionPlanLunca() != null) {
@@ -420,6 +430,7 @@ public class FichaInspeccionService {
         sincronizarValoresConFormato(ficha, formato);
 
         FichaInspeccion guardada = fichaRepository.save(ficha);
+        actualizarEstadoInstanciaDesdeFicha(guardada);
         return convertirADetailDTO(guardada);
     }
 
@@ -445,6 +456,13 @@ public class FichaInspeccionService {
         return esResultadoFinalizable(resultado) && !isBlank(firma) && !isBlank(fecha);
     }
 
+    private boolean determinarEstadoFicha(FichaInspeccion ficha, FichaInspeccionUpdateRequestDTO request) {
+        if (Boolean.TRUE.equals(request.getEstado())) {
+            return true;
+        }
+        return fichaFinalizadaRealmente(ficha) || esFinalizacionValida(ficha, request);
+    }
+
     private boolean esResultadoFinalizable(String resultado) {
         if (resultado == null) {
             return false;
@@ -457,6 +475,23 @@ public class FichaInspeccionService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private void actualizarEstadoInstanciaDesdeFicha(FichaInspeccion ficha) {
+        if (!Boolean.TRUE.equals(ficha.getEstado()) || ficha.getInspeccion() == null || ficha.getInstanciaTramiteId() == null) {
+            return;
+        }
+        inspeccionInstanciaRepository.findByInspeccion_IdInspeccionAndInstanciaTramite_IdInstancia(
+                ficha.getInspeccion(),
+                ficha.getInstanciaTramiteId()
+        ).ifPresent(ii -> {
+            ii.setEstadoInstancia("INSPECCIONADO");
+            ii.setFechaInspeccion(ii.getFechaInspeccion() != null ? ii.getFechaInspeccion() : LocalDateTime.now());
+            if (ii.getObservaciones() == null || ii.getObservaciones().isBlank()) {
+                ii.setObservaciones(ficha.getObservaciones());
+            }
+            inspeccionInstanciaRepository.save(ii);
+        });
     }
 
     /**
@@ -623,7 +658,8 @@ public class FichaInspeccionService {
         formato.setSubtituloPrincipal("CÁTEDRA DE LA EMPRESA");
         formato.setSubtituloFontSize(18);
         formato.setTituloSeccionDatosGenerales("DATOS GENERALES");
-        formato.setTituloSeccionPlaca("UNIDAD VEHICULAR");
+        formato.setTituloSeccionPlaca("PLACA");
+        formato.setTituloSeccionUnidadVehicular("UNIDAD VEHICULAR");
         formato.setTituloSeccionPlanLunca("PLAN LUNCA DE RODALE");
         formato.setTituloSeccionLaboratorio("OBSERVACIONES");
         FormatoInspeccion guardado = formatoRepository.save(formato);
@@ -742,16 +778,20 @@ public class FichaInspeccionService {
         if (formato != null) {
             dto.setTituloPrincipal(formato.getTituloPrincipal());
             dto.setSubtituloPrincipal(formato.getSubtituloPrincipal());
+            dto.setSubtitulo2(formato.getSubtitulo2());
             dto.setTituloSeccionDatosGenerales(formato.getTituloSeccionDatosGenerales());
             dto.setTituloSeccionPlaca(formato.getTituloSeccionPlaca());
+            dto.setTituloSeccionUnidadVehicular(formato.getTituloSeccionUnidadVehicular());
             dto.setTituloSeccionPlanLunca(formato.getTituloSeccionPlanLunca());
             dto.setTituloSeccionLaboratorio(formato.getTituloSeccionLaboratorio());
         } else {
             // Valores por defecto
             dto.setTituloPrincipal("CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA");
             dto.setSubtituloPrincipal("CÁTEDRA DE LA EMPRESA");
+            dto.setSubtitulo2("");
             dto.setTituloSeccionDatosGenerales("DATOS GENERALES");
             dto.setTituloSeccionPlaca("PLACA");
+            dto.setTituloSeccionUnidadVehicular("UNIDAD VEHICULAR");
             dto.setTituloSeccionPlanLunca("PLAN LUNCA DE RODALE");
             dto.setTituloSeccionLaboratorio("LABORATORIO");
         }
@@ -781,15 +821,19 @@ public class FichaInspeccionService {
         if (formato != null) {
             dto.setTituloPrincipal(formato.getTituloPrincipal());
             dto.setSubtituloPrincipal(formato.getSubtituloPrincipal());
+            dto.setSubtitulo2(formato.getSubtitulo2());
             dto.setTituloSeccionDatosGenerales(formato.getTituloSeccionDatosGenerales());
             dto.setTituloSeccionPlaca(formato.getTituloSeccionPlaca());
+            dto.setTituloSeccionUnidadVehicular(formato.getTituloSeccionUnidadVehicular());
             dto.setTituloSeccionPlanLunca(formato.getTituloSeccionPlanLunca());
             dto.setTituloSeccionLaboratorio(formato.getTituloSeccionLaboratorio());
         } else {
             dto.setTituloPrincipal("CERTIFICADO DE INSTRUCCIONES EQUIVALIDO COMPLEMENTARIA");
             dto.setSubtituloPrincipal("CÁTEDRA DE LA EMPRESA");
+            dto.setSubtitulo2("");
             dto.setTituloSeccionDatosGenerales("DATOS GENERALES");
             dto.setTituloSeccionPlaca("PLACA");
+            dto.setTituloSeccionUnidadVehicular("UNIDAD VEHICULAR");
             dto.setTituloSeccionPlanLunca("PLAN LUNCA DE RODALE");
             dto.setTituloSeccionLaboratorio("LABORATORIO");
         }

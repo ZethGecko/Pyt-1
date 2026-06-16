@@ -23,6 +23,7 @@ export interface FormatoInspeccion {
   subtitulo2?: string;
   tituloSeccionDatosGenerales: string;
   tituloSeccionPlaca: string;
+  tituloSeccionUnidadVehicular: string;
   tituloSeccionPlanLunca: string;
   tituloSeccionLaboratorio: string;
   campos?: CampoFormato[];

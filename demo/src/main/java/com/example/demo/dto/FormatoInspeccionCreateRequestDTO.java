@@ -15,6 +15,7 @@ public class FormatoInspeccionCreateRequestDTO {
     private String subtitulo4;
     private String tituloSeccionDatosGenerales;
     private String tituloSeccionPlaca;
+    private String tituloSeccionUnidadVehicular;
     private String tituloSeccionPlanLunca;
     private String tituloSeccionLaboratorio;
     private List<CampoFormatoDTO> campos;
@@ -107,6 +108,14 @@ public class FormatoInspeccionCreateRequestDTO {
 
     public void setTituloSeccionPlaca(String tituloSeccionPlaca) {
         this.tituloSeccionPlaca = tituloSeccionPlaca;
+    }
+
+    public String getTituloSeccionUnidadVehicular() {
+        return tituloSeccionUnidadVehicular;
+    }
+
+    public void setTituloSeccionUnidadVehicular(String tituloSeccionUnidadVehicular) {
+        this.tituloSeccionUnidadVehicular = tituloSeccionUnidadVehicular;
     }
 
     public String getTituloSeccionPlanLunca() {

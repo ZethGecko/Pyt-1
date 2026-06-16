@@ -330,10 +330,23 @@
            </div>
          </div>
 
-         <!-- Sección Unidad Vehicular -->
-         <div class="certificado-section mb-8">
-           <h3 class="section-header text-lg">UNIDAD VEHICULAR</h3>
-           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Sección Unidad Vehicular -->
+          <div class="certificado-section mb-8">
+            <h3 class="section-header text-lg">
+              <span *ngIf="!editandoTitulo['UNIDAD VEHICULAR']"
+                    (click)="modoDiseno && iniciarEdicionTitulo('UNIDAD VEHICULAR')"
+                    [class.editable-title]="modoDiseno">
+                {{ titulosSecciones['UNIDAD VEHICULAR'] }}
+              </span>
+                <input *ngIf="editandoTitulo['UNIDAD VEHICULAR']"
+                       type="text"
+                       class="editable-title-input"
+                       [(ngModel)]="tituloTemp['UNIDAD VEHICULAR']" (ngModelChange)="onInputChange()"
+                       (blur)="guardarEdicionTitulo('UNIDAD VEHICULAR')"
+                       (keydown.enter)="guardarEdicionTitulo('UNIDAD VEHICULAR')"
+                       (keydown.escape)="cancelarEdicionTitulo('UNIDAD VEHICULAR')">
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ng-container *ngFor="let param of secciones['UNIDAD VEHICULAR']">
                 <div class="flex items-start">
                   <label class="certificado-label text-sm font-medium text-gray-700 w-48 md:w-40"
@@ -379,9 +392,6 @@
              </div>
            </div>
          </div>
-
-         <!-- Sección Placa -->
-
 
         <!-- Sección Plan Lunca de Rodale -->
         <div class="certificado-section mb-8">

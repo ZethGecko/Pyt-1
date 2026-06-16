@@ -59,6 +59,9 @@ public class FormatoInspeccion {
     @Column(name = "titulo_seccion_placa", length = 100)
     private String tituloSeccionPlaca;
 
+    @Column(name = "titulo_seccion_unidad_vehicular", length = 100)
+    private String tituloSeccionUnidadVehicular;
+
     @Column(name = "titulo_seccion_plan_lunca", length = 100)
     private String tituloSeccionPlanLunca;
 
@@ -95,6 +98,9 @@ public class FormatoInspeccion {
         }
         if (tituloSeccionPlaca == null || tituloSeccionPlaca.trim().isEmpty()) {
             tituloSeccionPlaca = "PLACA";
+        }
+        if (tituloSeccionUnidadVehicular == null || tituloSeccionUnidadVehicular.trim().isEmpty()) {
+            tituloSeccionUnidadVehicular = "UNIDAD VEHICULAR";
         }
         if (tituloSeccionPlanLunca == null || tituloSeccionPlanLunca.trim().isEmpty()) {
             tituloSeccionPlanLunca = "PLAN LUNCA DE RODALE";
@@ -234,6 +240,14 @@ public class FormatoInspeccion {
 
     public void setTituloSeccionPlaca(String tituloSeccionPlaca) {
         this.tituloSeccionPlaca = tituloSeccionPlaca;
+    }
+
+    public String getTituloSeccionUnidadVehicular() {
+        return tituloSeccionUnidadVehicular;
+    }
+
+    public void setTituloSeccionUnidadVehicular(String tituloSeccionUnidadVehicular) {
+        this.tituloSeccionUnidadVehicular = tituloSeccionUnidadVehicular;
     }
 
     public String getTituloSeccionPlanLunca() {

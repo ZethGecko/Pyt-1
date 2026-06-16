@@ -204,9 +204,9 @@
                 </td>
                 <td>
                   <span class="badge"
-                        [class.badge-success]="inspeccion.resultadoGeneral === 'aprobado'"
-                        [class.badge-danger]="inspeccion.resultadoGeneral === 'rechazado'"
-                        [class.badge-warning]="inspeccion.resultadoGeneral === 'observado'"
+                        [class.badge-success]="inspeccion.resultadoGeneral === 'aprobado' || inspeccion.resultadoGeneral === 'APROBADO'"
+                        [class.badge-danger]="inspeccion.resultadoGeneral === 'rechazado' || inspeccion.resultadoGeneral === 'DESAPROBADO'"
+                        [class.badge-warning]="inspeccion.resultadoGeneral === 'observado' || inspeccion.resultadoGeneral === 'OBSERVADO' || inspeccion.resultadoGeneral === 'NO_PRESENTADO'"
                         [class.badge-secondary]="!inspeccion.resultadoGeneral">
                     {{ inspeccion.resultadoGeneral || 'Sin resultado' }}
                   </span>
@@ -370,6 +370,14 @@
                     <p class="text-sm text-gray-500 mt-2">Cargando vehículos...</p>
                   </div>
                   <div *ngIf="!cargandoInstancias && inspeccionSeleccionadaParaVer?.instancias && inspeccionSeleccionadaParaVer.instancias.length > 0" class="border rounded-md max-h-60 overflow-y-auto">
+                    <div class="p-3 border-b bg-gray-50">
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Filtrar por vehículo"
+                        [(ngModel)]="filtroVehiculo"
+                        (ngModelChange)="aplicarFiltroVehiculo()">
+                    </div>
                     <table class="min-w-full divide-y divide-gray-200">
                        <thead class="bg-gray-50">
                           <tr>
@@ -379,43 +387,56 @@
                           </tr>
                        </thead>
                        <tbody class="bg-white divide-y divide-gray-200">
-                          <tr *ngFor="let inst of inspeccionSeleccionadaParaVer.instancias">
+                          <tr *ngFor="let inst of instanciasFiltradas">
                             <td class="px-4 py-2 text-sm text-gray-900">
                               {{ inst.identificador }}
                               <span class="text-xs text-gray-500 block" *ngIf="inst.placa">Placa: {{ inst.placa }}</span>
                             </td>
                             <td class="px-4 py-2 text-sm">
-                              <span class="badge" [class]="'badge-' + getBadgeClassInstancia(inst.estadoInstancia)">
-                                {{ inst.estadoInstancia || 'N/A' }}
+                              <span class="badge" [class]="'badge-' + getBadgeClassResultadoInstancia(inst)">
+                                {{ getResultadoInstancia(inst) }}
                               </span>
                             </td>
                              <td class="px-4 py-2 text-sm">
-                               <ng-container *ngIf="puedeEditarFichaDesdeModal(inspeccionSeleccionadaParaVer?.estado); else readonlyFicha">
-                                 <button class="btn btn-sm btn-primary"
-                                         (click)="verFichaVehiculo(inst)"
-                                         [disabled]="inspeccionSeleccionadaParaVer?.estado === 'FINALIZADA' || inspeccionSeleccionadaParaVer?.estado === 'CANCELADA'"
-                                         title="Ver ficha de inspección del vehículo">
-                                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                   </svg>
-                                   <span *ngIf="inst.fichaId; else crearFichaLabel">Ver Ficha</span>
-                                   <ng-template #crearFichaLabel>Crear Ficha</ng-template>
-                                 </button>
-                               </ng-container>
-                               <ng-template #readonlyFicha>
-                                 <button class="btn btn-sm btn-primary"
-                                         (click)="verFichaVehiculo(inst)"
-                                         [disabled]="!inst.fichaId"
-                                         title="Ver ficha (solo lectura)">
-                                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                   </svg>
-                                   Ver Ficha
-                                 </button>
-                               </ng-template>
+                               <div class="flex gap-2 flex-wrap">
+                                <ng-container *ngIf="puedeEditarFichaDesdeModal(inspeccionSeleccionadaParaVer?.estado); else readonlyFicha">
+                                  <button class="btn btn-sm btn-primary"
+                                          (click)="verFichaVehiculo(inst)"
+                                          [disabled]="inspeccionSeleccionadaParaVer?.estado === 'FINALIZADA' || inspeccionSeleccionadaParaVer?.estado === 'CANCELADA'"
+                                          title="Ver ficha de inspección del vehículo">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    <span *ngIf="inst.fichaId; else crearFichaLabel">Ver Ficha</span>
+                                    <ng-template #crearFichaLabel>Crear Ficha</ng-template>
+                                  </button>
+                                </ng-container>
+                                <ng-template #readonlyFicha>
+                                  <button class="btn btn-sm btn-primary"
+                                          (click)="verFichaVehiculo(inst)"
+                                          [disabled]="!inst.fichaId"
+                                          title="Ver ficha (solo lectura)">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    Ver Ficha
+                                  </button>
+                                </ng-template>
+                                <button class="btn btn-sm"
+                                        [class.btn-warning]="inst.noPresentado"
+                                        [class.btn-outline]="!inst.noPresentado"
+                                        (click)="toggleNoPresentado(inst)"
+                                        [disabled]="inspeccionSeleccionadaParaVer?.estado === 'FINALIZADA' || inspeccionSeleccionadaParaVer?.estado === 'CANCELADA'"
+                                        title="Marcar o desmarcar vehículo como no presentado">
+                                  {{ inst.noPresentado ? 'Se presentó' : 'No Presentó' }}
+                                </button>
+                               </div>
                              </td>
+                          </tr>
+                          <tr *ngIf="instanciasFiltradas.length === 0">
+                            <td colspan="3" class="px-4 py-3 text-sm text-gray-500 text-center">No hay vehículos que coincidan con el filtro.</td>
                           </tr>
                        </tbody>
                     </table>

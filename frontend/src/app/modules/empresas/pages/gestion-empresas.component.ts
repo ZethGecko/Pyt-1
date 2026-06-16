@@ -105,6 +105,7 @@ export class GestionEmpresasComponent implements OnInit {
   inspeccionTUCSeleccionada: TucInspeccionResponse | null = null;
   vehiculosTUCSeleccionados: number[] = [];
   observacionesVehiculosTUC: { [vehiculoId: number]: string } = {};
+  filtroVehiculoTUC = '';
   tipoVigenciaTUC: '12_MESES' | 'HASTA_FIN_ANIO' = '12_MESES';
   anioVencimientoTUC: number = new Date().getFullYear() + 1;
   
@@ -125,6 +126,7 @@ export class GestionEmpresasComponent implements OnInit {
     this.inspeccionesTUC = [];
     this.vehiculosTUCSeleccionados = [];
     this.observacionesVehiculosTUC = {};
+    this.filtroVehiculoTUC = '';
     this.tipoVigenciaTUC = '12_MESES';
     this.anioVencimientoTUC = new Date().getFullYear() + 1;
     this.mostrarModalHabilitarTUC = true;
@@ -137,6 +139,7 @@ export class GestionEmpresasComponent implements OnInit {
     this.inspeccionesTUC = [];
     this.vehiculosTUCSeleccionados = [];
     this.observacionesVehiculosTUC = {};
+    this.filtroVehiculoTUC = '';
   }
 
   cargarInspeccionesParaTUC(): void {
@@ -159,16 +162,50 @@ export class GestionEmpresasComponent implements OnInit {
     });
   }
 
+  vehiculosTUCVisibles(): TucVehiculoResponse[] {
+    const filtro = this.filtroVehiculoTUC.trim().toLowerCase();
+    const vehiculos = this.vehiculosDeInspeccion(this.inspeccionTUCSeleccionada);
+
+    if (!filtro) {
+      return vehiculos;
+    }
+
+    return vehiculos.filter(vehiculo => [
+      vehiculo.placa,
+      vehiculo.marca,
+      vehiculo.modelo,
+      vehiculo.categoria,
+      vehiculo.resultadoFicha
+    ].some(valor => (valor || '').toLowerCase().includes(filtro)));
+  }
+
+  limpiarFiltroVehiculoTUC(): void {
+    this.filtroVehiculoTUC = '';
+  }
+
   seleccionarInspeccionTUC(inspeccion: TucInspeccionResponse): void {
     this.inspeccionTUCSeleccionada = inspeccion;
     this.observacionesVehiculosTUC = {};
     this.vehiculosTUCSeleccionados = this.vehiculosDeInspeccion(inspeccion)
-      .filter(vehiculo => vehiculo.resultadoFicha === 'APROBADO' && vehiculo.estadoFicha === true)
+      .filter(vehiculo => this.puedeHabilitarTuc(vehiculo))
       .map(vehiculo => vehiculo.idVehiculo)
       .filter((vehiculoId): vehiculoId is number => vehiculoId !== undefined);
   }
 
+  puedeHabilitarTuc(vehiculo: TucVehiculoResponse): boolean {
+    return vehiculo.resultadoFicha === 'APROBADO' || vehiculo.resultadoFicha === 'OBSERVADO';
+  }
+
+  requiereObservacionTuc(vehiculo: TucVehiculoResponse): boolean {
+    return vehiculo.resultadoFicha === 'OBSERVADO';
+  }
+
   toggleVehiculoTUC(vehiculoId: number, checked: boolean): void {
+    const vehiculo = this.vehiculosDeInspeccion(this.inspeccionTUCSeleccionada)
+      .find(v => v.idVehiculo === vehiculoId);
+    if (!vehiculo || !this.puedeHabilitarTuc(vehiculo)) {
+      return;
+    }
     if (checked) {
       if (!this.vehiculosTUCSeleccionados.includes(vehiculoId)) {
         this.vehiculosTUCSeleccionados.push(vehiculoId);
@@ -187,8 +224,10 @@ export class GestionEmpresasComponent implements OnInit {
       next: () => {
         vehiculo.resultadoFicha = resultado;
         vehiculo.estadoFicha = false;
-        if (resultado !== 'APROBADO') {
+        if (!this.puedeHabilitarTuc(vehiculo)) {
           this.vehiculosTUCSeleccionados = this.vehiculosTUCSeleccionados.filter(id => id !== vehiculo.idVehiculo);
+        } else if (!this.vehiculosTUCSeleccionados.includes(vehiculo.idVehiculo!)) {
+          this.vehiculosTUCSeleccionados.push(vehiculo.idVehiculo!);
         }
         this.notificationService.success('Resultado de ficha actualizado', 'Éxito', 2000);
       },
@@ -237,11 +276,11 @@ export class GestionEmpresasComponent implements OnInit {
     }
 
     const vehiculos = this.vehiculosDeInspeccion(this.inspeccionTUCSeleccionada)
-      .filter(vehiculo => this.estaVehiculoSeleccionado(vehiculo.idVehiculo));
+      .filter(vehiculo => this.estaVehiculoSeleccionado(vehiculo.idVehiculo) && this.puedeHabilitarTuc(vehiculo));
 
     const sinObservacion = vehiculos.find(vehiculo =>
-      vehiculo.resultadoFicha !== 'APROBADO' &&
-      !(this.observacionVehiculo(vehiculo) || '').trim()
+      this.requiereObservacionTuc(vehiculo) &&
+      !(this.observacionVehiculo(vehiculo) || vehiculo.observaciones || '').trim()
     );
 
     if (sinObservacion) {
@@ -263,7 +302,7 @@ export class GestionEmpresasComponent implements OnInit {
         color: vehiculo.color,
         categoria: vehiculo.categoria,
         subtipoTransporteId: vehiculo.subtipoTransporteId,
-        observaciones: this.observacionVehiculo(vehiculo)
+        observaciones: this.observacionVehiculo(vehiculo) || vehiculo.observaciones
       }))
     };
 

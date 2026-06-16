@@ -30,10 +30,13 @@ import { environment } from '@env';
    // Títulos del formato
    tituloPrincipal?: string;
    subtituloPrincipal?: string;
-   subtitulo2?: string;
-   tituloSeccionDatosGenerales?: string;
-   tituloSeccionPlaca?: string;
-   tituloSeccionPlanLunca?: string;
+    subtitulo2?: string;
+    subtitulo3?: string;
+    subtitulo4?: string;
+    tituloSeccionDatosGenerales?: string;
+    tituloSeccionPlaca?: string;
+    tituloSeccionUnidadVehicular?: string;
+    tituloSeccionPlanLunca?: string;
    tituloSeccionLaboratorio?: string;
     observaciones?: string;
  }

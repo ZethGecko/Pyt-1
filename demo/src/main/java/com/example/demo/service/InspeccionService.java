@@ -1017,16 +1017,28 @@ public class InspeccionService {
             throw new IllegalStateException("Solo se pueden terminar inspecciones iniciadas");
         }
         List<FichaInspeccion> fichas = new ArrayList<>();
+        int noPresentadosAutomaticos = 0;
         if (inspeccion.getInstancias() != null) {
             for (InspeccionInstancia ii : inspeccion.getInstancias()) {
                 Long instanciaTramiteId = ii.getInstanciaTramite() != null ? ii.getInstanciaTramite().getIdInstancia() : null;
                 Optional<FichaInspeccion> fichaOpt = instanciaTramiteId == null
                         ? Optional.empty()
                         : fichaInspeccionRepository.findByInstanciaTramiteIdAndInspeccion(inspeccion.getIdInspeccion(), instanciaTramiteId);
-                if (fichaOpt.isEmpty()) {
-                    throw new IllegalStateException("No se puede terminar la inspección porque hay instancias sin ficha asociada");
+                FichaInspeccion ficha;
+                if (fichaOpt.isEmpty() || esFichaPendiente(fichaOpt.get())) {
+                    ficha = fichaOpt.isPresent() ? fichaOpt.get() : crearFichaNoPresentado(inspeccion, ii);
+                    marcarFichaNoPresentado(ficha);
+                    ii.setEstadoInstancia("NO_PRESENTADO");
+                    ii.setFechaInspeccion(ii.getFechaInspeccion() != null ? ii.getFechaInspeccion() : LocalDateTime.now());
+                    if (ii.getObservaciones() == null || ii.getObservaciones().isBlank()) {
+                        ii.setObservaciones("NO PRESENTADO");
+                    }
+                    inspeccionInstanciaRepository.save(ii);
+                    noPresentadosAutomaticos++;
+                    continue;
                 }
-                FichaInspeccion ficha = fichaOpt.get();
+
+                ficha = fichaOpt.get();
                 validarFichaParaTerminarInspeccion(ficha);
                 fichas.add(ficha);
 
@@ -1053,20 +1065,109 @@ public class InspeccionService {
         return convertirAResponse(inspeccion);
     }
 
+    @Transactional
+    public InspeccionInstanciaResponse marcarNoPresentado(Long instanciaId, Boolean noPresentado) {
+        InspeccionInstancia ii = inspeccionInstanciaRepository.findById(instanciaId)
+                .orElseThrow(() -> new IllegalArgumentException("Instancia de inspección no encontrada"));
+        Inspeccion inspeccion = ii.getInspeccion();
+        if (inspeccion == null) {
+            throw new IllegalStateException("La instancia no tiene inspección asociada");
+        }
+        if ("FINALIZADA".equalsIgnoreCase(inspeccion.getEstado()) || "CANCELADA".equalsIgnoreCase(inspeccion.getEstado())) {
+            throw new IllegalStateException("No se puede cambiar el estado de presentación después de finalizar o cancelar la inspección");
+        }
+
+        Long inspeccionId = inspeccion.getIdInspeccion();
+        Long instanciaTramiteId = ii.getInstanciaTramite() != null ? ii.getInstanciaTramite().getIdInstancia() : null;
+        if (instanciaTramiteId == null) {
+            throw new IllegalStateException("La instancia no tiene trámite asociado");
+        }
+
+        if (Boolean.TRUE.equals(noPresentado)) {
+            ii.setEstadoInstancia("NO_PRESENTADO");
+            ii.setFechaInspeccion(ii.getFechaInspeccion() != null ? ii.getFechaInspeccion() : LocalDateTime.now());
+            if (ii.getObservaciones() == null || ii.getObservaciones().isBlank()) {
+                ii.setObservaciones("NO PRESENTADO");
+            }
+            FichaInspeccion ficha = fichaInspeccionRepository
+                    .findByInstanciaTramiteIdAndInspeccion(inspeccionId, instanciaTramiteId)
+                    .orElseGet(() -> crearFichaNoPresentado(inspeccion, ii));
+            marcarFichaNoPresentado(ficha);
+        } else {
+            ii.setEstadoInstancia("PENDIENTE");
+            ii.setFechaInspeccion(null);
+            if ("NO PRESENTADO".equals(ii.getObservaciones())) {
+                ii.setObservaciones(null);
+            }
+            fichaInspeccionRepository.findByInstanciaTramiteIdAndInspeccion(inspeccionId, instanciaTramiteId)
+                    .ifPresent(this::limpiarFichaNoPresentado);
+        }
+
+        inspeccionInstanciaRepository.save(ii);
+        return convertirAInspeccionInstanciaResponse(ii);
+    }
+
+    private boolean esFichaPendiente(FichaInspeccion ficha) {
+        if (ficha == null || ficha.getResultado() == null || ficha.getResultado().isBlank()) {
+            return true;
+        }
+        String resultado = ficha.getResultado().trim().toUpperCase();
+        return "PENDIENTE".equals(resultado)
+                || "NO_PRESENTADO".equals(resultado)
+                || (!"APROBADO".equals(resultado) && !"OBSERVADO".equals(resultado) && !"DESAPROBADO".equals(resultado));
+    }
+
+    private FichaInspeccion crearFichaNoPresentado(Inspeccion inspeccion, InspeccionInstancia instancia) {
+        FichaInspeccion ficha = new FichaInspeccion();
+        ficha.setInspeccion(inspeccion.getIdInspeccion());
+        Long instanciaTramiteId = instancia.getInstanciaTramite() != null
+                ? instancia.getInstanciaTramite().getIdInstancia()
+                : null;
+        ficha.setInstanciaTramiteId(instanciaTramiteId);
+        ficha.setVehiculo(obtenerVehiculoIdPorInstancia(instancia));
+        ficha.setEstado(false);
+        ficha.setResultado("NO_PRESENTADO");
+        ficha.setFechaCreacion(LocalDateTime.now());
+        ficha.setFechaActualizacion(LocalDateTime.now());
+        ficha.setFormatoInspeccion(fichaInspeccionService.obtenerOCrearFormatoActivo(inspeccion));
+        if (inspeccion.getTramite() != null && inspeccion.getTramite().getSolicitud() != null) {
+            ficha.setSolicitud(inspeccion.getTramite().getSolicitud().getIdSolicitud());
+        }
+        FichaInspeccion guardada = fichaInspeccionRepository.save(ficha);
+        fichaInspeccionService.crearValoresCamposParaFicha(guardada, ficha.getFormatoInspeccion());
+        return guardada;
+    }
+
+    private void marcarFichaNoPresentado(FichaInspeccion ficha) {
+        ficha.setEstado(false);
+        ficha.setResultado("NO_PRESENTADO");
+        ficha.setFirmaResponsable(null);
+        ficha.setFechaFirma(null);
+        ficha.setFechaInspeccion(null);
+        ficha.setObservaciones("NO PRESENTADO");
+        ficha.setFechaActualizacion(LocalDateTime.now());
+        fichaInspeccionRepository.save(ficha);
+    }
+
+    private void limpiarFichaNoPresentado(FichaInspeccion ficha) {
+        if (!"NO_PRESENTADO".equals(ficha.getResultado())) {
+            return;
+        }
+        ficha.setEstado(false);
+        ficha.setResultado(null);
+        ficha.setFirmaResponsable(null);
+        ficha.setFechaFirma(null);
+        ficha.setFechaInspeccion(null);
+        ficha.setObservaciones(null);
+        ficha.setFechaActualizacion(LocalDateTime.now());
+        fichaInspeccionRepository.save(ficha);
+    }
+
     private void validarFichaParaTerminarInspeccion(FichaInspeccion ficha) {
         if (ficha.getResultado() == null || ficha.getResultado().isBlank()) {
             throw new IllegalStateException("No se puede terminar la inspección porque hay fichas sin resultado");
         }
         normalizarResultado(ficha.getResultado());
-        if (!Boolean.TRUE.equals(ficha.getEstado())) {
-            throw new IllegalStateException("No se puede terminar la inspección porque hay fichas sin finalizar");
-        }
-        if (ficha.getFirmaResponsable() == null || ficha.getFirmaResponsable().isBlank()) {
-            throw new IllegalStateException("No se puede terminar la inspección porque hay fichas sin firma responsable");
-        }
-        if (ficha.getFechaFirma() == null || ficha.getFechaFirma().isBlank()) {
-            throw new IllegalStateException("No se puede terminar la inspección porque hay fichas sin fecha de firma");
-        }
     }
 
     private boolean esInspeccionEnCurso(String estado) {
@@ -1080,15 +1181,15 @@ public class InspeccionService {
             return null;
         }
         String normalizado = resultado.trim().toUpperCase();
-        if (!"APROBADO".equals(normalizado) && !"OBSERVADO".equals(normalizado) && !"DESAPROBADO".equals(normalizado)) {
-            throw new IllegalArgumentException("Resultado inválido. Use APROBADO, OBSERVADO o DESAPROBADO");
+        if (!"APROBADO".equals(normalizado) && !"OBSERVADO".equals(normalizado) && !"DESAPROBADO".equals(normalizado) && !"NO_PRESENTADO".equals(normalizado)) {
+            throw new IllegalArgumentException("Resultado inválido. Use APROBADO, OBSERVADO, DESAPROBADO o NO_PRESENTADO");
         }
         return normalizado;
     }
 
     private String calcularResultadoGeneral(List<FichaInspeccion> fichas) {
         if (fichas == null || fichas.isEmpty()) {
-            return null;
+            return "NO_PRESENTADO";
         }
         boolean tieneObservado = false;
         for (FichaInspeccion ficha : fichas) {
@@ -1110,6 +1211,7 @@ public class InspeccionService {
         }
         return inspeccion.getInstancias().stream()
                 .filter(ii -> !"INSPECCIONADO".equals(ii.getEstadoInstancia()))
+                .filter(ii -> !"NO_PRESENTADO".equals(ii.getEstadoInstancia()))
                 .findFirst()
                 .map(ii -> {
                     SiguienteInstanciaPendienteResponse r = new SiguienteInstanciaPendienteResponse();
@@ -1391,6 +1493,7 @@ public class InspeccionService {
             }
         }
         dto.setEstadoInstancia(ii.getEstadoInstancia());
+        dto.setNoPresentado("NO_PRESENTADO".equals(ii.getEstadoInstancia()));
         dto.setPlaca(ii.getPlaca());
         dto.setObservaciones(ii.getObservaciones());
         dto.setFechaInspeccion(ii.getFechaInspeccion());
@@ -1420,6 +1523,7 @@ public class InspeccionService {
             dto.setTramiteId(it.getTramite().getIdTramite());
         }
         dto.setEstadoInstancia("PENDIENTE");
+        dto.setNoPresentado(false);
         dto.setPlaca("");
         dto.setObservaciones("");
         dto.setFechaInspeccion(null);

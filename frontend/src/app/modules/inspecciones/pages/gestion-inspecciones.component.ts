@@ -264,9 +264,11 @@ export class GestionInspeccionesComponent implements OnInit {
   inspeccionSeleccionadaParaVer: InspeccionResponse | null = null;
   mostrarModalVerInstancias = false;
   cargandoInstancias = false;
+  filtroVehiculo = '';
 
   verInstanciasDeInspeccion(inspeccion: InspeccionResponse): void {
     this.cargandoInstancias = true;
+    this.filtroVehiculo = '';
     this.inspeccionService.obtenerConInstancias(inspeccion.idInspeccion).subscribe({
       next: (data) => {
         this.inspeccionSeleccionadaParaVer = data;
@@ -283,6 +285,37 @@ export class GestionInspeccionesComponent implements OnInit {
   cerrarModalVerInstancias(): void {
     this.mostrarModalVerInstancias = false;
     this.inspeccionSeleccionadaParaVer = null;
+    this.filtroVehiculo = '';
+  }
+
+  get instanciasFiltradas(): InspeccionInstanciaResponse[] {
+    const termino = this.filtroVehiculo.trim().toLowerCase();
+    if (!termino || !this.inspeccionSeleccionadaParaVer?.instancias) {
+      return this.inspeccionSeleccionadaParaVer?.instancias || [];
+    }
+    return this.inspeccionSeleccionadaParaVer.instancias.filter(instancia => {
+      const identificador = instancia.identificador?.toLowerCase() || '';
+      const placa = instancia.placa?.toLowerCase() || '';
+      return identificador.includes(termino) || placa.includes(termino);
+    });
+  }
+
+  getResultadoInstancia(instancia: InspeccionInstanciaResponse): string {
+    if (instancia.noPresentado || instancia.estadoInstancia === 'NO_PRESENTADO') {
+      return 'NO PRESENTÓ';
+    }
+    if (instancia.fichaResultado && instancia.fichaResultado.trim()) {
+      return instancia.fichaResultado.trim().toUpperCase();
+    }
+    return 'PENDIENTE';
+  }
+
+  getBadgeClassResultadoInstancia(instancia: InspeccionInstanciaResponse): string {
+    return this.getBadgeClassInstancia(this.getResultadoInstancia(instancia));
+  }
+
+  aplicarFiltroVehiculo(): void {
+    this.changeDetectorRef.detectChanges();
   }
 
   verFichaVehiculo(instancia: any): void {
@@ -303,6 +336,53 @@ export class GestionInspeccionesComponent implements OnInit {
     this.router.navigate(['/inspecciones', 'ficha', instancia.fichaId]);
   }
 
+  toggleNoPresentado(instancia: InspeccionInstanciaResponse): void {
+    if (!this.inspeccionSeleccionadaParaVer || this.inspeccionSeleccionadaParaVer.estado === 'FINALIZADA' || this.inspeccionSeleccionadaParaVer.estado === 'CANCELADA') {
+      return;
+    }
+    const siguienteEstado = !instancia.noPresentado;
+    const tieneFichaValida = this.esFichaCompletada(instancia);
+    if (siguienteEstado && tieneFichaValida && !confirm('Este vehículo ya tiene ficha completada. Marcarlo como NO PRESENTÓ limpiará el resultado actual. ¿Continuar?')) {
+      return;
+    }
+
+    this.cargando = true;
+    this.inspeccionService.marcarNoPresentado(instancia.idInspeccionInstancia!, siguienteEstado).subscribe({
+      next: (actualizada) => {
+        Object.assign(instancia, actualizada);
+        this.notificationService.success(
+          siguienteEstado ? 'Vehículo marcado como NO PRESENTÓ' : 'Vehículo marcado como presentado',
+          'Éxito',
+          2000
+        );
+        this.cargando = false;
+      },
+      error: (err: any) => {
+        this.notificationService.error(err.error?.message || 'Error al actualizar estado de presentación', 'Error', 3000);
+        this.cargando = false;
+      }
+    });
+  }
+
+  private esFichaCompletada(instancia: InspeccionInstanciaResponse): boolean {
+    const resultado = (instancia.fichaResultado || '').trim().toUpperCase();
+    return Boolean(instancia.fichaId) && ['APROBADO', 'OBSERVADO', 'DESAPROBADO'].includes(resultado);
+  }
+
+  private calcularConteoCierre(inspeccion: InspeccionResponse): { autoNoPresentados: number; noPresentadosFinales: number; completadas: number; total: number; marcadosNoPresentado: number } {
+    const instancias = inspeccion.instancias || [];
+    const completadas = instancias.filter(i => this.esFichaCompletada(i)).length;
+    const marcadosNoPresentado = instancias.filter(i => i.noPresentado || i.estadoInstancia === 'NO_PRESENTADO').length;
+    const autoNoPresentados = instancias.filter(i => !this.esFichaCompletada(i) && !i.noPresentado && i.estadoInstancia !== 'NO_PRESENTADO').length;
+    return {
+      total: instancias.length,
+      completadas,
+      marcadosNoPresentado,
+      autoNoPresentados,
+      noPresentadosFinales: marcadosNoPresentado + autoNoPresentados
+    };
+  }
+
   iniciarInspeccion(inspeccion: InspeccionResponse): void {
     if (inspeccion.estado !== 'PROGRAMADA') {
       this.notificationService.warning('La inspección ya fue iniciada o finalizada', 'Acción no permitida', 3000);
@@ -313,22 +393,10 @@ export class GestionInspeccionesComponent implements OnInit {
     this.inspeccionService.iniciar(inspeccion.idInspeccion, {}).subscribe({
       next: (data) => {
         inspeccion.estado = data.estado || 'EN_CURSO';
-        this.notificationService.success('Inspección iniciada. Complete la ficha asignada.', 'Éxito', 2000);
-        this.fichaInspeccionService.getByInspeccion(inspeccion.idInspeccion).subscribe({
-          next: (fichas) => {
-            this.cargando = false;
-            const primeraFicha = fichas?.length ? fichas[0] : null;
-            if (primeraFicha?.id) {
-              this.router.navigate(['/inspecciones', 'ficha', primeraFicha.id]);
-            } else {
-              this.router.navigate(['/inspecciones', 'realizar', inspeccion.idInspeccion]);
-            }
-          },
-          error: () => {
-            this.cargando = false;
-            this.router.navigate(['/inspecciones', 'realizar', inspeccion.idInspeccion]);
-          }
-        });
+        this.cargando = false;
+        this.notificationService.success('Inspección iniciada. Seleccione el vehículo a inspeccionar.', 'Éxito', 2000);
+        this.cargarInspecciones();
+        this.verInstanciasDeInspeccion(data);
       },
       error: (err) => {
         this.notificationService.error(err.error?.message || 'Error al iniciar inspección', 'Error', 5000);
@@ -417,16 +485,26 @@ export class GestionInspeccionesComponent implements OnInit {
   }
 
   terminarInspeccion(inspeccion: InspeccionResponse): void {
-    if (!confirm(`¿Está seguro de terminar la inspección ${inspeccion.codigo}?`)) return;
+    const conteo = this.calcularConteoCierre(inspeccion);
+    let mensaje = `¿Está seguro de terminar la inspección ${inspeccion.codigo}?`;
+    if (conteo.noPresentadosFinales > 0) {
+      if (conteo.autoNoPresentados > 0) {
+        mensaje += ` Se marcarán automáticamente ${conteo.autoNoPresentados} vehículo(s) como NO PRESENTÓ. La inspección finalizará con ${conteo.noPresentadosFinales} vehículo(s) NO PRESENTÓ.`;
+      } else {
+        mensaje += ` La inspección finalizará con ${conteo.noPresentadosFinales} vehículo(s) NO PRESENTÓ.`;
+      }
+    }
+    if (!confirm(mensaje)) return;
     this.cargando = true;
-    this.inspeccionService.terminar(inspeccion.idInspeccion, {}).subscribe({
-      next: () => {
-        this.notificationService.success('Inspección finalizada exitosamente', 'Éxito', 2000);
-        this.cargarInspecciones();
-      },
-      error: (err) => {
-        this.notificationService.error(err.error?.message || 'Error al finalizar inspección', 'Error', 5000);
-        this.cargando = false;
+     this.inspeccionService.terminar(inspeccion.idInspeccion, {}).subscribe({
+       next: () => {
+         this.notificationService.success('Inspección finalizada exitosamente', 'Éxito', 2000);
+         this.cargarInspecciones();
+        this.cerrarModalVerInstancias();
+       },
+       error: (err) => {
+         this.notificationService.error(err.error?.message || 'Error al finalizar inspección', 'Error', 5000);
+         this.cargando = false;
       }
     });
   }
@@ -533,9 +611,13 @@ export class GestionInspeccionesComponent implements OnInit {
   getBadgeClassInstancia(estado: string): string {
     switch (estado?.toUpperCase()) {
       case 'APROBADO': return 'success';
+      case 'DESAPROBADO': return 'danger';
       case 'EN_REVISION': return 'warning';
       case 'OBSERVADO': return 'warning';
+      case 'NO PRESENTADO': return 'warning';
+      case 'NO PRESENTÓ': return 'warning';
       case 'PENDIENTE': return 'info';
+      case 'INSPECCIONADO': return 'secondary';
       case 'CERRADO': return 'secondary';
       default: return 'secondary';
     }

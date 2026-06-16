@@ -245,12 +245,17 @@ public class InspeccionController {
           }
 
          /**
-          * Completa una instancia de inspección (marca como INSPECCIONADO y guarda datos).
+          * Marca o desmarca una instancia como no presentada.
           */
          @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-         @PutMapping("/instancias/{instanciaId}/completar")
-         public void completarInstancia(@PathVariable Long instanciaId, @RequestBody InspeccionInstanciaInspeccionarRequest request) {
-             inspeccionService.completarInstancia(instanciaId, request);
+         @PutMapping("/instancias/{instanciaId}/no-presentado")
+         public InspeccionInstanciaResponse marcarNoPresentado(
+                 @PathVariable Long instanciaId,
+                 @RequestBody Boolean noPresentado) {
+             if (noPresentado == null) {
+                 throw new IllegalArgumentException("El valor noPresentado es obligatorio");
+             }
+             return inspeccionService.marcarNoPresentado(instanciaId, noPresentado);
          }
 
         // ==================== ENDPOINTS POR BLOQUE ====================

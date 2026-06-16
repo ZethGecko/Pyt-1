@@ -408,6 +408,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
 
       // Actualizar valores de campos que ya existen en la ficha (por idParametros)
       for (const param of this.parametrosFicha) {
+        if (this.esSeccionPlaca(param.seccionAsignada || param.seccion)) {
+          continue;
+        }
         if (param.idParametros && mapaDraft.has(param.idParametros)) {
           param.valor = mapaDraft.get(param.idParametros)!;
         }
@@ -416,6 +419,7 @@ type ParametroFichaExtendido = ParametroInspeccion & {
       // Añadir campos que están en el formato pero NO existían en el borrador (nuevos campos)
       for (const campo of (formato.campos || [])) {
         if (campo.id === undefined) continue;
+        if (this.esSeccionPlaca(campo.seccion)) continue;
         if (!idsExistentes.has(campo.id)) {
           this.parametrosFicha.push({
             idParametros: campo.id,
@@ -450,6 +454,7 @@ type ParametroFichaExtendido = ParametroInspeccion & {
       const idsExistentes = new Set(this.parametrosFicha.map(p => p.idParametros).filter(Boolean));
       for (const campo of formato.campos) {
         if (campo.id === undefined) continue;
+        if (this.esSeccionPlaca(campo.seccion)) continue;
         if (!idsExistentes.has(campo.id)) {
           this.parametrosFicha.push({
             idParametros: campo.id,
@@ -596,8 +601,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        tituloPrincipal: formato.tituloPrincipal,
        subtituloPrincipal: formato.subtituloPrincipal,
        subtitulo2: formato.subtitulo2 || '',
-       tituloSeccionDatosGenerales: formato.tituloSeccionDatosGenerales,
-       tituloSeccionPlaca: formato.tituloSeccionPlaca,
+        tituloSeccionDatosGenerales: formato.tituloSeccionDatosGenerales,
+        tituloSeccionUnidadVehicular: formato.tituloSeccionUnidadVehicular,
+        tituloSeccionPlaca: formato.tituloSeccionPlaca,
        tituloSeccionPlanLunca: formato.tituloSeccionPlanLunca,
        tituloSeccionLaboratorio: formato.tituloSeccionLaboratorio,
         parametros: (formato.campos || []).map(c => ({
@@ -618,49 +624,58 @@ type ParametroFichaExtendido = ParametroInspeccion & {
        return;
      }
 
-     this.parametrosFicha = this.ficha.parametros.map(param => ({
-       ...param,
-       valor: param.observacion || '',
-       valorOpcion: (param.observacion === 'BIEN' || param.observacion === 'MAL') ? param.observacion : null
-     })) as ParametroFichaExtendido[];
+     this.parametrosFicha = this.ficha.parametros
+       .map(param => ({
+         ...param,
+         valor: param.observacion || '',
+         valorOpcion: (param.observacion === 'BIEN' || param.observacion === 'MAL') ? param.observacion : null
+       }))
+       .filter(param => !this.esSeccionPlaca((param as ParametroFichaExtendido).seccionAsignada || param.seccion)) as ParametroFichaExtendido[];
 
      this.clasificarPorSecciones();
    }
 
-   private clasificarPorSecciones(): void {
-     this.secciones = {
-       'DATOS GENERALES': [],
-       'UNIDAD VEHICULAR': [],
-       'PLACA': [],
-       'PLAN LUNCA DE RODALE': [],
-       'LABORATORIO': [],
-       'OBSERVACIONES': []
-     };
+    private clasificarPorSecciones(): void {
+      this.secciones = {
+        'DATOS GENERALES': [],
+        'UNIDAD VEHICULAR': [],
+        'PLACA': [],
+        'PLAN LUNCA DE RODALE': [],
+        'LABORATORIO': [],
+        'OBSERVACIONES': []
+      };
 
-     const paramsOrdenados = [...this.parametrosFicha].sort((a, b) => {
-       const secA = a.seccionAsignada || a.seccion || '';
-       const secB = b.seccionAsignada || b.seccion || '';
-       if (secA !== secB) return secA.localeCompare(secB);
-       return (a.orden || 0) - (b.orden || 0);
-     });
+      const paramsOrdenados = [...this.parametrosFicha]
+        .filter(param => !this.esSeccionPlaca(param.seccionAsignada || param.seccion))
+        .sort((a, b) => {
+          const secA = a.seccionAsignada || a.seccion || '';
+          const secB = b.seccionAsignada || b.seccion || '';
+          if (secA !== secB) return secA.localeCompare(secB);
+          return (a.orden || 0) - (b.orden || 0);
+        });
 
-     for (const param of paramsOrdenados) {
-       const nombre = param.parametro?.trim() || '';
-       let seccion = param.seccionAsignada || param.seccion || this.seccionesMap[nombre] || 'LABORATORIO';
-       if (!this.secciones[seccion]) {
-         seccion = 'LABORATORIO';
-       }
-       this.secciones[seccion].push(param);
-     }
-   }
+      for (const param of paramsOrdenados) {
+        const nombre = param.parametro?.trim() || '';
+        let seccion = param.seccionAsignada || param.seccion || this.seccionesMap[nombre] || 'LABORATORIO';
+        if (this.esSeccionPlaca(seccion) || !this.secciones[seccion]) {
+          seccion = 'LABORATORIO';
+        }
+        this.secciones[seccion].push(param);
+      }
+    }
+
+    private esSeccionPlaca(seccion?: string | null): boolean {
+      return (seccion || '').trim().toUpperCase() === 'PLACA';
+    }
 
    private sincronizarTitulosDesdeFormato(formato: FormatoInspeccion): void {
      this.tituloPrincipal = formato.tituloPrincipal || this.tituloPrincipal;
      this.subtituloPrincipal = formato.subtituloPrincipal || this.subtituloPrincipal;
      this.subtitulo2 = formato.subtitulo2 || '';
-     this.titulosSecciones['DATOS GENERALES'] = formato.tituloSeccionDatosGenerales || 'DATOS GENERALES';
-     this.titulosSecciones['PLACA'] = formato.tituloSeccionPlaca || 'PLACA';
-     this.titulosSecciones['PLAN LUNCA DE RODALE'] = formato.tituloSeccionPlanLunca || 'PLAN LUNCA DE RODALE';
+      this.titulosSecciones['DATOS GENERALES'] = formato.tituloSeccionDatosGenerales || 'DATOS GENERALES';
+      this.titulosSecciones['UNIDAD VEHICULAR'] = formato.tituloSeccionUnidadVehicular || 'UNIDAD VEHICULAR';
+      this.titulosSecciones['PLACA'] = formato.tituloSeccionPlaca || 'PLACA';
+      this.titulosSecciones['PLAN LUNCA DE RODALE'] = formato.tituloSeccionPlanLunca || 'PLAN LUNCA DE RODALE';
      this.titulosSecciones['LABORATORIO'] = formato.tituloSeccionLaboratorio || 'LABORATORIO';
    }
 
@@ -910,11 +925,14 @@ type ParametroFichaExtendido = ParametroInspeccion & {
            tituloPrincipal: this.tituloPrincipal,
            subtituloPrincipal: this.subtituloPrincipal,
            subtitulo2: this.subtitulo2 || '',
-           tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
-           tituloSeccionPlaca: this.titulosSecciones['PLACA'],
-           tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
+            tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
+            tituloSeccionUnidadVehicular: this.titulosSecciones['UNIDAD VEHICULAR'],
+            tituloSeccionPlaca: this.titulosSecciones['PLACA'],
+            tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
            tituloSeccionLaboratorio: this.titulosSecciones['LABORATORIO'],
-           campos: this.parametrosFicha.map(p => ({
+            campos: this.parametrosFicha
+              .filter(p => !this.esSeccionPlaca(p.seccionAsignada || p.seccion))
+              .map(p => ({
              id: p.idParametros || undefined,
              nombre: p.parametro,
              seccion: p.seccionAsignada || p.seccion || 'LABORATORIO',
@@ -1018,7 +1036,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
           this.fichaInspeccionService.update(this.ficha.id, {
             estado: estadoFicha,
             usuarioInspector: this.authState.currentUser()?.id || null,
-            parametros: this.parametrosFicha.map(p => ({
+            parametros: this.parametrosFicha
+              .filter(p => !this.esSeccionPlaca(p.seccionAsignada || p.seccion))
+              .map(p => ({
               idParametros: p.idParametros,
               parametro: p.parametro,
               observacion: p.valor || '',
@@ -1027,6 +1047,14 @@ type ParametroFichaExtendido = ParametroInspeccion & {
             firmaResponsable: this.firmaResponsable || undefined,
             fechaFirma: this.fechaFirma || undefined,
             resultado: this.resultado || undefined,
+            tituloPrincipal: this.tituloPrincipal,
+            subtituloPrincipal: this.subtituloPrincipal,
+            subtitulo2: this.subtitulo2 || undefined,
+            tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
+            tituloSeccionUnidadVehicular: this.titulosSecciones['UNIDAD VEHICULAR'],
+            tituloSeccionPlaca: this.titulosSecciones['PLACA'],
+            tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
+            tituloSeccionLaboratorio: this.titulosSecciones['LABORATORIO'],
             observaciones: this.ficha.observaciones
           }).subscribe({
             next: () => {
@@ -1053,7 +1081,9 @@ type ParametroFichaExtendido = ParametroInspeccion & {
         usuarioInspector: this.authState.currentUser()?.id || null,
         instanciaTramiteId,
         vehiculoId: this.inspeccion?.vehiculoId || null,
-        parametros: this.parametrosFicha.map(p => ({
+        parametros: this.parametrosFicha
+          .filter(p => !this.esSeccionPlaca(p.seccionAsignada || p.seccion))
+          .map(p => ({
           idParametros: p.idParametros,
           parametro: p.parametro,
           observacion: p.valor || '',
@@ -1061,7 +1091,15 @@ type ParametroFichaExtendido = ParametroInspeccion & {
         })),
         firmaResponsable: this.firmaResponsable || undefined,
         fechaFirma: this.fechaFirma || undefined,
-        resultado: this.resultado || undefined
+        resultado: this.resultado || undefined,
+        tituloPrincipal: this.tituloPrincipal,
+        subtituloPrincipal: this.subtituloPrincipal,
+        subtitulo2: this.subtitulo2 || undefined,
+        tituloSeccionDatosGenerales: this.titulosSecciones['DATOS GENERALES'],
+        tituloSeccionUnidadVehicular: this.titulosSecciones['UNIDAD VEHICULAR'],
+        tituloSeccionPlaca: this.titulosSecciones['PLACA'],
+        tituloSeccionPlanLunca: this.titulosSecciones['PLAN LUNCA DE RODALE'],
+        tituloSeccionLaboratorio: this.titulosSecciones['LABORATORIO']
       };
 
       // Si no hay conexion y no es solo sync, guardar solo local y notificar

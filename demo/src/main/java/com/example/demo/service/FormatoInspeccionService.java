@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class FormatoInspeccionService {
 
     public static final String FORMATO_GLOBAL_NOMBRE = FichaInspeccionService.FORMATO_GLOBAL_NOMBRE;
+    public static final Long FORMATO_GLOBAL_ID = 1L;
 
     private final FormatoInspeccionRepository formatoRepository;
     private final CampoFormatoRepository campoRepository;
@@ -70,12 +71,19 @@ public class FormatoInspeccionService {
             );
         }
 
+        boolean hayCambios = hayCambiosFormato(formato, request) || hayCambiosCampos(formato, request.getCampos());
+
         aplicarDatosFormato(formato, request);
 
         sincronizarCampos(formato, request.getCampos());
 
-        FormatoInspeccion guardado = formatoRepository.save(formato);
-        formatoRepository.flush();
+        FormatoInspeccion guardado;
+        if (hayCambios) {
+            guardado = formatoRepository.save(formato);
+            formatoRepository.flush();
+        } else {
+            guardado = formato;
+        }
 
         asignarFormatoAInspeccion(guardado, request.getInspeccionId());
 
@@ -84,12 +92,20 @@ public class FormatoInspeccionService {
     }
 
     private FormatoInspeccion obtenerFormatoGlobalOCrear(Long inspeccionId) {
-        FormatoInspeccion formato = formatoRepository.findByNombre(FORMATO_GLOBAL_NOMBRE).orElse(null);
+        FormatoInspeccion formato = formatoRepository.findById(FORMATO_GLOBAL_ID).orElse(null);
+        if (formato != null) {
+            return formato;
+        }
+
+        formato = formatoRepository.findByNombre(FORMATO_GLOBAL_NOMBRE).orElse(null);
         if (formato != null) {
             return formato;
         }
 
         formato = new FormatoInspeccion();
+        if (!formatoRepository.existsById(FORMATO_GLOBAL_ID)) {
+            formato.setIdFormatoInspeccion(FORMATO_GLOBAL_ID);
+        }
         formato.setNombre(FORMATO_GLOBAL_NOMBRE);
         formato.setDescripcion("Formato reutilizable global para inspecciones");
         formato.setActivo(true);
@@ -99,8 +115,9 @@ public class FormatoInspeccionService {
         formato.setSubtituloFontSize(18);
         formato.setTituloSeccionDatosGenerales("DATOS GENERALES");
         formato.setTituloSeccionPlaca("PLACA");
+        formato.setTituloSeccionUnidadVehicular("UNIDAD VEHICULAR");
         formato.setTituloSeccionPlanLunca("PLAN LUNCA DE RODALE");
-        formato.setTituloSeccionLaboratorio("LABORATORIO");
+        formato.setTituloSeccionLaboratorio("OBSERVACIONES");
         FormatoInspeccion guardado = formatoRepository.save(formato);
         formatoRepository.flush();
 
@@ -133,12 +150,17 @@ public class FormatoInspeccionService {
         formato.setSubtitulo4(request.getSubtitulo4());
         formato.setTituloSeccionDatosGenerales(request.getTituloSeccionDatosGenerales());
         formato.setTituloSeccionPlaca(request.getTituloSeccionPlaca());
+        formato.setTituloSeccionUnidadVehicular(request.getTituloSeccionUnidadVehicular());
         formato.setTituloSeccionPlanLunca(request.getTituloSeccionPlanLunca());
         formato.setTituloSeccionLaboratorio(request.getTituloSeccionLaboratorio());
         formato.setActivo(true);
     }
 
     private void sincronizarCampos(FormatoInspeccion formato, List<CampoFormatoDTO> camposNuevos) {
+        if (camposNuevos == null) {
+            return;
+        }
+
         List<CampoFormato> existentes = formato.getCampos();
         if (existentes == null) {
             existentes = new ArrayList<>();
@@ -365,6 +387,65 @@ public class FormatoInspeccionService {
         fichaInspeccionService.sincronizarTodasLasFichasDeFormato(formato);
     }
 
+    private boolean hayCambiosFormato(FormatoInspeccion formato, FormatoInspeccionCreateRequestDTO request) {
+        return !mismoTexto(formato.getNombre(), FORMATO_GLOBAL_NOMBRE)
+            || !mismoTexto(formato.getDescripcion(), request.getDescripcion())
+            || !mismoTexto(formato.getTituloPrincipal(), request.getTituloPrincipal())
+            || !mismoNumero(formato.getTituloFontSize(), request.getTituloFontSize())
+            || !mismoTexto(formato.getSubtituloPrincipal(), request.getSubtituloPrincipal())
+            || !mismoNumero(formato.getSubtituloFontSize(), request.getSubtituloFontSize())
+            || !mismoTexto(formato.getSubtitulo2(), request.getSubtitulo2())
+            || !mismoTexto(formato.getSubtitulo3(), request.getSubtitulo3())
+            || !mismoTexto(formato.getSubtitulo4(), request.getSubtitulo4())
+            || !mismoTexto(formato.getTituloSeccionDatosGenerales(), request.getTituloSeccionDatosGenerales())
+            || !mismoTexto(formato.getTituloSeccionPlaca(), request.getTituloSeccionPlaca())
+            || !mismoTexto(formato.getTituloSeccionUnidadVehicular(), request.getTituloSeccionUnidadVehicular())
+            || !mismoTexto(formato.getTituloSeccionPlanLunca(), request.getTituloSeccionPlanLunca())
+            || !mismoTexto(formato.getTituloSeccionLaboratorio(), request.getTituloSeccionLaboratorio());
+    }
+
+    private boolean hayCambiosCampos(FormatoInspeccion formato, List<CampoFormatoDTO> camposNuevos) {
+        if (camposNuevos == null) {
+            return false;
+        }
+
+        List<CampoFormato> existentes = formato.getCampos() != null ? formato.getCampos() : List.of();
+        if (existentes.size() != camposNuevos.size()) {
+            return true;
+        }
+
+        Map<Long, CampoFormato> mapaExistentes = existentes.stream()
+                .filter(c -> c.getIdCampoFormato() != null)
+                .collect(Collectors.toMap(CampoFormato::getIdCampoFormato, c -> c));
+
+        for (CampoFormatoDTO dto : camposNuevos) {
+            if (dto.getId() == null || !mapaExistentes.containsKey(dto.getId())) {
+                return true;
+            }
+            CampoFormato campo = mapaExistentes.get(dto.getId());
+            if (!mismoTexto(campo.getNombre(), dto.getNombre())
+                || !mismoTexto(campo.getSeccion(), dto.getSeccion())
+                || !mismoNumero(campo.getOrden(), dto.getOrden())
+                || !mismoTexto(campo.getTipoEvaluacion(), dto.getTipoEvaluacion())
+                || !mismoBooleano(campo.getObligatorio(), dto.getObligatorio())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean mismoTexto(String a, String b) {
+        return (a == null ? "" : a.trim()).equals(b == null ? "" : b.trim());
+    }
+
+    private boolean mismoNumero(Integer a, Integer b) {
+        return a == null ? b == null : a.equals(b);
+    }
+
+    private boolean mismoBooleano(Boolean a, Boolean b) {
+        return a == null ? b == null : a.equals(b);
+    }
+
     private FormatoInspeccionResponseDTO convertirAResponseDTO(FormatoInspeccion formato) {
         System.out.println("[convertirAResponseDTO] Formato ID=" + formato.getIdFormatoInspeccion() +
             ", tituloPrincipal=" + formato.getTituloPrincipal() +
@@ -384,6 +465,7 @@ public class FormatoInspeccionService {
         dto.setSubtitulo4(formato.getSubtitulo4());
         dto.setTituloSeccionDatosGenerales(formato.getTituloSeccionDatosGenerales());
         dto.setTituloSeccionPlaca(formato.getTituloSeccionPlaca());
+        dto.setTituloSeccionUnidadVehicular(formato.getTituloSeccionUnidadVehicular());
         dto.setTituloSeccionPlanLunca(formato.getTituloSeccionPlanLunca());
         dto.setTituloSeccionLaboratorio(formato.getTituloSeccionLaboratorio());
 
@@ -406,6 +488,11 @@ public class FormatoInspeccionService {
         dto.setActivo(formato.getActivo());
         dto.setFechaCreacion(formato.getFechaCreacion() != null ? formato.getFechaCreacion().toString() : null);
         dto.setTituloPrincipal(formato.getTituloPrincipal());
+        dto.setTituloSeccionDatosGenerales(formato.getTituloSeccionDatosGenerales());
+        dto.setTituloSeccionPlaca(formato.getTituloSeccionPlaca());
+        dto.setTituloSeccionUnidadVehicular(formato.getTituloSeccionUnidadVehicular());
+        dto.setTituloSeccionPlanLunca(formato.getTituloSeccionPlanLunca());
+        dto.setTituloSeccionLaboratorio(formato.getTituloSeccionLaboratorio());
         dto.setSubtituloPrincipal(formato.getSubtituloPrincipal());
         return dto;
     }

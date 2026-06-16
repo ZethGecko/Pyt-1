@@ -53,10 +53,11 @@ export interface InspeccionResponse {
     placa?: string;
     fechaInspeccion?: string;
     observaciones?: string;
-    fichaId?: number;
-    fichaResultado?: string;
-    fichaEstado?: boolean;
-  }[];
+     fichaId?: number;
+     fichaResultado?: string;
+     fichaEstado?: boolean;
+     noPresentado?: boolean;
+   }[];
 }
 
 export interface InspeccionInstanciaResponse {
@@ -72,6 +73,7 @@ export interface InspeccionInstanciaResponse {
   fichaId?: number;
   fichaResultado?: string;
   fichaEstado?: boolean;
+  noPresentado?: boolean;
 }
 
 export interface BloqueInspeccionDTO {
@@ -205,6 +207,12 @@ export class InspeccionService {
 
    terminar(id: number, request: InspeccionTerminarRequest): Observable<InspeccionResponse> {
      return this.http.put<InspeccionResponse>(`${this.apiUrl}/${id}/terminar`, request);
+   }
+
+   marcarNoPresentado(instanciaId: number, noPresentado: boolean): Observable<InspeccionInstanciaResponse> {
+     return this.http.put<InspeccionInstanciaResponse>(`${this.apiUrl}/instancias/${instanciaId}/no-presentado`, noPresentado, {
+       headers: { 'Content-Type': 'application/json' }
+     });
    }
 
    eliminar(id: number): Observable<void> {

@@ -231,8 +231,8 @@ public class TUCService {
                                                          Map<Long, Vehiculo> vehiculosPorId,
                                                          Map<String, Vehiculo> vehiculosPorPlaca) {
         List<FichaInspeccion> fichas = fichaRepository.findByInspeccion(inspeccionId);
-        Map<Long, FichaInspeccion> fichasAprobadasPorVehiculo = fichas.stream()
-                .filter(this::esFichaAprobadaFinalizada)
+        Map<Long, FichaInspeccion> fichasHabilitablesPorVehiculo = fichas.stream()
+                .filter(this::esFichaHabilitableParaTuc)
                 .collect(Collectors.toMap(
                         FichaInspeccion::getVehiculo,
                         ficha -> ficha,
@@ -241,8 +241,12 @@ public class TUCService {
 
         for (VehiculoHabilitacionTucRequestDTO item : items) {
             Long vehiculoId = obtenerVehiculoIdParaValidacion(item, vehiculosPorId, vehiculosPorPlaca);
-            if (vehiculoId == null || !fichasAprobadasPorVehiculo.containsKey(vehiculoId)) {
-                throw new IllegalStateException("Cada vehículo debe tener una ficha aprobada y finalizada en la inspección seleccionada");
+            if (vehiculoId == null || !fichasHabilitablesPorVehiculo.containsKey(vehiculoId)) {
+                throw new IllegalStateException("Cada vehículo debe tener una ficha APROBADA u OBSERVADA en la inspección seleccionada");
+            }
+            FichaInspeccion ficha = fichasHabilitablesPorVehiculo.get(vehiculoId);
+            if ("OBSERVADO".equals(normalizarResultado(ficha.getResultado())) && !tieneObservacion(item)) {
+                throw new IllegalStateException("Los vehículos OBSERVADOS requieren completar observaciones para habilitar TUC");
             }
         }
     }
@@ -263,15 +267,16 @@ public class TUCService {
         return vehiculo != null ? vehiculo.getIdVehiculo() : null;
     }
 
-    private boolean esFichaAprobadaFinalizada(FichaInspeccion ficha) {
-        return ficha != null
-                && ficha.getVehiculo() != null
-                && Boolean.TRUE.equals(ficha.getEstado())
-                && "APROBADO".equals(normalizarResultado(ficha.getResultado()))
-                && ficha.getFirmaResponsable() != null
-                && !ficha.getFirmaResponsable().isBlank()
-                && ficha.getFechaFirma() != null
-                && !ficha.getFechaFirma().isBlank();
+    private boolean esFichaHabilitableParaTuc(FichaInspeccion ficha) {
+        if (ficha == null || ficha.getVehiculo() == null || ficha.getResultado() == null) {
+            return false;
+        }
+        String resultado = ficha.getResultado().trim().toUpperCase();
+        return "APROBADO".equals(resultado) || "OBSERVADO".equals(resultado);
+    }
+
+    private boolean tieneObservacion(VehiculoHabilitacionTucRequestDTO item) {
+        return item.getObservaciones() != null && !item.getObservaciones().trim().isEmpty();
     }
 
     private String normalizarResultado(String resultado) {

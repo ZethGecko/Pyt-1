@@ -15,6 +15,7 @@ public class InspeccionInstanciaResponse {
     private Long fichaId;
     private String fichaResultado;
     private Boolean fichaEstado;
+    private Boolean noPresentado;
 
     public InspeccionInstanciaResponse() {}
 
@@ -50,6 +51,9 @@ public class InspeccionInstanciaResponse {
 
     public Boolean getFichaEstado() { return fichaEstado; }
     public void setFichaEstado(Boolean fichaEstado) { this.fichaEstado = fichaEstado; }
+
+    public Boolean getNoPresentado() { return noPresentado; }
+    public void setNoPresentado(Boolean noPresentado) { this.noPresentado = noPresentado; }
 
     public Long getTramiteId() { return tramiteId; }
     public void setTramiteId(Long tramiteId) { this.tramiteId = tramiteId; }

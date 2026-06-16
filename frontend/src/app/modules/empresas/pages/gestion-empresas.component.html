@@ -526,6 +526,26 @@
           </div>
         </div>
 
+        <div class="form-row" *ngIf="inspeccionTUCSeleccionada">
+          <div class="form-group">
+            <label for="filtroVehiculoTUC">Filtrar vehículos</label>
+            <input
+              type="text"
+              id="filtroVehiculoTUC"
+              [(ngModel)]="filtroVehiculoTUC"
+              name="filtroVehiculoTUC"
+              class="filter-input"
+              placeholder="Buscar por placa, marca, modelo, categoría o resultado"
+            >
+          </div>
+          <div class="form-group" *ngIf="filtroVehiculoTUC">
+            <label class="empty-label">&nbsp;</label>
+            <button class="btn btn-secondary" type="button" (click)="limpiarFiltroVehiculoTUC()">
+              Limpiar filtro
+            </button>
+          </div>
+        </div>
+
         <div class="table-container" *ngIf="inspeccionTUCSeleccionada">
           <table class="data-table">
             <thead>
@@ -540,11 +560,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let vehiculo of vehiculosDeInspeccion(inspeccionTUCSeleccionada)">
+              <tr *ngFor="let vehiculo of vehiculosTUCVisibles()">
                 <td>
                   <input
                     type="checkbox"
                     [checked]="estaVehiculoSeleccionado(vehiculo.idVehiculo)"
+                    [disabled]="!puedeHabilitarTuc(vehiculo)"
                     (change)="toggleVehiculoTUC(vehiculo.idVehiculo || 0, $any($event.target).checked)"
                     name="vehiculoTUC_{{ vehiculo.idVehiculo }}"
                   >
@@ -586,6 +607,11 @@
               <tr *ngIf="vehiculosDeInspeccion(inspeccionTUCSeleccionada).length === 0">
                 <td colspan="7" class="empty-state">
                   <p>No hay vehículos en esta inspección</p>
+                </td>
+              </tr>
+              <tr *ngIf="vehiculosDeInspeccion(inspeccionTUCSeleccionada).length > 0 && vehiculosTUCVisibles().length === 0">
+                <td colspan="7" class="empty-state">
+                  <p>No se encontraron vehículos que coincidan con el filtro</p>
                 </td>
               </tr>
             </tbody>
