@@ -104,6 +104,11 @@ export class GestionInspeccionesComponent implements OnInit {
   instanciasDisponibles: InspeccionInstanciaResponse[] = [];
   cargandoInstanciasDisponibles = false;
 
+  mostrarModalPdfFichas = false;
+  inspeccionPdfId: number | null = null;
+  filtroPdfFichas = 'TODAS';
+  cargandoPdfFichas = false;
+
   abrirModalCreacion(): void {
     this.inspeccionParaEditarId = undefined;
     this.modoModal = 'crear';
@@ -170,6 +175,39 @@ export class GestionInspeccionesComponent implements OnInit {
     this.mostrarModalInstanciasDisponibles = false;
     this.inspeccionParaAgregarInstancias = undefined;
     this.instanciasDisponibles = [];
+  }
+
+  abrirModalDescargarPdf(inspeccionId: number): void {
+    this.inspeccionPdfId = inspeccionId;
+    this.filtroPdfFichas = 'TODAS';
+    this.mostrarModalPdfFichas = true;
+  }
+
+  cerrarModalPdfFichas(): void {
+    this.mostrarModalPdfFichas = false;
+    this.inspeccionPdfId = null;
+    this.filtroPdfFichas = 'TODAS';
+  }
+
+  descargarPdfFichas(): void {
+    if (!this.inspeccionPdfId) return;
+    this.cargandoPdfFichas = true;
+    this.inspeccionService.descargarPdfFichasInspeccion(this.inspeccionPdfId, this.filtroPdfFichas).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `fichas-inspeccion-${this.inspeccionPdfId}-${this.filtroPdfFichas.toLowerCase()}.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        this.cargandoPdfFichas = false;
+        this.cerrarModalPdfFichas();
+      },
+      error: (err) => {
+        this.cargandoPdfFichas = false;
+        this.notificationService.error(err.error?.message || 'Error al descargar PDF', 'Error', 5000);
+      }
+    });
   }
 
   private obtenerIdTramiteDeInspeccion(inspeccion: InspeccionResponse): number | undefined {
@@ -501,6 +539,7 @@ export class GestionInspeccionesComponent implements OnInit {
          this.notificationService.success('Inspección finalizada exitosamente', 'Éxito', 2000);
          this.cargarInspecciones();
         this.cerrarModalVerInstancias();
+        this.abrirModalDescargarPdf(inspeccion.idInspeccion);
        },
        error: (err) => {
          this.notificationService.error(err.error?.message || 'Error al finalizar inspección', 'Error', 5000);

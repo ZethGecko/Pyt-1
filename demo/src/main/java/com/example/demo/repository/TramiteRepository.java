@@ -149,8 +149,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
            "FROM Tramite t " +
            "LEFT JOIN t.departamentoActual d " +
            "LEFT JOIN t.usuarioRegistra u " +
@@ -193,8 +194,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
            "FROM Tramite t " +
            "LEFT JOIN t.departamentoActual d " +
            "LEFT JOIN t.usuarioRegistra u " +
@@ -237,8 +239,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
            "FROM Tramite t " +
            "LEFT JOIN t.departamentoActual d " +
            "LEFT JOIN t.usuarioRegistra u " +
@@ -281,8 +284,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
            "FROM Tramite t " +
            "LEFT JOIN t.departamentoActual d " +
            "LEFT JOIN t.usuarioRegistra u " +
@@ -325,8 +329,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
            "FROM Tramite t " +
            "LEFT JOIN t.departamentoActual d " +
            "LEFT JOIN t.usuarioRegistra u " +
@@ -369,8 +374,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
             "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
             "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
             "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-            "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-            ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
             "FROM Tramite t " +
             "LEFT JOIN t.departamentoActual d " +
             "LEFT JOIN t.usuarioRegistra u " +
@@ -414,8 +420,9 @@ public interface TramiteRepository extends JpaRepository<Tramite, Long> {
            "COUNT(DISTINCT CASE WHEN doc.estado = 'APROBADO' THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado IN ('PENDIENTE', 'PRESENTADO') THEN doc.idDocumento END), " +
            "COUNT(DISTINCT CASE WHEN doc.estado = 'OBSERVADO' THEN doc.idDocumento END), " +
-           "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END) " +
-           ") " +
+             "COUNT(DISTINCT CASE WHEN doc.estado = 'REPROBADO' THEN doc.idDocumento END), " +
+             "(SELECT COUNT(i.idInstancia) FROM InstanciaTramite i WHERE i.tramite.idTramite = t.idTramite) " +
+             ") " +
            "FROM Tramite t " +
            "LEFT JOIN t.departamentoActual d " +
            "LEFT JOIN t.usuarioRegistra u " +

@@ -105,6 +105,8 @@ export class GestionEmpresasComponent implements OnInit {
   inspeccionTUCSeleccionada: TucInspeccionResponse | null = null;
   vehiculosTUCSeleccionados: number[] = [];
   observacionesVehiculosTUC: { [vehiculoId: number]: string } = {};
+  evidenciasTUC: { [vehiculoId: number]: Array<{ nombre: string; tipo: string; base64: string; url: string }> } = {};
+  evidenciaVistaTUC: { nombre: string; tipo: string; url: string } | null = null;
   filtroVehiculoTUC = '';
   tipoVigenciaTUC: '12_MESES' | 'HASTA_FIN_ANIO' = '12_MESES';
   anioVencimientoTUC: number = new Date().getFullYear() + 1;
@@ -126,6 +128,8 @@ export class GestionEmpresasComponent implements OnInit {
     this.inspeccionesTUC = [];
     this.vehiculosTUCSeleccionados = [];
     this.observacionesVehiculosTUC = {};
+    this.evidenciasTUC = {};
+    this.evidenciaVistaTUC = null;
     this.filtroVehiculoTUC = '';
     this.tipoVigenciaTUC = '12_MESES';
     this.anioVencimientoTUC = new Date().getFullYear() + 1;
@@ -139,6 +143,8 @@ export class GestionEmpresasComponent implements OnInit {
     this.inspeccionesTUC = [];
     this.vehiculosTUCSeleccionados = [];
     this.observacionesVehiculosTUC = {};
+    this.evidenciasTUC = {};
+    this.evidenciaVistaTUC = null;
     this.filtroVehiculoTUC = '';
   }
 
@@ -186,6 +192,8 @@ export class GestionEmpresasComponent implements OnInit {
   seleccionarInspeccionTUC(inspeccion: TucInspeccionResponse): void {
     this.inspeccionTUCSeleccionada = inspeccion;
     this.observacionesVehiculosTUC = {};
+    this.evidenciasTUC = {};
+    this.evidenciaVistaTUC = null;
     this.vehiculosTUCSeleccionados = this.vehiculosDeInspeccion(inspeccion)
       .filter(vehiculo => this.puedeHabilitarTuc(vehiculo))
       .map(vehiculo => vehiculo.idVehiculo)
@@ -251,10 +259,114 @@ export class GestionEmpresasComponent implements OnInit {
       : '';
   }
 
+  evidenciasPreviasTUC(vehiculo: TucVehiculoResponse): Array<{ nombre: string; tipo: string; base64: string; url: string }> {
+    const nombres = vehiculo.evidenciaNombres || [];
+    const tipos = vehiculo.evidenciaTipos || [];
+    const bases = vehiculo.evidenciaBase64s || [];
+    const cantidad = Math.min(nombres.length, bases.length);
+    return Array.from({ length: cantidad }, (_, index) => {
+      const tipo = tipos[index] || 'application/octet-stream';
+      const base64 = bases[index] || '';
+      return {
+        nombre: nombres[index] || 'Evidencia',
+        tipo,
+        base64,
+        url: `data:${tipo};base64,${base64}`
+      };
+    });
+  }
+
+  tieneEvidenciaPreviaTUC(vehiculo: TucVehiculoResponse): boolean {
+    return this.evidenciasPreviasTUC(vehiculo).length > 0;
+  }
+
+  verEvidenciaPreviaTUC(vehiculo: TucVehiculoResponse, indice: number): void {
+    const evidencia = this.evidenciasPreviasTUC(vehiculo)[indice];
+    if (evidencia) {
+      this.evidenciaVistaTUC = evidencia;
+    }
+  }
+
   setObservacionVehiculo(vehiculo: TucVehiculoResponse, valor: string): void {
     if (vehiculo.idVehiculo !== undefined) {
       this.observacionesVehiculosTUC[vehiculo.idVehiculo] = valor;
     }
+  }
+
+  async seleccionarEvidenciaTUC(vehiculoId: number | undefined, event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const archivos = Array.from(input.files || []);
+    if (!vehiculoId || archivos.length === 0) {
+      return;
+    }
+
+    const nuevasEvidencias = await Promise.all(archivos.map(async archivo => {
+      const base64 = await this.leerArchivoComoBase64(archivo);
+      return {
+        nombre: archivo.name,
+        tipo: archivo.type || 'application/octet-stream',
+        base64,
+        url: `data:${archivo.type || 'application/octet-stream'};base64,${base64}`
+      };
+    }));
+
+    const actuales = this.evidenciasTUC[vehiculoId] || [];
+    this.evidenciasTUC[vehiculoId] = input.multiple ? [...actuales, ...nuevasEvidencias] : nuevasEvidencias;
+    input.value = '';
+  }
+
+  private async leerArchivoComoBase64(archivo: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const lector = new FileReader();
+      lector.onload = () => {
+        const base64 = String(lector.result || '').split(',')[1] || String(lector.result || '');
+        resolve(base64);
+      };
+      lector.onerror = () => reject(lector.error);
+      lector.readAsDataURL(archivo);
+    });
+  }
+
+  verEvidenciaTUC(vehiculoId: number | undefined, indice = 0): void {
+    const evidencias = vehiculoId !== undefined ? this.evidenciasTUC[vehiculoId] : [];
+    const evidencia = evidencias?.[indice];
+    if (!evidencia) {
+      return;
+    }
+    this.evidenciaVistaTUC = evidencia;
+  }
+
+  cerrarModalEvidenciaTUC(): void {
+    this.evidenciaVistaTUC = null;
+  }
+
+  limpiarEvidenciaTUC(vehiculoId: number | undefined, indice?: number): void {
+    if (vehiculoId === undefined) {
+      return;
+    }
+
+    const evidencias = this.evidenciasTUC[vehiculoId] || [];
+    if (indice === undefined) {
+      delete this.evidenciasTUC[vehiculoId];
+      return;
+    }
+
+    this.evidenciasTUC[vehiculoId] = evidencias.filter((_, index) => index !== indice);
+    if (this.evidenciasTUC[vehiculoId].length === 0) {
+      delete this.evidenciasTUC[vehiculoId];
+    }
+  }
+
+  tieneEvidenciaTUC(vehiculoId: number | undefined): boolean {
+    return vehiculoId !== undefined && (this.evidenciasTUC[vehiculoId] || []).length > 0;
+  }
+
+  esImagenEvidenciaTUC(): boolean {
+    return !!this.evidenciaVistaTUC?.tipo.startsWith('image/');
+  }
+
+  esPdfEvidenciaTUC(): boolean {
+    return this.evidenciaVistaTUC?.tipo === 'application/pdf';
   }
 
   habilitarTUCSeleccionados(): void {
@@ -293,17 +405,23 @@ export class GestionEmpresasComponent implements OnInit {
       inspeccionId: this.inspeccionTUCSeleccionada.idInspeccion,
       tipo: this.tipoVigenciaTUC,
       anioVencimiento: this.tipoVigenciaTUC === 'HASTA_FIN_ANIO' ? this.anioVencimientoTUC : undefined,
-      vehiculos: vehiculos.map(vehiculo => ({
-        idVehiculo: vehiculo.idVehiculo,
-        placa: vehiculo.placa,
-        marca: vehiculo.marca,
-        modelo: vehiculo.modelo,
-        anioFabricacion: vehiculo.anioFabricacion,
-        color: vehiculo.color,
-        categoria: vehiculo.categoria,
-        subtipoTransporteId: vehiculo.subtipoTransporteId,
-        observaciones: this.observacionVehiculo(vehiculo) || vehiculo.observaciones
-      }))
+      vehiculos: vehiculos.map(vehiculo => {
+        const evidencias = this.evidenciasTUC[vehiculo.idVehiculo!] || [];
+        return {
+          idVehiculo: vehiculo.idVehiculo,
+          placa: vehiculo.placa,
+          marca: vehiculo.marca,
+          modelo: vehiculo.modelo,
+          anioFabricacion: vehiculo.anioFabricacion,
+          color: vehiculo.color,
+          categoria: vehiculo.categoria,
+          subtipoTransporteId: vehiculo.subtipoTransporteId,
+          observaciones: this.observacionVehiculo(vehiculo) || vehiculo.observaciones,
+          evidenciaNombres: evidencias.map(evidencia => evidencia.nombre),
+          evidenciaTipos: evidencias.map(evidencia => evidencia.tipo),
+          evidenciaBase64s: evidencias.map(evidencia => evidencia.base64)
+        };
+      })
     };
 
     this.cargandoTUC = true;

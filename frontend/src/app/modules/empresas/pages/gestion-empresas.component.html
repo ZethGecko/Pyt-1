@@ -535,7 +535,7 @@
               [(ngModel)]="filtroVehiculoTUC"
               name="filtroVehiculoTUC"
               class="filter-input"
-              placeholder="Buscar por placa, marca, modelo, categoría o resultado"
+              placeholder="Buscar por placa o resultado"
             >
           </div>
           <div class="form-group" *ngIf="filtroVehiculoTUC">
@@ -552,11 +552,10 @@
               <tr>
                 <th>Seleccionar</th>
                 <th>Placa</th>
-                <th>Marca / Modelo</th>
-                <th>Categoría</th>
                 <th>Resultado ficha</th>
                 <th>TUC actual</th>
                 <th>Observaciones</th>
+                <th>Evidencia</th>
               </tr>
             </thead>
             <tbody>
@@ -571,8 +570,6 @@
                   >
                 </td>
                 <td>{{ vehiculo.placa || 'Sin placa' }}</td>
-                <td>{{ vehiculo.marca || '' }} {{ vehiculo.modelo || '' }}</td>
-                <td>{{ vehiculo.categoria || 'N/A' }}</td>
                 <td>
                   <select
                     class="form-select"
@@ -596,21 +593,59 @@
                 </td>
                 <td>
                   <textarea
-                    [(ngModel)]="observacionesVehiculosTUC[vehiculo.idVehiculo]"
+                    [ngModel]="observacionVehiculo(vehiculo) || vehiculo.observaciones || ''"
                     [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="setObservacionVehiculo(vehiculo, $event)"
                     placeholder="Obligatorio si no está aprobado"
                     rows="2"
                     class="form-textarea"
                   ></textarea>
                 </td>
+                <td>
+                  <div *ngIf="requiereObservacionTuc(vehiculo)" class="flex flex-col gap-2">
+                      <div *ngIf="tieneEvidenciaPreviaTUC(vehiculo)" class="text-xs text-gray-500">Evidencia adjuntada:</div>
+                      <div *ngFor="let evidencia of evidenciasPreviasTUC(vehiculo); let i = index" class="flex items-center gap-2">
+                        <span class="text-xs text-gray-600 truncate max-w-[180px]">
+                          {{ evidencia.nombre }}
+                        </span>
+                        <button type="button" class="btn btn-sm btn-secondary" (click)="verEvidenciaPreviaTUC(vehiculo, i)">
+                          Ver
+                        </button>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                        multiple
+                        (change)="seleccionarEvidenciaTUC(vehiculo.idVehiculo, $event)"
+                        class="form-control text-xs"
+                      >
+                      <div *ngIf="tieneEvidenciaTUC(vehiculo.idVehiculo)" class="flex flex-col gap-2">
+                        <div *ngFor="let evidencia of evidenciasTUC[vehiculo.idVehiculo!] || []; let i = index" class="flex items-center gap-2">
+                          <span class="text-xs text-gray-600 truncate max-w-[180px]">
+                            {{ evidencia.nombre }}
+                          </span>
+                          <button type="button" class="btn btn-sm btn-secondary" (click)="verEvidenciaTUC(vehiculo.idVehiculo, i)">
+                            Ver
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline" (click)="limpiarEvidenciaTUC(vehiculo.idVehiculo, i)">
+                            Quitar
+                          </button>
+                        </div>
+                      </div>
+                      <div *ngIf="!tieneEvidenciaPreviaTUC(vehiculo) && !tieneEvidenciaTUC(vehiculo.idVehiculo)" class="text-xs text-gray-400">
+                        Ningún archivo seleccionado
+                      </div>
+                  </div>
+                  <span *ngIf="!requiereObservacionTuc(vehiculo)" class="text-xs text-gray-400">No requiere</span>
+                </td>
               </tr>
               <tr *ngIf="vehiculosDeInspeccion(inspeccionTUCSeleccionada).length === 0">
-                <td colspan="7" class="empty-state">
+                <td colspan="6" class="empty-state">
                   <p>No hay vehículos en esta inspección</p>
                 </td>
               </tr>
               <tr *ngIf="vehiculosDeInspeccion(inspeccionTUCSeleccionada).length > 0 && vehiculosTUCVisibles().length === 0">
-                <td colspan="7" class="empty-state">
+                <td colspan="6" class="empty-state">
                   <p>No se encontraron vehículos que coincidan con el filtro</p>
                 </td>
               </tr>
@@ -628,6 +663,32 @@
           <span *ngIf="cargandoTUC" class="spinner-small"></span>
           {{ cargandoTUC ? 'Habilitando...' : 'Habilitar TUC seleccionado' }}
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="evidenciaVistaTUC" (click)="cerrarModalEvidenciaTUC()">
+    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ evidenciaVistaTUC.nombre }}</h2>
+        <button class="btn-close" (click)="cerrarModalEvidenciaTUC()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <img *ngIf="esImagenEvidenciaTUC()" [src]="evidenciaVistaTUC.url" class="max-w-full rounded border">
+        <iframe *ngIf="esPdfEvidenciaTUC()" [src]="evidenciaVistaTUC.url" class="w-full h-[60vh] border rounded"></iframe>
+        <div *ngIf="!esImagenEvidenciaTUC() && !esPdfEvidenciaTUC()" class="text-center py-8">
+          <p class="mb-4">Este tipo de archivo no se puede previsualizar en el navegador.</p>
+          <a class="btn btn-primary" [href]="evidenciaVistaTUC.url" [download]="evidenciaVistaTUC.nombre">
+            Descargar evidencia
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalEvidenciaTUC()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1045,7 +1106,7 @@
                    </td>
               </tr>
               <tr *ngIf="gerentesFiltrados.length === 0">
-          <td colspan="7" class="empty-state">
+          <td colspan="6" class="empty-state">
                   <p>No hay gerentes registrados</p>
                 </td>
               </tr>

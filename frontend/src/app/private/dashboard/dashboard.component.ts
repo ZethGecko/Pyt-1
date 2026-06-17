@@ -240,12 +240,13 @@ export class DashboardComponent implements OnInit {
    }
 
    puedeFinalizarTramite(tramite: TramiteEnriquecido): boolean {
-     return tramite.estado?.toLowerCase() === 'aprobado';
+     const estado = tramite.estado?.toLowerCase();
+     return estado === 'aprobado' || (estado === 'observado' && (tramite.conteoInstancias || 0) > 0);
    }
 
    finalizarTramite(tramite: TramiteEnriquecido): void {
      if (!this.puedeFinalizarTramite(tramite)) {
-       this.notificationService.showWarning('Solo se pueden finalizar trámites en estado "Aprobado"');
+       this.notificationService.showWarning('Solo se pueden finalizar trámites en estado "Aprobado" u "Observado" con expediente');
        return;
      }
      if (confirm('¿Está seguro de finalizar este trámite? Una vez finalizado no se podrán realizar modificaciones.')) {

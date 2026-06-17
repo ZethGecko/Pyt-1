@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -68,6 +69,12 @@ public class Empresa {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+
+    @Transient
+    private Long gerenteId;
+
+    @Transient
+    private Long subtipoTransporteId;
 
     // Relación con Gerente (muchas empresas pueden tener un gerente? La FK está en empresa)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -246,12 +253,30 @@ public class Empresa {
         this.gerente = gerente;
     }
 
+    @JsonProperty("gerenteId")
+    public Long getGerenteId() {
+        return gerente != null ? gerente.getIdGerente() : gerenteId;
+    }
+
+    public void setGerenteId(Long gerenteId) {
+        this.gerenteId = gerenteId;
+    }
+
     public SubtipoTransporte getSubtipoTransporte() {
         return subtipoTransporte;
     }
 
     public void setSubtipoTransporte(SubtipoTransporte subtipoTransporte) {
         this.subtipoTransporte = subtipoTransporte;
+    }
+
+    @JsonProperty("subtipoTransporteId")
+    public Long getSubtipoTransporteId() {
+        return subtipoTransporte != null ? subtipoTransporte.getIdSubtipoTransporte() : subtipoTransporteId;
+    }
+
+    public void setSubtipoTransporteId(Long subtipoTransporteId) {
+        this.subtipoTransporteId = subtipoTransporteId;
     }
 
     public List<Vehiculo> getVehiculos() {

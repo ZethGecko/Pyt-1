@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class VehiculoParaHabilitarTucDTO {
     private Long idVehiculo;
@@ -20,6 +21,9 @@ public class VehiculoParaHabilitarTucDTO {
     private Boolean tieneTucActivo;
     private LocalDateTime fechaVencimientoTuc;
     private String observaciones;
+    private List<String> evidenciaNombres;
+    private List<String> evidenciaTipos;
+    private List<String> evidenciaBase64s;
 
     public Long getIdVehiculo() { return idVehiculo; }
     public void setIdVehiculo(Long idVehiculo) { this.idVehiculo = idVehiculo; }
@@ -71,4 +75,13 @@ public class VehiculoParaHabilitarTucDTO {
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
+    public List<String> getEvidenciaNombres() { return evidenciaNombres; }
+    public void setEvidenciaNombres(List<String> evidenciaNombres) { this.evidenciaNombres = evidenciaNombres; }
+
+    public List<String> getEvidenciaTipos() { return evidenciaTipos; }
+    public void setEvidenciaTipos(List<String> evidenciaTipos) { this.evidenciaTipos = evidenciaTipos; }
+
+    public List<String> getEvidenciaBase64s() { return evidenciaBase64s; }
+    public void setEvidenciaBase64s(List<String> evidenciaBase64s) { this.evidenciaBase64s = evidenciaBase64s; }
 }

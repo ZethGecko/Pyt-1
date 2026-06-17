@@ -1,12 +1,25 @@
 package com.example.demo.service;
 
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,6 +49,22 @@ import com.example.demo.repository.VehiculoRepository;
 public class FichaInspeccionService {
 
     public static final String FORMATO_GLOBAL_NOMBRE = "FORMATO_GLOBAL_REUTILIZABLE";
+
+    private static final float MARGEN_X = 45f;
+    private static final float ANCHO_CONTENIDO = 510f;
+    private static final float Y_INICIO = 805f;
+    private static final Color COLOR_DARK = new Color(30, 41, 59);
+    private static final Color COLOR_PRIMARY = new Color(37, 99, 235);
+    private static final Color COLOR_SUCCESS = new Color(22, 163, 74);
+    private static final Color COLOR_WARNING = new Color(245, 158, 11);
+    private static final Color COLOR_DANGER = new Color(220, 38, 38);
+    private static final Color COLOR_PANEL = new Color(248, 250, 252);
+    private static final Color COLOR_ROW = new Color(241, 245, 249);
+    private static final Color COLOR_BORDER = new Color(203, 213, 225);
+    private static final Color COLOR_TEXT = new Color(15, 23, 42);
+    private static final Color COLOR_MUTED = new Color(100, 116, 139);
+    private static final Color COLOR_WHITE = new Color(255, 255, 255);
+    private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final FichaInspeccionRepository fichaRepository;
     private final VehiculoRepository vehiculoRepository;
@@ -95,6 +124,341 @@ public class FichaInspeccionService {
         return fichaRepository.findByInspeccion(inspeccionId).stream()
                 .map(this::convertToDetailDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarPdfPorInspeccion(Long inspeccionId, String estado) {
+        List<FichaInspeccionResponseDTO> fichas = listarPorInspeccion(inspeccionId);
+        String estadoFiltro = estado == null || estado.isBlank() || "TODAS".equalsIgnoreCase(estado)
+                ? null
+                : estado.trim().toUpperCase();
+        if (estadoFiltro != null && !List.of("APROBADO", "DESAPROBADO", "OBSERVADO").contains(estadoFiltro)) {
+            throw new IllegalArgumentException("Estado inválido. Use TODAS, APROBADO, DESAPROBADO u OBSERVADO");
+        }
+
+        List<FichaInspeccionResponseDTO> fichasFiltradas = fichas.stream()
+                .filter(ficha -> estadoFiltro == null || estadoFiltro.equals(normalizarResultado(ficha.getResultado())))
+                .collect(Collectors.toList());
+
+        Inspeccion inspeccion = inspeccionRepository.findById(inspeccionId).orElse(null);
+        try (PDDocument document = new PDDocument(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            PDFont font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+            PDFont bold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+            float margenX = 45;
+            float y = 805;
+
+            for (FichaInspeccionResponseDTO ficha : fichasFiltradas) {
+                y = nuevaPagina(document, bold, font, margenX, 805, inspeccion, estadoFiltro);
+                y = dibujirFicha(document, font, bold, margenX, y, ficha, inspeccion, estadoFiltro);
+            }
+            if (fichasFiltradas.isEmpty()) {
+                y = nuevaPagina(document, bold, font, margenX, 805, inspeccion, estadoFiltro);
+                y = dibujirTexto(document, font, margenX, Math.max(y - 18, 760), 500, 11, "No hay fichas con el filtro seleccionado.", inspeccion, estadoFiltro);
+            }
+            document.save(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("No se pudo generar el PDF de fichas", e);
+        }
+    }
+
+    private float nuevaPagina(PDDocument document, PDFont bold, PDFont font, float margenX, float y, Inspeccion inspeccion, String estadoFiltro) throws IOException {
+        PDPage page = new PDPage(PDRectangle.A4);
+        document.addPage(page);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+
+        rellenarRectangulo(content, margenX, 795, ANCHO_CONTENIDO, 82, COLOR_DARK, COLOR_DARK);
+        dibujarTextoEnStream(content, bold, 15f, margenX + 12, 770, "FICHA DE INSPECCIÓN VEHICULAR", COLOR_WHITE);
+        dibujarTextoEnStream(content, font, 8.5f, margenX + 12, 753,
+                "Inspección: " + codigoInspeccion(inspeccion) + " | Empresa: " + empresaInspeccion(inspeccion), COLOR_WHITE);
+        dibujarTextoEnStream(content, font, 8.5f, margenX + 12, 739,
+                "Fecha: " + fechaInspeccion(inspeccion) + " | Estado del filtro: " + (estadoFiltro != null ? estadoFiltro : "TODAS"), COLOR_WHITE);
+        dibujarTextoEnStream(content, font, 8f, margenX + 12, 42,
+                "Documento generado por sistema de inspección | Página " + document.getNumberOfPages(), COLOR_MUTED);
+        content.close();
+        return 685;
+    }
+
+    private float dibujirFicha(PDDocument document, PDFont font, PDFont bold, float margenX, float y, FichaInspeccionResponseDTO ficha, Inspeccion inspeccion, String estadoFiltro) throws IOException {
+        y = dibujarEncabezadoFicha(document, font, bold, margenX, y, ficha);
+        y = dibujarPanel(document, font, bold, margenX, y, ANCHO_CONTENIDO, "DATOS GENERALES");
+        y = dibujarFilaDoble(document, font, bold, margenX, y, ANCHO_CONTENIDO, "Empresa", valorO(ficha.getEmpresaNombre(), "Sin registrar"), "Resultado", valorO(ficha.getResultado(), "Sin resultado"));
+        y = dibujarFilaDoble(document, font, bold, margenX, y, ANCHO_CONTENIDO, "Fecha inspección", fechaFicha(ficha), "Estado ficha", ficha.getEstado() != null ? (ficha.getEstado() ? "Finalizada" : "Pendiente") : "Sin estado");
+        if (ficha.getInstanciaTramiteId() != null) {
+            y = dibujarFila(document, font, bold, margenX, y, ANCHO_CONTENIDO, "Instancia trámite", String.valueOf(ficha.getInstanciaTramiteId()));
+        }
+        if (ficha.getFirmaResponsable() != null && !ficha.getFirmaResponsable().isBlank()) {
+            y = dibujarFila(document, font, bold, margenX, y, ANCHO_CONTENIDO, "Responsable", ficha.getFirmaResponsable());
+        }
+        if (ficha.getFechaFirma() != null && !ficha.getFechaFirma().isBlank()) {
+            y = dibujarFila(document, font, bold, margenX, y, ANCHO_CONTENIDO, "Fecha firma", ficha.getFechaFirma());
+        }
+
+        y = dibujarPanel(document, font, bold, margenX, y, ANCHO_CONTENIDO, "UNIDAD VEHICULAR");
+        y = dibujarFilaDoble(document, font, bold, margenX, y, ANCHO_CONTENIDO, "Placa", valorO(ficha.getVehiculoPlaca(), "Sin placa"), "Marca / modelo", valorO(ficha.getVehiculoMarca(), "") + " " + valorO(ficha.getVehiculoModelo(), ""));
+        y -= 6;
+
+        if (ficha.getObservaciones() != null && !ficha.getObservaciones().isBlank()) {
+            y = dibujarPanel(document, font, bold, margenX, y, ANCHO_CONTENIDO, "OBSERVACIONES GENERALES");
+            int lineasObservacion = dividirTexto(font, 9, ficha.getObservaciones(), ANCHO_CONTENIDO - 40).size();
+            float alturaObservacion = Math.min(130f, Math.max(70f, 48f + lineasObservacion * 16f));
+            if (y < alturaObservacion + 90) {
+                y = nuevaPagina(document, bold, font, margenX, y, inspeccion, estadoFiltro);
+                y = dibujarPanel(document, font, bold, margenX, y, ANCHO_CONTENIDO, "OBSERVACIONES GENERALES");
+            }
+            y = dibujarObservaciones(document, font, bold, margenX, y, ANCHO_CONTENIDO, ficha.getObservaciones(), alturaObservacion);
+            y -= 8;
+        }
+
+        if (ficha.getParametros() == null || ficha.getParametros().isEmpty()) {
+            y = dibujarPanel(document, font, bold, margenX, y, ANCHO_CONTENIDO, "DETALLE DE INSPECCIÓN");
+            y = dibujirTexto(document, font, margenX + 10, y - 12, ANCHO_CONTENIDO - 20, 9, "Sin campos registrados para esta ficha.", inspeccion, estadoFiltro);
+            return y - 18;
+        }
+
+        Map<String, List<ParametroInspeccionResponseDTO>> parametrosPorSeccion = ficha.getParametros().stream()
+                .collect(Collectors.groupingBy(parametro -> parametro.getSeccion() != null && !parametro.getSeccion().isBlank() ? parametro.getSeccion() : "DETALLE DE INSPECCIÓN", LinkedHashMap::new, Collectors.toList()));
+
+        for (Map.Entry<String, List<ParametroInspeccionResponseDTO>> entry : parametrosPorSeccion.entrySet()) {
+            if (y < 130) {
+                y = nuevaPagina(document, bold, font, margenX, y, inspeccion, estadoFiltro);
+            }
+            y = dibujarPanel(document, font, bold, margenX, y, ANCHO_CONTENIDO, entry.getKey());
+            List<ParametroInspeccionResponseDTO> parametros = entry.getValue();
+            for (int i = 0; i < parametros.size(); i += 2) {
+                ParametroInspeccionResponseDTO izquierda = parametros.get(i);
+                ParametroInspeccionResponseDTO derecha = i + 1 < parametros.size() ? parametros.get(i + 1) : null;
+                y = dibujarFilaParametroDoble(document, font, bold, margenX, y, ANCHO_CONTENIDO, izquierda, derecha);
+            }
+            y -= 4;
+        }
+        return y - 14;
+    }
+
+    private float dibujarEncabezadoFicha(PDDocument document, PDFont font, PDFont bold, float margenX, float y, FichaInspeccionResponseDTO ficha) throws IOException {
+        float altura = 54;
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        rellenarRectangulo(content, margenX, y, ANCHO_CONTENIDO, altura, COLOR_PANEL, COLOR_BORDER);
+        dibujarTextoEnStream(content, bold, 11f, margenX + 10, y - 18, "FICHA N° " + ficha.getIdFichaInspeccion(), COLOR_DARK);
+        dibujarTextoEnStream(content, font, 8.5f, margenX + 10, y - 35, "Vehículo: " + valorO(ficha.getVehiculoPlaca(), "Sin placa"), COLOR_MUTED);
+
+        String resultado = valorO(ficha.getResultado(), "Sin resultado");
+        Color colorResultado = colorResultado(resultado);
+        rellenarRectangulo(content, margenX + ANCHO_CONTENIDO - 128, y - 39, 116, 24, colorResultado, colorResultado);
+        dibujarTextoEnStream(content, bold, 9f, margenX + ANCHO_CONTENIDO - 118, y - 24, resultado, COLOR_WHITE);
+        content.close();
+        return y - altura - 12;
+    }
+
+    private float dibujarPanel(PDDocument document, PDFont font, PDFont bold, float margenX, float y, float ancho, String titulo) throws IOException {
+        float altura = 28;
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        rellenarRectangulo(content, margenX, y, ancho, altura, COLOR_PANEL, COLOR_BORDER);
+        dibujarTextoEnStream(content, bold, 9.5f, margenX + 10, y - 17, titulo.toUpperCase(), COLOR_PRIMARY);
+        content.close();
+        return y - altura;
+    }
+
+    private float dibujarFila(PDDocument document, PDFont font, PDFont bold, float margenX, float y, float ancho, String etiqueta, String valor) throws IOException {
+        float altura = 24;
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        rellenarRectangulo(content, margenX, y, ancho, altura, COLOR_ROW, COLOR_BORDER);
+        dibujarTextoEnStream(content, bold, 8.5f, margenX + 8, y - 15, etiqueta != null ? etiqueta.toUpperCase() : "", COLOR_MUTED);
+        dibujarTextoEnStream(content, font, 8.5f, margenX + 150, y - 15, valorO(valor, "Sin registrar"), COLOR_TEXT);
+        content.close();
+        return y - altura - 2;
+    }
+
+    private float dibujarFilaDoble(PDDocument document, PDFont font, PDFont bold, float margenX, float y, float ancho, String etiqueta1, String valor1, String etiqueta2, String valor2) throws IOException {
+        float altura = 24;
+        float columna = ancho / 2f;
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        rellenarRectangulo(content, margenX, y, ancho, altura, COLOR_ROW, COLOR_BORDER);
+        dibujarTextoEnStream(content, bold, 8.5f, margenX + 8, y - 15, etiqueta1 != null ? etiqueta1.toUpperCase() : "", COLOR_MUTED);
+        dibujarTextoEnStream(content, font, 8.5f, margenX + 150, y - 15, valorO(valor1, "Sin registrar"), COLOR_TEXT);
+        dibujarTextoEnStream(content, bold, 8.5f, margenX + columna + 8, y - 15, etiqueta2 != null ? etiqueta2.toUpperCase() : "", COLOR_MUTED);
+        dibujarTextoEnStream(content, font, 8.5f, margenX + columna + 150, y - 15, valorO(valor2, "Sin registrar"), COLOR_TEXT);
+        content.close();
+        return y - altura - 2;
+    }
+
+    private float dibujarFilaParametroDoble(PDDocument document, PDFont font, PDFont bold, float margenX, float y, float ancho, ParametroInspeccionResponseDTO izquierda, ParametroInspeccionResponseDTO derecha) throws IOException {
+        float columna = ancho / 2f;
+        float anchoColumna = columna - 16;
+        float altura = alturaParametros(font, izquierda, derecha, anchoColumna);
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        rellenarRectangulo(content, margenX, y, ancho, altura, COLOR_ROW, COLOR_BORDER);
+        dibujarParametroEnStream(content, font, bold, margenX + 8, y, anchoColumna, izquierda, altura);
+        if (derecha != null) {
+            dibujarParametroEnStream(content, font, bold, margenX + columna + 8, y, anchoColumna, derecha, altura);
+        }
+        content.close();
+        return y - altura - 2;
+    }
+
+    private float alturaParametros(PDFont font, ParametroInspeccionResponseDTO izquierda, ParametroInspeccionResponseDTO derecha, float anchoColumna) throws IOException {
+        int lineas = Math.max(contarLineasParametro(font, izquierda, anchoColumna), contarLineasParametro(font, derecha, anchoColumna));
+        return Math.min(72f, 24f + Math.max(0, lineas - 1) * 12f);
+    }
+
+    private int contarLineasParametro(PDFont font, ParametroInspeccionResponseDTO parametro, float anchoMaximo) throws IOException {
+        if (parametro == null) {
+            return 1;
+        }
+        String etiqueta = parametro.getParametro() != null ? parametro.getParametro().toUpperCase() : "";
+        String valor = parametro.getObservacion() != null && !parametro.getObservacion().isBlank() ? parametro.getObservacion() : "(sin registrar)";
+        int lineas = 1;
+        if (font.getStringWidth(etiqueta) / 1000f * 8f > anchoMaximo * 0.45f) {
+            lineas++;
+        }
+        return lineas + Math.max(1, dividirTexto(font, 8, valor, anchoMaximo).size());
+    }
+
+    private void dibujarParametroEnStream(PDPageContentStream content, PDFont font, PDFont bold, float x, float y, float anchoMaximo, ParametroInspeccionResponseDTO parametro, float altura) throws IOException {
+        if (parametro == null) {
+            return;
+        }
+        String etiqueta = parametro.getParametro() != null ? parametro.getParametro().toUpperCase() : "";
+        String valor = parametro.getObservacion() != null && !parametro.getObservacion().isBlank() ? parametro.getObservacion() : "(sin registrar)";
+        float etiquetaAncho = font.getStringWidth(etiqueta) / 1000f * 8f;
+        float valorX = etiquetaAncho > anchoMaximo * 0.55f ? x : x + 70f;
+        float valorAncho = etiquetaAncho > anchoMaximo * 0.55f ? anchoMaximo : Math.max(40f, anchoMaximo - 70f);
+        dibujarTextoEnStream(content, bold, 8f, x, y - 15, etiqueta, COLOR_MUTED);
+        float yy = y - 15;
+        if (etiquetaAncho > anchoMaximo * 0.45f) {
+            yy = y - 29;
+        }
+        if (font.getStringWidth(etiqueta) / 1000f * 8f > anchoMaximo * 0.55f) {
+            yy = y - 29;
+        }
+        for (String linea : dividirTexto(font, 8, valor, valorAncho)) {
+            dibujarTextoEnStream(content, font, 8f, valorX, yy, linea, COLOR_TEXT);
+            yy -= 10f;
+        }
+    }
+
+    private float dibujarObservaciones(PDDocument document, PDFont font, PDFont bold, float margenX, float y, float ancho, String texto, float altura) throws IOException {
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        rellenarRectangulo(content, margenX, y, ancho, altura, COLOR_ROW, COLOR_BORDER);
+        dibujarTextoEnStream(content, bold, 8.5f, margenX + 8, y - 18, "OBSERVACIONES:", COLOR_MUTED);
+        float yy = y - 54;
+        for (String linea : dividirTexto(font, 9, texto, ancho - 40)) {
+            dibujarTextoEnStream(content, font, 9f, margenX + 8, yy, linea, COLOR_TEXT);
+            yy -= 14f;
+        }
+        content.close();
+        return y - altura - 2;
+    }
+
+    private float dibujirTexto(PDDocument document, PDFont font, float margenX, float y, float anchoMaximo, int tamano, String texto, Inspeccion inspeccion, String estadoFiltro) throws IOException {
+        PDPage page = document.getPage(document.getNumberOfPages() - 1);
+        if (y < 130) {
+            y = nuevaPagina(document, font, font, margenX, y, inspeccion, estadoFiltro);
+            page = document.getPage(document.getNumberOfPages() - 1);
+        }
+
+        PDPageContentStream content = new PDPageContentStream(document, page, AppendMode.APPEND, true);
+        for (String linea : dividirTexto(font, tamano, texto, anchoMaximo)) {
+            content.beginText();
+            content.setFont(font, tamano);
+            content.newLineAtOffset(margenX, y);
+            content.showText(linea);
+            content.endText();
+            y -= tamano + 3;
+        }
+        content.close();
+        return y;
+    }
+
+    private List<String> dividirTexto(PDFont font, int tamano, String texto, float anchoMaximo) throws IOException {
+        String safe = texto == null ? "" : texto;
+        if (safe.isBlank() || font.getStringWidth(safe) / 1000f * tamano <= anchoMaximo) {
+            return List.of(safe);
+        }
+
+        List<String> lineas = new ArrayList<>();
+        StringBuilder linea = new StringBuilder();
+        for (int i = 0; i < safe.length(); i++) {
+            char c = safe.charAt(i);
+            StringBuilder candidata = new StringBuilder(linea).append(c);
+            if (font.getStringWidth(candidata.toString()) / 1000f * tamano > anchoMaximo && linea.length() > 0) {
+                lineas.add(linea.toString().trim());
+                linea = new StringBuilder().append(c);
+            } else {
+                linea = candidata;
+            }
+        }
+        if (!linea.isEmpty()) {
+            lineas.add(linea.toString().trim());
+        }
+        return lineas;
+    }
+
+    private void rellenarRectangulo(PDPageContentStream content, float x, float ySuperior, float ancho, float alto, Color relleno, Color borde) throws IOException {
+        content.setNonStrokingColor(relleno);
+        content.addRect(x, ySuperior - alto, ancho, alto);
+        content.fill();
+        if (borde != null) {
+            content.setStrokingColor(borde);
+            content.addRect(x, ySuperior - alto, ancho, alto);
+            content.stroke();
+        }
+    }
+
+    private void dibujarTextoEnStream(PDPageContentStream content, PDFont font, float tamano, float x, float y, String texto, Color color) throws IOException {
+        content.setNonStrokingColor(color);
+        content.beginText();
+        content.setFont(font, tamano);
+        content.newLineAtOffset(x, y);
+        content.showText(texto != null ? texto : "");
+        content.endText();
+    }
+
+    private Color colorResultado(String resultado) {
+        String normalizado = normalizarResultado(resultado);
+        if ("APROBADO".equals(normalizado)) {
+            return COLOR_SUCCESS;
+        }
+        if ("OBSERVADO".equals(normalizado)) {
+            return COLOR_WARNING;
+        }
+        if ("DESAPROBADO".equals(normalizado)) {
+            return COLOR_DANGER;
+        }
+        return COLOR_MUTED;
+    }
+
+    private String valorO(String valor, String fallback) {
+        return valor != null && !valor.isBlank() ? valor : fallback;
+    }
+
+    private String codigoInspeccion(Inspeccion inspeccion) {
+        return inspeccion != null && inspeccion.getCodigo() != null ? inspeccion.getCodigo() : "Sin código";
+    }
+
+    private String empresaInspeccion(Inspeccion inspeccion) {
+        return inspeccion != null && inspeccion.getEmpresaNombre() != null ? inspeccion.getEmpresaNombre() : "Sin empresa";
+    }
+
+    private String fechaInspeccion(Inspeccion inspeccion) {
+        if (inspeccion == null || inspeccion.getFechaProgramada() == null) {
+            return "Sin fecha";
+        }
+        return inspeccion.getFechaProgramada().toString();
+    }
+
+    private String fechaFicha(FichaInspeccionResponseDTO ficha) {
+        return ficha.getFechaInspeccion() != null ? ficha.getFechaInspeccion().format(FORMATO_FECHA) : "Sin fecha";
+    }
+
+    private String normalizarResultado(String resultado) {
+        return resultado == null || resultado.isBlank() ? "" : resultado.trim().toUpperCase();
     }
 
     /**
@@ -818,6 +1182,11 @@ public class FichaInspeccionService {
 
         // Títulos desde FormatoInspeccion
         FormatoInspeccion formato = ficha.getFormatoInspeccion();
+        if (formato == null && ficha.getInspeccion() != null) {
+            formato = inspeccionRepository.findById(ficha.getInspeccion())
+                    .map(Inspeccion::getFormatoInspeccion)
+                    .orElse(null);
+        }
         if (formato != null) {
             dto.setTituloPrincipal(formato.getTituloPrincipal());
             dto.setSubtituloPrincipal(formato.getSubtituloPrincipal());

@@ -7,7 +7,9 @@ import com.example.demo.service.FichaInspeccionService;
 import com.example.demo.service.InspeccionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +43,17 @@ public class FichaInspeccionController {
     @GetMapping("/tramite/{tramiteId}")
     public List<FichaInspeccionResponseDTO> listarPorTramite(@PathVariable Long tramiteId) {
         return fichaInspeccionService.listarPorTramite(tramiteId);
+    }
+
+    @GetMapping("/inspeccion/{inspeccionId}/pdf")
+    public ResponseEntity<byte[]> descargarPdfPorInspeccion(@PathVariable Long inspeccionId,
+                                                            @RequestParam(defaultValue = "TODAS") String estado) {
+        byte[] pdf = fichaInspeccionService.generarPdfPorInspeccion(inspeccionId, estado);
+        String nombreArchivo = "fichas-inspeccion-" + inspeccionId + "-" + estado.toLowerCase() + ".pdf";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", nombreArchivo);
+        return ResponseEntity.ok().headers(headers).body(pdf);
     }
 
     /**

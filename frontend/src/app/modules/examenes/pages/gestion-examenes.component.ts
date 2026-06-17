@@ -519,7 +519,15 @@ interface DiaCalendario {
                  }
                </div>
 
-               <!-- PersonaNatural Fields (Readonly if found) -->
+               <!-- Datos de Persona Natural -->
+               <div class="form-section-title">
+                 <app-icon name="user" size="sm" customClass="mr-1"></app-icon>
+                 Datos de persona natural
+               </div>
+               <small class="text-muted form-hint">
+                 Aquí puede corregir solo datos de la persona natural, como nombre, género, teléfono, email o dirección. No se modifican datos del trámite.
+               </small>
+
               <div class="form-group">
                 <label for="nombres">Nombres *</label>
                 <input
@@ -528,7 +536,6 @@ interface DiaCalendario {
                   [(ngModel)]="inscripcionForm.nombres"
                   class="form-input"
                   placeholder="Nombres"
-                  [readonly]="personaEncontrada !== null"
                 >
               </div>
 
@@ -540,7 +547,6 @@ interface DiaCalendario {
                   [(ngModel)]="inscripcionForm.apellidos"
                   class="form-input"
                   placeholder="Apellidos"
-                  [readonly]="personaEncontrada !== null"
                 >
               </div>
 
@@ -551,7 +557,6 @@ interface DiaCalendario {
                     id="genero"
                     [(ngModel)]="inscripcionForm.genero"
                     class="form-input"
-                    [disabled]="personaEncontrada !== null"
                   >
                     <option value="">Seleccione</option>
                     <option value="MASCULINO">Masculino</option>
@@ -566,7 +571,6 @@ interface DiaCalendario {
                     [(ngModel)]="inscripcionForm.telefono"
                     class="form-input"
                     placeholder="Teléfono"
-                    [readonly]="personaEncontrada !== null"
                   >
                 </div>
               </div>
@@ -579,7 +583,6 @@ interface DiaCalendario {
                   [(ngModel)]="inscripcionForm.email"
                   class="form-input"
                   placeholder="Email"
-                  [readonly]="personaEncontrada !== null"
                 >
               </div>
 
@@ -737,9 +740,12 @@ interface DiaCalendario {
                                  }
                                </button>
                              </td>
-                               <td class="text-right">
-                                 <div class="action-buttons">
-                                   <button class="btn-icon btn-approve" title="Aprobar" (click)="aprobarInscripcion(inscripcion)">
+                                <td class="text-right">
+                                  <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary" title="Ver detalles de la persona natural" (click)="verDetallesPersonaInscrita(inscripcion)">
+                                      <app-icon name="eye" size="sm"></app-icon>
+                                    </button>
+                                    <button class="btn-icon btn-approve" title="Aprobar" (click)="aprobarInscripcion(inscripcion)">
                                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                      </svg>
@@ -771,7 +777,86 @@ interface DiaCalendario {
          </div>
        }
 
-        <!-- Modal de Resultados Recientes -->
+        <!-- Modal de detalles de persona natural inscrita -->
+        @if (showPersonaDetalleModal()) {
+          <div class="modal-overlay" (click)="closePersonaDetalleModal()">
+            <div class="modal-content persona-detalle-modal" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>
+                  <app-icon name="user" size="md" customClass="mr-2"></app-icon>
+                  Datos de la persona natural
+                </h2>
+                <button class="modal-close" (click)="closePersonaDetalleModal()">
+                  <app-icon name="x" size="sm"></app-icon>
+                </button>
+              </div>
+              <div class="modal-body">
+                @if (!personaDetalleActual) {
+                  <div class="empty-state">
+                    <app-icon name="user" size="sm" customClass="text-gray-400"></app-icon>
+                    <p>No hay datos de persona natural disponibles.</p>
+                  </div>
+                } @else {
+                  <div class="detalle-grid">
+                    <div class="detalle-item">
+                      <span>DNI</span>
+                      <strong>{{ personaDetalleActual.dni || 'Sin DNI' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Nombres</span>
+                      <strong>{{ personaDetalleActual.nombres || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Apellidos</span>
+                      <strong>{{ personaDetalleActual.apellidos || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Nombre completo</span>
+                      <strong>{{ [personaDetalleActual.nombres, personaDetalleActual.apellidos].filter(Boolean).join(' ') || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Fecha de nacimiento</span>
+                      <strong>{{ personaDetalleActual.fechaNacimiento || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Género</span>
+                      <strong>{{ personaDetalleActual.genero || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Teléfono</span>
+                      <strong>{{ personaDetalleActual.telefono || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Email</span>
+                      <strong>{{ personaDetalleActual.email || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item full-width">
+                      <span>Dirección</span>
+                      <strong>{{ personaDetalleActual.direccion || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Distrito</span>
+                      <strong>{{ personaDetalleActual.distrito || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Provincia</span>
+                      <strong>{{ personaDetalleActual.provincia || 'Sin registrar' }}</strong>
+                    </div>
+                    <div class="detalle-item">
+                      <span>Departamento</span>
+                      <strong>{{ personaDetalleActual.departamento || 'Sin registrar' }}</strong>
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-primary" (click)="closePersonaDetalleModal()">Cerrar</button>
+              </div>
+            </div>
+          </div>
+        }
+
+         <!-- Modal de Resultados Recientes -->
         @if (showResultadosRecientesModal()) {
           <div class="modal-overlay" (click)="closeResultadosRecientesModal()">
             <div class="modal-content resultados-recientes-modal" (click)="$event.stopPropagation()">
@@ -1689,6 +1774,54 @@ interface DiaCalendario {
       max-width: 600px;
     }
 
+    .form-section-title {
+      display: flex;
+      align-items: center;
+      margin: 4px 0 8px;
+      padding-top: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-gray-900);
+    }
+
+    .persona-detalle-modal {
+      max-width: 720px;
+    }
+
+    .detalle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .detalle-item {
+      background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .detalle-item.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .detalle-item span {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+
+    .detalle-item strong {
+      display: block;
+      font-size: 15px;
+      color: var(--color-gray-900);
+      word-break: break-word;
+    }
+
     // Botón clear inline (para autocomplete)
     .btn-clear-inline {
       display: inline-flex;
@@ -2246,6 +2379,8 @@ export class GestionExamenesComponent implements OnInit {
   showDetallesModal = signal(false);
   examenDetalles: Examen | null = null;
   inscritosDelGrupo = signal<any[]>([]);
+  showPersonaDetalleModal = signal(false);
+  personaDetalleActual: PersonaNatural | null = null;
 
   selectedExam: Examen | null = null;
   inscripciones = signal<any[]>([]);
@@ -2669,8 +2804,55 @@ export class GestionExamenesComponent implements OnInit {
       return;
     }
 
+    const nombres = String(this.inscripcionForm.nombres || '').trim();
+    const apellidos = String(this.inscripcionForm.apellidos || '').trim();
+    if (!nombres || !apellidos) {
+      this.notificationService.error('Complete los nombres y apellidos de la persona natural', 'Validación', 3000);
+      return;
+    }
+
+    const personaActualizada: Partial<PersonaNatural> = {
+      nombres,
+      apellidos,
+      fechaNacimiento: this.inscripcionForm.fechaNacimiento || null,
+      genero: this.inscripcionForm.genero || null,
+      telefono: this.inscripcionForm.telefono || null,
+      email: this.inscripcionForm.email || null,
+      direccion: this.inscripcionForm.direccion || null,
+      distrito: this.inscripcionForm.distrito || null,
+      provincia: this.inscripcionForm.provincia || null,
+      departamento: this.inscripcionForm.departamento || null
+    };
+
+    this.personaNaturalService.actualizar(this.personaEncontrada.id, personaActualizada).subscribe({
+      next: (persona) => {
+        this.personaEncontrada = persona;
+        this.inscripcionForm.nombres = persona.nombres;
+        this.inscripcionForm.apellidos = persona.apellidos;
+        this.inscripcionForm.genero = persona.genero || '';
+        this.inscripcionForm.telefono = persona.telefono || '';
+        this.inscripcionForm.email = persona.email || '';
+        this.inscripcionForm.direccion = persona.direccion || '';
+        this.inscripcionForm.distrito = persona.distrito || '';
+        this.inscripcionForm.provincia = persona.provincia || '';
+        this.inscripcionForm.departamento = persona.departamento || '';
+        this.enviarInscripcion(Number(dniLimpio));
+      },
+      error: (err: any) => {
+        console.error('Error actualizando persona natural:', err);
+        this.notificationService.error(err.error?.message || 'Error al actualizar los datos de la persona natural', 'Error', 3000);
+      }
+    });
+  }
+
+  private enviarInscripcion(dni: number): void {
+    if (!this.selectedExam) {
+      this.notificationService.error('Seleccione un grupo de examen', 'Validación', 3000);
+      return;
+    }
+
     const request = {
-      dni: Number(dniLimpio),
+      dni,
       grupoPresentacionId: this.selectedExam.id,
       codigoRUT: this.inscripcionForm.codigoRUT?.trim() || '',
       tipoTramite: this.inscripcionForm.tipoTramite || '',
@@ -2697,6 +2879,16 @@ export class GestionExamenesComponent implements OnInit {
         this.notificationService.error(err.error?.message || 'Error al registrar la inscripción', 'Error', 3000);
       }
     });
+  }
+
+  verDetallesPersonaInscrita(inscripcion: any): void {
+    this.personaDetalleActual = inscripcion.persona || null;
+    this.showPersonaDetalleModal.set(true);
+  }
+
+  closePersonaDetalleModal(): void {
+    this.showPersonaDetalleModal.set(false);
+    this.personaDetalleActual = null;
   }
 
   selectDate(day: DiaCalendario): void {

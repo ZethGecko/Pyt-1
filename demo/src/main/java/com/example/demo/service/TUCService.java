@@ -312,7 +312,7 @@ public class TUCService {
         Vehiculo vehiculo = obtenerOCrearVehiculo(item, empresa, vehiculosPorId, vehiculosPorPlaca);
         Long idVehiculo = vehiculo.getIdVehiculo();
         TUC tucActivo = idVehiculo != null ? tucActivoPorVehiculo.get(idVehiculo) : null;
-        return emitirOActualizarTUCConTucActivo(vehiculo, tipo, anioVencimiento, item.getObservaciones(), true, tucActivo);
+        return emitirOActualizarTUCConTucActivo(vehiculo, tipo, anioVencimiento, combinarObservacionesConEvidencia(item), true, tucActivo);
     }
 
     private Vehiculo obtenerOCrearVehiculo(VehiculoHabilitacionTucRequestDTO item,
@@ -654,8 +654,18 @@ public class TUCService {
         dto.setEstado(vehiculo.getEstado());
         dto.setTieneTucActivo(tucActivo != null);
         dto.setFechaVencimientoTuc(tucActivo != null ? tucActivo.getFechaVencimiento() : vehiculo.getFechaVencimientoTUC());
-        dto.setObservaciones(vehiculo.getObservaciones());
+        dto.setObservaciones(combinarObservaciones(vehiculo.getObservaciones(), ficha.getObservaciones()));
+        asignarEvidenciasPrevias(dto, tucActivo);
         return dto;
+    }
+
+    private void asignarEvidenciasPrevias(VehiculoParaHabilitarTucDTO dto, TUC tuc) {
+        if (tuc == null || tuc.getObservaciones() == null || tuc.getObservaciones().isBlank()) {
+            return;
+        }
+        dto.setEvidenciaNombres(extraerEvidenciaNombres(tuc.getObservaciones()));
+        dto.setEvidenciaTipos(extraerEvidenciaTipos(tuc.getObservaciones()));
+        dto.setEvidenciaBase64s(extraerEvidenciaBase64s(tuc.getObservaciones()));
     }
 
     private VehiculoParaHabilitarTucDTO convertirVehiculoParaHabilitarDTO(FichaInspeccion ficha) {
@@ -692,7 +702,8 @@ public class TUCService {
         dto.setEstado(vehiculo.getEstado());
         dto.setTieneTucActivo(tucActivo != null);
         dto.setFechaVencimientoTuc(tucActivo != null ? tucActivo.getFechaVencimiento() : vehiculo.getFechaVencimientoTUC());
-        dto.setObservaciones(vehiculo.getObservaciones());
+        dto.setObservaciones(combinarObservaciones(vehiculo.getObservaciones(), ficha.getObservaciones()));
+        asignarEvidenciasPrevias(dto, tucActivo);
         return dto;
     }
 
@@ -726,6 +737,8 @@ public class TUCService {
         dto.setDuracionMeses(tuc.getDuracionMeses());
         dto.setTipo(tuc.getTipo());
         dto.setObservaciones(tuc.getObservaciones());
+        dto.setEvidenciaNombres(extraerEvidenciaNombres(tuc.getObservaciones()));
+        dto.setEvidenciaTipos(extraerEvidenciaTipos(tuc.getObservaciones()));
 
         if (tuc.getEmpresa() != null) {
             dto.setEmpresaId(tuc.getEmpresa().getIdEmpresa());
@@ -871,6 +884,38 @@ public class TUCService {
         return tuc.getVehiculos();
     }
 
+    private String combinarObservacionesConEvidencia(VehiculoHabilitacionTucRequestDTO item) {
+        String observaciones = item.getObservaciones();
+        List<String> nombres = item.getEvidenciaNombres();
+        List<String> tipos = item.getEvidenciaTipos();
+        List<String> bases = item.getEvidenciaBase64s();
+
+        if ((nombres == null || nombres.isEmpty()) && item.getEvidenciaNombre() != null && !item.getEvidenciaNombre().trim().isEmpty()) {
+            nombres = List.of(item.getEvidenciaNombre());
+        }
+        if ((tipos == null || tipos.isEmpty()) && item.getEvidenciaTipo() != null && !item.getEvidenciaTipo().trim().isEmpty()) {
+            tipos = List.of(item.getEvidenciaTipo());
+        }
+        if ((bases == null || bases.isEmpty()) && item.getEvidenciaBase64() != null && !item.getEvidenciaBase64().trim().isEmpty()) {
+            bases = List.of(item.getEvidenciaBase64());
+        }
+
+        int cantidadEvidencias = Math.min(nombres != null ? nombres.size() : 0, bases != null ? bases.size() : 0);
+        for (int i = 0; i < cantidadEvidencias; i++) {
+            String evidenciaNombre = nombres != null ? nombres.get(i) : null;
+            String evidenciaBase64 = bases != null ? bases.get(i) : null;
+            if (evidenciaNombre == null || evidenciaNombre.trim().isEmpty() || evidenciaBase64 == null || evidenciaBase64.trim().isEmpty()) {
+                continue;
+            }
+            String tipo = tipos != null && tipos.size() > i && tipos.get(i) != null && !tipos.get(i).trim().isEmpty()
+                    ? tipos.get(i).trim()
+                    : "application/octet-stream";
+            String evidencia = "EVIDENCIA_ADJUNTA(nombre=" + evidenciaNombre.trim() + ", tipo=" + tipo + ", datos=" + evidenciaBase64.trim() + ")";
+            observaciones = combinarObservaciones(observaciones, evidencia);
+        }
+        return observaciones;
+    }
+
     private String combinarObservaciones(String actual, String nueva) {
         if (nueva == null || nueva.trim().isEmpty()) {
             return actual;
@@ -884,6 +929,54 @@ public class TUCService {
             return base;
         }
         return base + " | " + entrada;
+    }
+
+    private List<String> extraerEvidenciaNombres(String observaciones) {
+        if (observaciones == null || observaciones.isBlank()) {
+            return List.of();
+        }
+        return extraerEvidenciaCampo(observaciones, "nombre=");
+    }
+
+    private List<String> extraerEvidenciaTipos(String observaciones) {
+        if (observaciones == null || observaciones.isBlank()) {
+            return List.of();
+        }
+        return extraerEvidenciaCampo(observaciones, "tipo=");
+    }
+
+    private List<String> extraerEvidenciaBase64s(String observaciones) {
+        if (observaciones == null || observaciones.isBlank()) {
+            return List.of();
+        }
+        return extraerEvidenciaCampo(observaciones, "datos=");
+    }
+
+    private List<String> extraerEvidenciaCampo(String observaciones, String prefijo) {
+        List<String> resultado = new ArrayList<>();
+        String texto = observaciones;
+        int indice = texto.indexOf("EVIDENCIA_ADJUNTA(");
+        while (indice >= 0) {
+            int cierre = texto.indexOf(')', indice);
+            if (cierre < 0) {
+                break;
+            }
+            String evidencia = texto.substring(indice, cierre + 1);
+            int campoInicio = evidencia.indexOf(prefijo);
+            if (campoInicio >= 0) {
+                int valorInicio = campoInicio + prefijo.length();
+                int valorFin = evidencia.indexOf(',', valorInicio);
+                if (valorFin < 0) {
+                    valorFin = evidencia.length() - 1;
+                }
+                String valor = evidencia.substring(valorInicio, valorFin).trim();
+                if (!valor.isEmpty()) {
+                    resultado.add(valor);
+                }
+            }
+            indice = texto.indexOf("EVIDENCIA_ADJUNTA(", cierre + 1);
+        }
+        return resultado;
     }
 
     private String generarCodigoTUC() {

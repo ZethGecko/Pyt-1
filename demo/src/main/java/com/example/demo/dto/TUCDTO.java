@@ -12,6 +12,8 @@ public class TUCDTO {
     private Integer duracionMeses;
     private String tipo;
     private String observaciones;
+    private List<String> evidenciaNombres;
+    private List<String> evidenciaTipos;
 
     // Empresa
     private Long empresaId;
@@ -50,6 +52,12 @@ public class TUCDTO {
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
+    public List<String> getEvidenciaNombres() { return evidenciaNombres; }
+    public void setEvidenciaNombres(List<String> evidenciaNombres) { this.evidenciaNombres = evidenciaNombres; }
+
+    public List<String> getEvidenciaTipos() { return evidenciaTipos; }
+    public void setEvidenciaTipos(List<String> evidenciaTipos) { this.evidenciaTipos = evidenciaTipos; }
 
     public Long getEmpresaId() { return empresaId; }
     public void setEmpresaId(Long empresaId) { this.empresaId = empresaId; }

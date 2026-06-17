@@ -1,5 +1,7 @@
 package com.example.demo.dto;
 
+import java.util.List;
+
 public class VehiculoHabilitacionTucRequestDTO {
     private Long idVehiculo;
     private String placa;
@@ -11,6 +13,12 @@ public class VehiculoHabilitacionTucRequestDTO {
     private Long subtipoTransporteId;
     private Double pesoNeto;
     private String observaciones;
+    private String evidenciaNombre;
+    private String evidenciaTipo;
+    private String evidenciaBase64;
+    private List<String> evidenciaNombres;
+    private List<String> evidenciaTipos;
+    private List<String> evidenciaBase64s;
 
     public Long getIdVehiculo() { return idVehiculo; }
     public void setIdVehiculo(Long idVehiculo) { this.idVehiculo = idVehiculo; }
@@ -41,4 +49,22 @@ public class VehiculoHabilitacionTucRequestDTO {
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
+    public String getEvidenciaNombre() { return evidenciaNombre; }
+    public void setEvidenciaNombre(String evidenciaNombre) { this.evidenciaNombre = evidenciaNombre; }
+
+    public String getEvidenciaTipo() { return evidenciaTipo; }
+    public void setEvidenciaTipo(String evidenciaTipo) { this.evidenciaTipo = evidenciaTipo; }
+
+    public String getEvidenciaBase64() { return evidenciaBase64; }
+    public void setEvidenciaBase64(String evidenciaBase64) { this.evidenciaBase64 = evidenciaBase64; }
+
+    public List<String> getEvidenciaNombres() { return evidenciaNombres; }
+    public void setEvidenciaNombres(List<String> evidenciaNombres) { this.evidenciaNombres = evidenciaNombres; }
+
+    public List<String> getEvidenciaTipos() { return evidenciaTipos; }
+    public void setEvidenciaTipos(List<String> evidenciaTipos) { this.evidenciaTipos = evidenciaTipos; }
+
+    public List<String> getEvidenciaBase64s() { return evidenciaBase64s; }
+    public void setEvidenciaBase64s(List<String> evidenciaBase64s) { this.evidenciaBase64s = evidenciaBase64s; }
 }

@@ -21,6 +21,8 @@ export interface TUCResponse {
   empresaNombre?: string;
   empresaRuc?: string;
   observaciones?: string;
+  evidenciaNombres?: string[];
+  evidenciaTipos?: string[];
   archivoUrl?: string;
 }
 
@@ -69,6 +71,9 @@ export interface TucVehiculoResponse {
   tieneTucActivo?: boolean;
   fechaVencimientoTuc?: string;
   observaciones?: string;
+  evidenciaNombres?: string[];
+  evidenciaTipos?: string[];
+  evidenciaBase64s?: string[];
 }
 
 export interface TucHabilitacionRequest {
@@ -87,6 +92,9 @@ export interface TucHabilitacionRequest {
     subtipoTransporteId?: number;
     pesoNeto?: number;
     observaciones?: string;
+    evidenciaNombres?: string[];
+    evidenciaTipos?: string[];
+    evidenciaBase64s?: string[];
   }>;
 }
 

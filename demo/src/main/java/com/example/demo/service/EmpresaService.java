@@ -2,9 +2,7 @@ package com.example.demo.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,27 +10,34 @@ import org.springframework.stereotype.Service;
 import com.example.demo.dto.EmpresaProjectionDTO;
 import com.example.demo.model.Empresa;
 import com.example.demo.repository.EmpresaRepository;
+import com.example.demo.repository.GerenteRepository;
+import com.example.demo.repository.SubtipoTransporteRepository;
+import com.example.demo.repository.TUCRepository;
 
 @Service
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final GerenteRepository gerenteRepository;
+    private final TUCRepository tucRepository;
+    private final SubtipoTransporteRepository subtipoTransporteRepository;
 
-    public EmpresaService(EmpresaRepository empresaRepository) {
+    public EmpresaService(EmpresaRepository empresaRepository,
+                          GerenteRepository gerenteRepository,
+                          TUCRepository tucRepository,
+                          SubtipoTransporteRepository subtipoTransporteRepository) {
         this.empresaRepository = empresaRepository;
+        this.gerenteRepository = gerenteRepository;
+        this.tucRepository = tucRepository;
+        this.subtipoTransporteRepository = subtipoTransporteRepository;
     }
 
     public List<Empresa> listarTodas() {
         List<Empresa> empresas = empresaRepository.findAllWithDetails();
-        Map<Long, Integer> unidadesPorEmpresa = new HashMap<>();
-        for (Object[] fila : empresaRepository.contarVehiculosHabilitadosPorEmpresa(LocalDateTime.now())) {
-            Long empresaId = ((Number) fila[0]).longValue();
-            Long unidades = (Long) fila[1];
-            unidadesPorEmpresa.put(empresaId, unidades != null ? unidades.intValue() : 0);
-        }
+        LocalDateTime now = LocalDateTime.now();
         for (Empresa empresa : empresas) {
             sincronizarEstadoPorVigencia(empresa);
-            empresa.setUnidadesHabilitadas(unidadesPorEmpresa.getOrDefault(empresa.getIdEmpresa(), 0));
+            empresa.setUnidadesHabilitadas(contarUnidadesHabilitadas(empresa.getIdEmpresa(), now));
         }
         return empresas;
     }
@@ -54,6 +59,9 @@ public class EmpresaService {
         if (empresa.getFechaRegistro() == null) {
             empresa.setFechaRegistro(LocalDateTime.now());
         }
+        asignarGerente(empresa);
+        asignarSubtipoTransporte(empresa);
+        empresa.setUnidadesHabilitadas(contarUnidadesHabilitadas(empresa.getIdEmpresa(), LocalDateTime.now()));
         empresa.setFechaActualizacion(LocalDateTime.now());
 
         if (!nuevo) {
@@ -67,6 +75,7 @@ public class EmpresaService {
         Empresa empresa = empresaRepository.findById(id).orElse(null);
         if (empresa != null) {
             sincronizarEstadoPorVigencia(empresa);
+            empresa.setUnidadesHabilitadas(contarUnidadesHabilitadas(empresa.getIdEmpresa(), LocalDateTime.now()));
         }
         return empresa;
     }
@@ -109,6 +118,26 @@ public class EmpresaService {
         empresaRepository.deleteById(id);
     }
 
+    private Integer contarUnidadesHabilitadas(Long empresaId, LocalDateTime now) {
+        if (empresaId == null) {
+            return 0;
+        }
+        Long unidades = tucRepository.countVehiculosHabilitadosPorEmpresa(empresaId, now);
+        return unidades != null ? unidades.intValue() : 0;
+    }
+
+    private void asignarGerente(Empresa empresa) {
+        if (empresa.getGerenteId() != null) {
+            empresa.setGerente(gerenteRepository.findById(Math.toIntExact(empresa.getGerenteId())).orElse(null));
+        }
+    }
+
+    private void asignarSubtipoTransporte(Empresa empresa) {
+        if (empresa.getSubtipoTransporteId() != null) {
+            empresa.setSubtipoTransporte(subtipoTransporteRepository.findById(empresa.getSubtipoTransporteId()).orElse(null));
+        }
+    }
+
     @Scheduled(fixedDelay = 3_600_000)
     public void desactivarEmpresasVencidas() {
         for (Empresa empresa : empresaRepository.findAll()) {
@@ -149,7 +178,7 @@ public class EmpresaService {
         dto.setInicioVigencia(empresa.getInicioVigencia());
         dto.setFinVigencia(empresa.getFinVigencia());
         dto.setUnidadesVehiculares(empresa.getUnidadesVehiculares());
-        dto.setUnidadesHabilitadas(empresa.getUnidadesHabilitadas());
+        dto.setUnidadesHabilitadas(contarUnidadesHabilitadas(empresa.getIdEmpresa(), LocalDateTime.now()));
         dto.setFechaRegistro(empresa.getFechaRegistro());
         dto.setFechaActualizacion(empresa.getFechaActualizacion());
         dto.setActivo(empresa.getActivo());

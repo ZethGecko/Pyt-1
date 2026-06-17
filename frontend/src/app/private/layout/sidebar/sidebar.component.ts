@@ -8,7 +8,6 @@ import { filter, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 
 interface MenuState {
-  inicio: boolean;
   gestion: boolean;
   configuracion: boolean;
   auditoria: boolean;
@@ -28,7 +27,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private authNotificationService = inject(AuthNotificationService);
 
   expandedMenus = signal<MenuState>({
-    inicio: true,
     gestion: true,
     configuracion: false,
     auditoria: false
@@ -82,18 +80,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private updateExpandedMenus(url: string): void {
-    let inicio = false;
     let gestion = false;
     let configuracion = false;
     let auditoria = false;
-
-    if (url === '/' ||
-        url.startsWith('/publicaciones') ||
-        url.startsWith('/busqueda-rutas') ||
-        url.startsWith('/seguimiento') ||
-        url.startsWith('/auth')) {
-      inicio = true;
-    }
 
     if (url.startsWith('/tramites') ||
         url.startsWith('/empresas') ||
@@ -121,7 +110,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       auditoria = true;
     }
 
-    this.expandedMenus.set({ inicio, gestion, configuracion, auditoria });
+    this.expandedMenus.set({ gestion, configuracion, auditoria });
   }
 
   toggleMenu(menu: keyof MenuState): void {

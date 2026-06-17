@@ -729,9 +729,11 @@ public class TramiteService {
             String estadoActual = tramite.getEstado();
             String estadoUpper = nuevoEstado.toUpperCase();
 
-            // Validación: Solo se puede cambiar a FINALIZADO desde APROBADO
-            if (estadoUpper.equals("FINALIZADO") && !"APROBADO".equals(estadoActual)) {
-                throw new IllegalStateException("Solo se pueden finalizar trámites en estado APROBADO. Estado actual: " + estadoActual);
+            // Validación: Solo se puede cambiar a FINALIZADO desde APROBADO, o desde OBSERVADO cuando ya existe expediente/instancia
+            if (estadoUpper.equals("FINALIZADO")
+                    && !"APROBADO".equals(estadoActual)
+                    && (!"OBSERVADO".equals(estadoActual) || instanciaRepository.countByTramite_IdTramite(id) == 0)) {
+                throw new IllegalStateException("Solo se pueden finalizar trámites en estado APROBADO u OBSERVADO con expediente. Estado actual: " + estadoActual);
             }
 
             // Validación: No se puede cambiar desde estados finales (FINALIZADO, CANCELADO, RECHAZADO)
@@ -901,8 +903,9 @@ public class TramiteService {
         }
         
         String estadoActual = tramite.getEstado();
-        if (!"APROBADO".equals(estadoActual)) {
-            throw new IllegalStateException("Solo se pueden finalizar trámites que estén en estado APROBADO. Estado actual: " + estadoActual);
+        if (!"APROBADO".equals(estadoActual)
+                && (!"OBSERVADO".equals(estadoActual) || instanciaRepository.countByTramite_IdTramite(id) == 0)) {
+            throw new IllegalStateException("Solo se pueden finalizar trámites en estado APROBADO u OBSERVADO con expediente. Estado actual: " + estadoActual);
         }
         
         // Cambiar estado a FINALIZADO

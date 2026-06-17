@@ -154,7 +154,14 @@ export class InspeccionService {
     return this.http.post<FichaInspeccionResponse>(`${this.fichaUrl}/inspeccion/${inspeccionId}`, ficha);
   }
 
-   // ========== CRUD ==========
+   descargarPdfFichasInspeccion(inspeccionId: number, estado: string): Observable<Blob> {
+     return this.http.get(`${this.fichaUrl}/inspeccion/${inspeccionId}/pdf`, {
+       params: { estado },
+       responseType: 'blob'
+     });
+   }
+
+    // ========== CRUD ==========
    obtener(id: number): Observable<InspeccionResponse> {
      return this.http.get<InspeccionResponse>(`${this.apiUrl}/${id}`);
    }

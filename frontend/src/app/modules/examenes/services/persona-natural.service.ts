@@ -62,6 +62,13 @@ export class PersonaNaturalService {
     );
   }
 
+  // Actualizar persona natural
+  actualizar(id: number, persona: Partial<PersonaNatural>): Observable<PersonaNatural> {
+    return this.http.put<PersonaNatural>(`${this.apiUrl}/${id}`, persona).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Obtener todas las personas
   obtenerTodas(): Observable<PersonaNatural[]> {
     return this.http.get<PersonaNatural[]>(this.apiUrl).pipe(

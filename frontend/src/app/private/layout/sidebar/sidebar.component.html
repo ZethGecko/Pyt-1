@@ -21,53 +21,8 @@
 
    <!-- Navegación -->
    <nav class="sidebar-nav">
-      <ul class="nav-list">
-        <!-- Inicio (Expandible con páginas públicas) -->
-        <li class="nav-item has-submenu">
-          <button (click)="toggleMenu('inicio')" class="nav-link" [class.active]="expandedMenus().inicio">
-            <div class="nav-icon-wrapper">
-              <app-icon [name]="expandedMenus().inicio ? 'folder-open' : 'folder'" size="sm" customClass="nav-icon"></app-icon>
-            </div>
-            <span class="nav-text">Inicio</span>
-            <app-icon 
-              name="chevron-right" 
-              size="xs" 
-              class="nav-arrow" 
-              [class.rotated]="expandedMenus().inicio">
-            </app-icon>
-          </button>
-
-          @if (expandedMenus().inicio) {
-            <ul class="submenu">
-              <li class="submenu-item">
-                <a routerLink="/" routerLinkActive="active" class="submenu-link">
-                  <app-icon name="home" size="xs" class="submenu-icon"></app-icon>
-                  <span class="submenu-text">Página Principal</span>
-                </a>
-              </li>
-              <li class="submenu-item">
-                <a routerLink="/publicaciones" routerLinkActive="active" class="submenu-link">
-                  <app-icon name="newspaper" size="xs" class="submenu-icon"></app-icon>
-                  <span class="submenu-text">Publicaciones</span>
-                </a>
-              </li>
-              <li class="submenu-item">
-                <a routerLink="/busqueda-rutas" routerLinkActive="active" class="submenu-link">
-                  <app-icon name="map" size="xs" class="submenu-icon"></app-icon>
-                  <span class="submenu-text">Búsqueda de Rutas</span>
-                </a>
-              </li>
-              <li class="submenu-item">
-                <a routerLink="/seguimiento" routerLinkActive="active" class="submenu-link">
-                  <app-icon name="search" size="xs" class="submenu-icon"></app-icon>
-                  <span class="submenu-text">Seguimiento de Trámites</span>
-                </a>
-              </li>
-            </ul>
-          }
-        </li>
-
-        <!-- Dashboard -->
+       <ul class="nav-list">
+         <!-- Dashboard -->
         <li class="nav-item">
           <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
             <div class="nav-icon-wrapper">

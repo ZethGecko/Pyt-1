@@ -282,7 +282,17 @@
                      </svg>
                    </button>
 
-                   <!-- Botón Cancelar (si no FINALIZADA ni CANCELADA) -->
+                    <!-- Botón Descargar PDF fichas (solo si FINALIZADA) -->
+                    <button *ngIf="inspeccion.estado === 'FINALIZADA'"
+                            class="btn-icon btn-download"
+                            (click)="abrirModalDescargarPdf(inspeccion.idInspeccion)"
+                            title="Descargar PDF de fichas">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v11m0-11L8 14m4-4l4 4m3 2h-3a2 2 0 01-2-2V5a2 2 0 114 0v9a2 2 0 01-2 2z"/>
+                      </svg>
+                    </button>
+
+                    <!-- Botón Cancelar (si no FINALIZADA ni CANCELADA) -->
                    <button *ngIf="inspeccion.estado !== 'FINALIZADA' && inspeccion.estado !== 'CANCELADA'"
                            class="btn-icon btn-delete"
                            (click)="cancelarInspeccion(inspeccion)"
@@ -335,6 +345,39 @@
       </svg>
     </button>
   </div>
+
+    <!-- Modal Descargar PDF de Fichas -->
+    <div class="modal-overlay" *ngIf="mostrarModalPdfFichas" (click)="cerrarModalPdfFichas()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Descargar PDF de fichas</h2>
+          <button class="btn-close" (click)="cerrarModalPdfFichas()">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-description">Seleccione el estado de fichas que desea incluir en el PDF.</p>
+          <div class="form-group">
+            <label for="filtroPdfFichas">Estado de fichas</label>
+            <select id="filtroPdfFichas" [(ngModel)]="filtroPdfFichas" name="filtroPdfFichas">
+              <option value="TODAS">Todas</option>
+              <option value="APROBADO">Aprobado</option>
+              <option value="DESAPROBADO">Desaprobado</option>
+              <option value="OBSERVADO">Observado</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalPdfFichas()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="descargarPdfFichas()" [disabled]="cargandoPdfFichas || !inspeccionPdfId">
+            <span *ngIf="cargandoPdfFichas" class="spinner-small"></span>
+            {{ cargandoPdfFichas ? 'Generando...' : 'Descargar PDF' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal Programar Inspección (por grupos) -->
     <app-modal-programar-inspeccion
