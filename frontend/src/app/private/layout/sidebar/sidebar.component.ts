@@ -89,7 +89,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
         url.startsWith('/vehiculos') ||
         url.startsWith('/inspecciones') ||
         url.startsWith('/examenes') ||
-        url.startsWith('/admin/publicaciones') ||
         url.startsWith('/admin/notificaciones')) {
       gestion = true;
     }

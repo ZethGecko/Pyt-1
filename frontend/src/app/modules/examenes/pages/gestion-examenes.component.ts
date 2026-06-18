@@ -63,6 +63,10 @@ interface DiaCalendario {
             <app-icon name="plus" size="sm"></app-icon>
             Nuevo Grupo
           </button>
+          <button class="btn btn-secondary" (click)="openPersonasNaturalesModal()">
+            <app-icon name="users" size="sm"></app-icon>
+            Personas naturales
+          </button>
           <button class="btn btn-secondary" (click)="openResultadosRecientesModal()">
             <app-icon name="clipboard-list" size="sm"></app-icon>
             Ver Resultados Recientes
@@ -674,8 +678,8 @@ interface DiaCalendario {
                      </span>
                    </div>
                     <div class="info-item">
-                      <span class="label">Examen:</span>
-                      <span class="value">{{ examenDetalles.requisitoExamen?.descripcion || 'N/A' }}</span>
+                      <span class="label">Código del grupo:</span>
+                      <span class="value">{{ examenDetalles.codigo || 'N/A' }}</span>
                     </div>
                   </div>
                </div>
@@ -811,40 +815,12 @@ interface DiaCalendario {
                       <strong>{{ personaDetalleActual.apellidos || 'Sin registrar' }}</strong>
                     </div>
                     <div class="detalle-item">
-                      <span>Nombre completo</span>
-                      <strong>{{ [personaDetalleActual.nombres, personaDetalleActual.apellidos].filter(Boolean).join(' ') || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
-                      <span>Fecha de nacimiento</span>
-                      <strong>{{ personaDetalleActual.fechaNacimiento || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
-                      <span>Género</span>
-                      <strong>{{ personaDetalleActual.genero || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
                       <span>Teléfono</span>
                       <strong>{{ personaDetalleActual.telefono || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
-                      <span>Email</span>
-                      <strong>{{ personaDetalleActual.email || 'Sin registrar' }}</strong>
                     </div>
                     <div class="detalle-item full-width">
                       <span>Dirección</span>
                       <strong>{{ personaDetalleActual.direccion || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
-                      <span>Distrito</span>
-                      <strong>{{ personaDetalleActual.distrito || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
-                      <span>Provincia</span>
-                      <strong>{{ personaDetalleActual.provincia || 'Sin registrar' }}</strong>
-                    </div>
-                    <div class="detalle-item">
-                      <span>Departamento</span>
-                      <strong>{{ personaDetalleActual.departamento || 'Sin registrar' }}</strong>
                     </div>
                   </div>
                 }
@@ -855,6 +831,178 @@ interface DiaCalendario {
             </div>
           </div>
         }
+
+        <!-- Modal de Personas Naturales -->
+        @if (showPersonasNaturalesModal()) {
+          <div class="modal-overlay" (click)="closePersonasNaturalesModal()">
+            <div class="modal-content personas-naturales-modal" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h2>
+                  <app-icon name="users" size="md" customClass="mr-2"></app-icon>
+                  Personas naturales
+                </h2>
+                <button class="modal-close" (click)="closePersonasNaturalesModal()">
+                  <app-icon name="x" size="sm"></app-icon>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="filters-card" style="margin-bottom: 16px; padding: 12px;">
+                  <div class="filters-row">
+                    <div class="filter-group" style="flex: 1;">
+                      <label class="filter-label">Buscar persona</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="filtroPersonas"
+                        (input)="resetPersonasNaturalesPage()"
+                        placeholder="Buscar por nombre, apellido o DNI..."
+                        class="filter-input">
+                    </div>
+                    <div class="filter-group" style="width: 150px;">
+                      <label class="filter-label">&nbsp;</label>
+                      <button class="btn btn-secondary w-100" (click)="limpiarFiltroPersonas()">
+                        Limpiar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="modal-summary" style="margin-bottom: 12px;">
+                  <span>
+                    Mostrando {{ personasNaturalesPaginadas.length }} de {{ personasNaturalesFiltradas.length }} personas
+                  </span>
+                  <span>
+                    Página {{ personasNaturalesPagina + 1 }} de {{ personasNaturalesTotalPages }}
+                  </span>
+                </div>
+
+                @if (personasNaturalesFiltradas.length === 0) {
+                  <div class="empty-state">
+                    <app-icon name="users" size="sm" customClass="text-gray-400"></app-icon>
+                    <p>No se encontraron personas naturales</p>
+                  </div>
+                } @else {
+                  <div class="table-container personas-naturales-table-container">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th class="text-nowrap">DNI</th>
+                          <th>Persona</th>
+                          <th class="text-nowrap">Teléfono</th>
+                          <th class="text-nowrap">Email</th>
+                          <th>Dirección / Ubicación</th>
+                          <th class="text-right text-nowrap">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (persona of personasNaturalesPaginadas; track persona.id) {
+                          <tr class="hover-row">
+                            <td class="text-nowrap">{{ persona.dni || 'Sin DNI' }}</td>
+                            <td>
+                              <strong>{{ getNombrePersona(persona) }}</strong>
+                            </td>
+                            <td class="text-nowrap">{{ persona.telefono || 'Sin registrar' }}</td>
+                            <td class="text-nowrap">{{ persona.email || 'Sin registrar' }}</td>
+                            <td>{{ getUbicacionPersona(persona) }}</td>
+                            <td class="text-right text-nowrap">
+                              <button class="btn btn-sm btn-secondary text-nowrap" (click)="verResultadosPersona(persona)">
+                                <app-icon name="clipboard-list" size="sm"></app-icon>
+                                Ver trámites y resultados
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="pagination-row">
+                    <button class="btn btn-sm btn-secondary" [disabled]="personasNaturalesPagina === 0" (click)="previousPersonasNaturalesPage()">
+                      Anterior
+                    </button>
+                    <span>
+                      Página {{ personasNaturalesPagina + 1 }} de {{ personasNaturalesTotalPages }}
+                    </span>
+                    <button class="btn btn-sm btn-secondary" [disabled]="personasNaturalesPagina >= personasNaturalesTotalPages - 1" (click)="nextPersonasNaturalesPage()">
+                      Siguiente
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-primary" (click)="closePersonasNaturalesModal()">Cerrar</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Modal de exámenes y resultados por persona -->
+         @if (showPersonaResultadosModal()) {
+           <div class="modal-overlay" (click)="closePersonaResultadosModal()">
+             <div class="modal-content persona-resultados-modal" (click)="$event.stopPropagation()">
+               <div class="modal-header">
+                 <h2>
+                   <app-icon name="clipboard-list" size="md" customClass="mr-2"></app-icon>
+                   Exámenes y resultados
+                 </h2>
+                 <button class="modal-close" (click)="closePersonaResultadosModal()">
+                   <app-icon name="x" size="sm"></app-icon>
+                 </button>
+               </div>
+               <div class="modal-body">
+                 @if (!personaResultadosActual) {
+                   <div class="empty-state">
+                     <app-icon name="user" size="sm" customClass="text-gray-400"></app-icon>
+                     <p>No hay persona seleccionada.</p>
+                   </div>
+                 } @else {
+                   <div class="persona-resumen">
+                     <strong>{{ getNombrePersona(personaResultadosActual) }}</strong>
+                     <span>DNI {{ personaResultadosActual.dni || 'Sin DNI' }}</span>
+                   </div>
+
+                   @if (personaResultados().length === 0) {
+                     <div class="empty-state">
+                       <app-icon name="clipboard-list" size="sm" customClass="text-gray-400"></app-icon>
+                       <p>No hay exámenes registrados para esta persona.</p>
+                     </div>
+                   } @else {
+                     <div class="table-container resultados-table-container">
+                       <table class="data-table">
+                         <thead>
+                           <tr>
+                             <th>Examen</th>
+                             <th>Fecha</th>
+                             <th>Horario</th>
+                             <th>Resultado</th>
+                           </tr>
+                         </thead>
+                         <tbody>
+                           @for (inscripcion of personaResultados(); track inscripcion.id) {
+                             <tr>
+                               <td>
+                                 <span class="code-badge">{{ getGrupoExamenLabel(inscripcion) }}</span>
+                               </td>
+                               <td>{{ getFechaPresentacion(inscripcion) }}</td>
+                               <td>{{ getHorarioPresentacion(inscripcion) }}</td>
+                               <td>
+                                 <span class="state-badge" [class]="getResultadoClass(getResultadoLabel(inscripcion))">
+                                   {{ getResultadoLabel(inscripcion) }}
+                                 </span>
+                               </td>
+                             </tr>
+                           }
+                         </tbody>
+                       </table>
+                     </div>
+                   }
+                 }
+               </div>
+               <div class="modal-footer">
+                 <button class="btn btn-primary" (click)="closePersonaResultadosModal()">Cerrar</button>
+               </div>
+             </div>
+           </div>
+         }
 
          <!-- Modal de Resultados Recientes -->
         @if (showResultadosRecientesModal()) {
@@ -1425,6 +1573,33 @@ interface DiaCalendario {
       background: var(--color-gray-50);
     }
 
+    .text-right {
+      text-align: right;
+    }
+
+    .text-nowrap {
+      white-space: nowrap;
+    }
+
+    .modal-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--color-gray-600);
+      margin-bottom: 12px;
+    }
+
+    .pagination-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 16px;
+      color: var(--color-gray-600);
+      font-size: 13px;
+    }
+
     .code-badge {
       font-weight: 600;
       color: var(--color-gray-900);
@@ -1461,6 +1636,21 @@ interface DiaCalendario {
       border-radius: 4px;
       font-size: 12px;
       font-weight: 500;
+    }
+
+    .state-badge.aprobado {
+      background: var(--color-green-100);
+      color: var(--color-green-600);
+    }
+
+    .state-badge.desaprobado {
+      background: var(--color-red-100);
+      color: var(--color-red-600);
+    }
+
+    .state-badge.pendiente {
+      background: var(--color-orange-100);
+      color: var(--color-orange-600);
     }
 
     .resultado-badge {
@@ -1822,6 +2012,53 @@ interface DiaCalendario {
       word-break: break-word;
     }
 
+    .persona-resultados-modal {
+      max-width: 980px;
+    }
+
+    .personas-naturales-modal {
+      max-width: 1100px;
+    }
+
+    .personas-naturales-table-container table {
+      min-width: 1000px;
+    }
+
+    .persona-resumen {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--color-gray-200);
+      border-radius: 10px;
+      background: var(--color-gray-50);
+      margin-bottom: 16px;
+    }
+
+    .persona-resumen span {
+      color: var(--color-gray-500);
+      font-size: 13px;
+    }
+
+    .resultados-table-container {
+      overflow-x: auto;
+    }
+
+    .resultados-table-container table {
+      min-width: 760px;
+    }
+
+    .pagado-text {
+      color: var(--color-green-600);
+      font-weight: 600;
+    }
+
+    .no-pagado-text {
+      color: var(--color-orange-600);
+      font-weight: 600;
+    }
+
     // Botón clear inline (para autocomplete)
     .btn-clear-inline {
       display: inline-flex;
@@ -1901,7 +2138,7 @@ interface DiaCalendario {
 
      /* Modal de Detalles */
      .detalles-modal {
-       max-width: 700px;
+       max-width: 1100px;
      }
 
      .info-section, .inscritos-section {
@@ -2388,6 +2625,16 @@ export class GestionExamenesComponent implements OnInit {
   // Tipos de Trámite (para autocompletado)
   tiposTramite: any[] = [];
 
+  // Personas naturales inscritas
+  personasNaturales = signal<PersonaNatural[]>([]);
+  filtroPersonas = '';
+  personasNaturalesPagina = 0;
+  personasNaturalesPageSize = 5;
+  showPersonasNaturalesModal = signal(false);
+  showPersonaResultadosModal = signal(false);
+  personaResultadosActual: PersonaNatural | null = null;
+  personaResultados = signal<any[]>([]);
+
   // Resultados Recientes
   showResultadosRecientesModal = signal(false);
   resultadosRecientes = signal<any[]>([]);
@@ -2404,10 +2651,11 @@ export class GestionExamenesComponent implements OnInit {
    buscandoDni = signal(false);
    buscandoTramite = signal(false);
 
-   ngOnInit(): void {
+    ngOnInit(): void {
       this.loadExamenes();
       this.loadRequisitos();
       this.loadTiposTramite();
+      this.loadPersonasNaturales();
       this.selectedDate.set(new Date());
 
       // Suscribirse al estado global de inscripciones (para Resultados Recientes)
@@ -2934,13 +3182,152 @@ export class GestionExamenesComponent implements OnInit {
     return this.examenes().reduce((sum, e) => sum + e.cuposDisponibles, 0);
   }
 
+  openPersonasNaturalesModal(): void {
+    this.filtroPersonas = '';
+    this.personasNaturalesPagina = 0;
+    this.showPersonasNaturalesModal.set(true);
+    this.loadPersonasNaturales();
+  }
+
+  closePersonasNaturalesModal(): void {
+    this.showPersonasNaturalesModal.set(false);
+  }
+
+  resetPersonasNaturalesPage(): void {
+    this.personasNaturalesPagina = 0;
+  }
+
+  limpiarFiltroPersonas(): void {
+    this.filtroPersonas = '';
+    this.personasNaturalesPagina = 0;
+  }
+
+  get personasNaturalesFiltradas(): PersonaNatural[] {
+    const termino = this.filtroPersonas.trim().toLowerCase();
+    const filtradas = !termino
+      ? this.personasNaturales()
+      : this.personasNaturales().filter(persona => {
+          const nombre = this.getNombrePersona(persona).toLowerCase();
+          const dni = String(persona.dni || '');
+          return nombre.includes(termino) || dni.includes(termino);
+        });
+
+    return [...filtradas].sort((a, b) => this.getNombrePersona(a).localeCompare(this.getNombrePersona(b)));
+  }
+
+  get personasNaturalesPaginadas(): PersonaNatural[] {
+    const inicio = this.personasNaturalesPagina * this.personasNaturalesPageSize;
+    return this.personasNaturalesFiltradas.slice(inicio, inicio + this.personasNaturalesPageSize);
+  }
+
+  get personasNaturalesTotalPages(): number {
+    return Math.max(1, Math.ceil(this.personasNaturalesFiltradas.length / this.personasNaturalesPageSize));
+  }
+
+  previousPersonasNaturalesPage(): void {
+    this.personasNaturalesPagina = Math.max(0, this.personasNaturalesPagina - 1);
+  }
+
+  nextPersonasNaturalesPage(): void {
+    this.personasNaturalesPagina = Math.min(this.personasNaturalesTotalPages - 1, this.personasNaturalesPagina + 1);
+  }
+
+  getNombrePersona(persona: PersonaNatural | null): string {
+    if (!persona) return '';
+    return [persona.nombres, persona.apellidos].filter(Boolean).join(' ') || 'Sin nombre';
+  }
+
+  getUbicacionPersona(persona: PersonaNatural | null): string {
+    if (!persona) return 'Sin registrar';
+    return [persona.direccion, persona.distrito, persona.provincia, persona.departamento]
+      .filter(Boolean)
+      .join(' - ') || 'Sin registrar';
+  }
+
+  loadPersonasNaturales(): void {
+    this.personaNaturalService.obtenerTodas().subscribe({
+      next: (personas) => {
+        this.personasNaturales.set(personas || []);
+      },
+      error: (err) => {
+        console.error('Error cargando personas naturales:', err);
+        this.personasNaturales.set([]);
+        this.notificationService.error('No se pudieron cargar las personas naturales', 'Error', 3000);
+      }
+    });
+  }
+
+  verResultadosPersona(persona: PersonaNatural): void {
+    this.personaResultadosActual = persona;
+    this.personaResultados.set([]);
+    const personaId = Number(persona.id || persona.dni);
+    this.inscripcionService.buscarPorPersonaId(personaId).subscribe({
+      next: (inscripciones) => {
+        const sorted = [...(inscripciones || [])]
+          .sort((a, b) => new Date(b.fechaInscripcion).getTime() - new Date(a.fechaInscripcion).getTime());
+        this.personaResultados.set(sorted);
+      },
+      error: (err) => {
+        console.error('Error buscando resultados de persona:', err);
+        this.personaResultados.set([]);
+        this.notificationService.error('No se pudieron cargar los resultados de la persona', 'Error', 3000);
+      }
+    });
+    this.showPersonaResultadosModal.set(true);
+  }
+
+  closePersonaResultadosModal(): void {
+    this.showPersonaResultadosModal.set(false);
+    this.personaResultadosActual = null;
+    this.personaResultados.set([]);
+  }
+
+  getTramiteLabel(inscripcion: any): string {
+    const tramite = inscripcion.tramite || null;
+    return tramite?.codigoRut || inscripcion.codigoRUT || inscripcion.codigoRut || 'Sin trámite';
+  }
+
+  getTramiteSubLabel(inscripcion: any): string {
+    const tramite = inscripcion.tramite || null;
+    const tipo = tramite?.tipoTramiteDescripcion || tramite?.tipoTramite?.descripcion || tramite?.tipoTramiteCodigo || '';
+    const estado = tramite?.estado || '';
+    return [tipo, estado].filter(Boolean).join(' - ') || 'Sin información del trámite';
+  }
+
+  getGrupoExamenLabel(inscripcion: any): string {
+    const grupo = inscripcion.grupoPresentacion || null;
+    return grupo?.tipoExamen || grupo?.codigo || grupo?.nombre || 'Sin examen';
+  }
+
+  getFechaPresentacion(inscripcion: any): string {
+    const grupo = inscripcion.grupoPresentacion || null;
+    if (!grupo?.fechaPresentacion) return 'Sin fecha';
+    return new Date(grupo.fechaPresentacion).toLocaleDateString('es-PE');
+  }
+
+  getHorarioPresentacion(inscripcion: any): string {
+    const grupo = inscripcion.grupoPresentacion || null;
+    if (!grupo?.horaInicio || !grupo?.horaFin) return 'Sin horario';
+    return `${grupo.horaInicio} - ${grupo.horaFin}`;
+  }
+
+  getResultadoLabel(inscripcion: any): string {
+    if (inscripcion.resultado) return this.getEstadoFormateado(inscripcion.resultado);
+    if (inscripcion.estado === 'PROGRAMADO' || inscripcion.estado === 'PENDIENTE') return 'Pendiente';
+    if (inscripcion.estado) return this.getEstadoFormateado(inscripcion.estado);
+    return 'Pendiente';
+  }
+
   getEstadoFormateado(estado: string): string {
     const map: any = {
-      'PROGRAMADO': 'Programado',
+      'PROGRAMADO': 'Pendiente',
       'EN_CURSO': 'En Curso',
       'COMPLETADO': 'Completado',
       'CANCELADO': 'Cancelado',
-      'CERRADO': 'Cerrado'
+      'CERRADO': 'Cerrado',
+      'PENDIENTE': 'Pendiente',
+      'APROBADO': 'Aprobado',
+      'REPROBADO': 'Reprobado'
     };
     return map[estado] || estado;
   }
@@ -2954,8 +3341,10 @@ export class GestionExamenesComponent implements OnInit {
    }
 
    getResultadoClass(resultado: string | null | undefined): string {
-     if (!resultado) return 'pendiente';
-     return resultado.toLowerCase();
+     const value = String(resultado || '').toLowerCase();
+     if (value.includes('aprob')) return 'aprobado';
+     if (value.includes('reprob') || value.includes('desaprob')) return 'desaprobado';
+     return 'pendiente';
    }
 
     editInscripcion(inscripcion: any): void {

@@ -115,11 +115,18 @@ export class InscripcionExamenService {
     );
   }
 
-  // Buscar inscripciones por DNI de la persona
-  buscarPorDni(dni: number): Observable<InscripcionExamen[]> {
-    return this.http.get<InscripcionExamen[]>(`${this.apiUrl}/buscar/dni/${dni}`).pipe(
+  // Buscar inscripciones por ID de la persona
+  buscarPorPersonaId(personaId: number): Observable<InscripcionExamen[]> {
+    let params = new HttpParams();
+    params = params.set('personaId', personaId.toString());
+    return this.http.get<InscripcionExamen[]>(`${this.apiUrl}/buscar`, { params }).pipe(
       catchError(this.handleError)
     );
+  }
+
+  // Buscar inscripciones por DNI de la persona
+  buscarPorDni(dni: number): Observable<InscripcionExamen[]> {
+    return this.buscarPorPersonaId(dni);
   }
 
   // Contar inscripciones activas por grupo

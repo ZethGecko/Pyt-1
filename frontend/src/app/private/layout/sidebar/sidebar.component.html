@@ -22,17 +22,7 @@
    <!-- Navegación -->
    <nav class="sidebar-nav">
        <ul class="nav-list">
-         <!-- Dashboard -->
-        <li class="nav-item">
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
-            <div class="nav-icon-wrapper">
-              <app-icon name="dashboard" size="sm" customClass="nav-icon"></app-icon>
-            </div>
-            <span class="nav-text">Dashboard</span>
-          </a>
-        </li>
-
-       <!-- Gestión Principal (Expandible) -->
+        <!-- Gestión Principal (Expandible) -->
        <li class="nav-item has-submenu">
          <button (click)="toggleMenu('gestion')" class="nav-link" [class.active]="expandedMenus().gestion">
            <div class="nav-icon-wrapper">
@@ -85,12 +75,7 @@
                  <span class="submenu-text">Exámenes</span>
                </a>
               </li>
-             <li class="submenu-item">
-                <a routerLink="/admin/publicaciones" routerLinkActive="active" class="submenu-link">
-                  <app-icon name="newspaper" size="xs" class="submenu-icon"></app-icon>
-                  <span class="submenu-text">Publicaciones</span>
-                </a>
-              </li>
+
               <li class="submenu-item">
                 <a routerLink="/admin/notificaciones" routerLinkActive="active" class="submenu-link">
                   <app-icon name="bell" size="xs" class="submenu-icon"></app-icon>
@@ -173,16 +158,6 @@
         </li>
 
         <!-- Enlaces directos -->
-
-        <li class="nav-item">
-          <a routerLink="/puntos-ruta" routerLinkActive="active" class="nav-link">
-            <div class="nav-icon-wrapper">
-              <app-icon name="location" size="sm" customClass="nav-icon"></app-icon>
-            </div>
-            <span class="nav-text">Puntos Ruta</span>
-          </a>
-        </li>
-
 
      </ul>
    </nav>
