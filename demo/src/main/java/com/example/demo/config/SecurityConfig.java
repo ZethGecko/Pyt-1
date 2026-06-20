@@ -42,10 +42,19 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:4200", "http://localhost:3000", "http://localhost", "http://localhost:80", "http://127.0.0.1:4200")
+                        .allowedOrigins(
+                                "http://localhost:4200",
+                                "http://localhost:3000",
+                                "http://localhost",
+                                "http://localhost:80",
+                                "http://127.0.0.1:4200",
+                                "https://mpsrj-gtcv-o8o6.onrender.com",
+                                "https://mpsrj-gtcv.onrender.com",
+                                "https://backend-service-pq2g.onrender.com"
+                        )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                         .allowedHeaders("*")
-                        .exposedHeaders("Authorization");
+                        .exposedHeaders("Authorization", "X-Refresh-Token");
             }
         };
     }
